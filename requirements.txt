@@ -1,0 +1,28 @@
+# requirements.txt — the Python libraries Scam Shield needs.
+# Install them all with:   pip install -r requirements.txt
+#
+# Versions are pinned (==) so everyone on the team gets exactly the same
+# libraries, and "it works on my computer" means it works on yours too.
+
+# Web server: FastAPI is the framework, uvicorn runs it
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+# Lets FastAPI read form data (Twilio sends webhooks as forms)
+python-multipart==0.0.32
+
+# Reads our secret keys from the .env file
+python-dotenv==1.2.4
+
+# Talks to Nemotron on Nebius Token Factory (it speaks the OpenAI API format)
+openai==3.28.0
+
+# Web search for caller-number lookups and scam news
+tavily-python==0.8.5
+
+# Phone calls and SMS
+twilio==9.11.2
+
+# Testing
+pytest==9.1.1
+# FastAPI's test client needs httpx
+httpx==0.28.1

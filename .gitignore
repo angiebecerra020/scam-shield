@@ -1,0 +1,26 @@
+# .gitignore — tells git which files to NEVER upload to GitHub.
+# The most important line is ".env": that file holds our real API keys.
+
+# Secrets (real keys live here — never commit!)
+.env
+.env.local
+
+# Python virtual environment (each person creates their own)
+.venv/
+venv/
+
+# Python cache files (auto-generated, not useful to share)
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local editor settings (personal, stay on each person's computer)
+.vscode/
+.idea/
+
+# Mac system files
+.DS_Store
+
+# Logs and real call recordings (privacy: never upload real calls)
+*.log
+recordings/
