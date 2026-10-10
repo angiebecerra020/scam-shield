@@ -1,0 +1,27 @@
+<!--
+  index.html — The family dashboard page (a placeholder for now).
+
+  How it fits in: the web server (app/main.py) sends this page when someone
+  opens http://localhost:8000. It loads styles.css (the look) and app.js (the
+  behavior). The real dashboard (live risk meter, reasons, source links, call
+  history) is coming in a later step.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scam Shield</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="card">
+    <p class="badge">Coming soon</p>
+    <h1>🛡️ Scam Shield</h1>
+    <p class="tagline">Catches scam calls while they happen, and tells the family right away.</p>
+    <!-- aria-live makes screen readers announce the status when it changes -->
+    <p class="status">Server status: <span id="server-status" aria-live="polite">checking…</span></p>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

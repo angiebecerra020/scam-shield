@@ -1,0 +1,96 @@
+/*
+  styles.css — The look of the Scam Shield dashboard.
+
+  How it fits in: index.html loads this file. Our brand colors are defined
+  ONCE as variables (in :root below), so the whole app stays on-brand
+  (black + gold) and a color change only happens in one place.
+
+  Mobile-first: the main styles are for phones. Bigger screens get a few
+  extras in the @media block at the bottom.
+*/
+
+:root {
+  --color-black: #1C1C1C;    /* page background */
+  --color-gold: #C9A227;     /* brand accent: headings, highlights */
+  --color-surface: #262626;  /* cards: a little lighter than the background */
+  --color-text: #F5F5F5;     /* main text: near-white, easy to read on black */
+  --color-muted: #B3B3B3;    /* secondary text */
+  --radius: 16px;            /* rounded corners */
+}
+
+/* Make width and padding add up the way you'd expect */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  /* Center the card in the middle of the screen */
+  display: grid;
+  place-items: center;
+  /* 16px gap at the edges so nothing touches the phone's screen edge */
+  padding: 16px;
+  background: var(--color-black);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Larger-than-usual text: family members of all ages read this on phones */
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  margin: 0 0 16px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--color-gold);
+  color: var(--color-black);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0 0 8px;
+  color: var(--color-gold);
+  font-size: 2rem;
+}
+
+.tagline {
+  margin: 0 0 24px;
+}
+
+.status {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 16px;
+}
+
+/* Added by app.js when the server answers */
+.status-ok {
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+/* Tablets and computers: a bit more breathing room */
+@media (min-width: 768px) {
+  .card {
+    padding: 48px 40px;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+  }
+}
