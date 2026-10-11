@@ -81,7 +81,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 ### 2. Install
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/scam-shield.git
+git clone https://github.com/angiebecerra020/scam-shield.git
 cd scam-shield
 python3 -m venv .venv
 source .venv/bin/activate
