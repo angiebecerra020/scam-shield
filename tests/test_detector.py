@@ -1,12 +1,14 @@
 """
-test_detector.py — Tests for the scam detector (app/detector.py).
+test_detector.py
 
-How it fits in: two kinds of tests live here.
-  1. Quick tests with a FAKE Nemotron. They check our own code: reading the
-     answer, fixing bad scores, and never crashing. No API key needed.
-  2. The accuracy test. It sends every script in data/test_scripts/ to the
-     REAL Nemotron and prints a table of how it did. It only runs when
-     NEBIUS_API_KEY is in .env. To see the table, run:
+Tests for the scam detector (app/detector.py).
+
+How it fits in: there are two kinds of tests in here.
+  1. Quick tests with a FAKE Nemotron. These check our own code, like reading
+     the answer, fixing bad scores, and never crashing. No API key needed.
+  2. The accuracy test. This one sends every script in data/test_scripts/ to
+     the REAL Nemotron and prints a table showing how it did. It only runs
+     when NEBIUS_API_KEY is in .env. To see the table, run:
          pytest tests/test_detector.py -s -k accuracy
 """
 
@@ -34,10 +36,10 @@ GOOD_SCAM_ANSWER = """{
 
 class FakeNemotron:
     """
-    A stand-in for the Nebius client that answers with text we choose.
+    A pretend version of the Nebius client that answers with whatever text we pick.
 
-    It copies the shape of the real client (client.chat.completions.create)
-    and remembers every request, so tests can check what we sent.
+    It's shaped just like the real client (client.chat.completions.create),
+    and it remembers every request so the tests can check what we sent.
 
     Example:
         fake = FakeNemotron(['{"risk_score": 90}'])
@@ -51,7 +53,7 @@ class FakeNemotron:
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
 
     def create(self, **request):
-        """Pretend to be chat.completions.create(): reply with the next answer."""
+        """Acts like chat.completions.create() and replies with the next answer."""
         self.requests.append(request)
         answer = self.answers.pop(0)
         if isinstance(answer, Exception):
@@ -62,7 +64,7 @@ class FakeNemotron:
 
 def not_supported_error() -> BadRequestError:
     """
-    Build the error Nebius sends when it doesn't support an option (HTTP 400).
+    Makes the error Nebius sends when it doesn't support an option (an HTTP 400).
 
     Example:
         FakeNemotron([not_supported_error(), GOOD_SCAM_ANSWER])
@@ -72,9 +74,7 @@ def not_supported_error() -> BadRequestError:
     return BadRequestError("response_format not supported", response=response, body=None)
 
 
-# ---------------------------------------------------------------------------
-# 1. Quick tests with a fake Nemotron
-# ---------------------------------------------------------------------------
+# Part 1: quick tests with a fake Nemotron
 
 
 def test_good_answer_comes_through_cleanly():
@@ -89,7 +89,7 @@ def test_good_answer_comes_through_cleanly():
 
 
 def test_verdict_always_matches_the_score():
-    """If the model says "safe" but scores 95, we trust the score."""
+    """If the model says "safe" but scores it 95, we go with the score."""
     answer = '{"risk_score": 95, "verdict": "safe", "reasons": [], "claimed_identity": null, "family_alert_message": "Call her."}'
 
     result = detector.score_call(SCAM_CALL, client=FakeNemotron([answer]))
@@ -98,7 +98,7 @@ def test_verdict_always_matches_the_score():
 
 
 def test_safe_call_never_alerts_the_family():
-    """A low score should never carry a family alert, even if the model wrote one."""
+    """A low score should never come with a family alert, even if the model wrote one."""
     answer = '{"risk_score": 10, "verdict": "safe", "reasons": ["Just chatting"], "claimed_identity": "granddaughter Sofia", "family_alert_message": "Hello!"}'
 
     result = detector.score_call("Caller: Hi Grandma, it's Sofia!", client=FakeNemotron([answer]))
@@ -108,7 +108,7 @@ def test_safe_call_never_alerts_the_family():
 
 
 def test_scores_outside_0_to_100_are_fixed():
-    """Scores like 140 or "-5" get squeezed into 0-100."""
+    """Scores like 140 or minus 5 get squeezed back into 0 to 100."""
     assert detector.clamp_score(140) == 100
     assert detector.clamp_score("-5") == 0
     assert detector.clamp_score("85") == 85
@@ -116,7 +116,7 @@ def test_scores_outside_0_to_100_are_fixed():
 
 
 def test_json_hidden_in_extra_text_is_still_found():
-    """Thinking notes, chatty sentences and ```json fences shouldn't break us."""
+    """Thinking notes, chatty sentences and ```json fences shouldn't mess us up."""
     messy = "<think>gift cards... secrecy...</think>\nSure! ```json\n" + GOOD_SCAM_ANSWER + "\n```"
 
     result = detector.score_call(SCAM_CALL, client=FakeNemotron([messy]))
@@ -143,7 +143,7 @@ def test_connection_problem_never_crashes():
 
 
 def test_empty_call_is_not_sent_to_nemotron():
-    """No words yet means nothing to check, and no credits spent."""
+    """No words yet means there's nothing to check, so we don't spend credits."""
     fake = FakeNemotron([])
 
     result = detector.score_call("   ", client=fake)
@@ -153,7 +153,7 @@ def test_empty_call_is_not_sent_to_nemotron():
 
 
 def test_falls_back_when_strict_format_is_not_supported():
-    """If Nebius rejects the strict JSON schema, we try the next way of asking."""
+    """If Nebius says no to the strict JSON schema, we try the next way of asking."""
     fake = FakeNemotron([not_supported_error(), GOOD_SCAM_ANSWER])
 
     result = detector.score_call(SCAM_CALL, client=fake)
@@ -164,7 +164,7 @@ def test_falls_back_when_strict_format_is_not_supported():
 
 
 def test_request_asks_for_the_right_language_and_marks_the_transcript():
-    """The transcript goes between markers, and we ask for the family's language."""
+    """The transcript goes between tags, and we ask for the family's language."""
     fake = FakeNemotron([GOOD_SCAM_ANSWER])
 
     detector.score_call(SCAM_CALL, language="es", client=fake)
@@ -187,21 +187,19 @@ def test_sample_scripts_load_and_turn_into_transcripts():
     assert transcript_text(grandparent, up_to_line=1) == "Caller: Grandma? It's me, Danny."
 
 
-# ---------------------------------------------------------------------------
-# 2. Accuracy test with the REAL Nemotron
-# ---------------------------------------------------------------------------
+# Part 2: the accuracy test with the REAL Nemotron
 
 
 def is_correct(expected: str, result: dict) -> bool:
     """
     Did the detector get this script right?
 
-    A scam counts as caught when it's at least "suspicious" (score 40+).
-    A normal call counts as right only when it's "safe" (under 40).
+    A scam counts as caught when it's at least "suspicious" (a score of 40 or more).
+    A normal call only counts as right when it's "safe" (under 40).
 
-    Example:
-        is_correct("scam", {"verdict": "likely_scam"})  ->  True
-        is_correct("normal", {"verdict": "suspicious"}) ->  False
+    Examples:
+        is_correct("scam", {"verdict": "likely_scam"}) gives you True
+        is_correct("normal", {"verdict": "suspicious"}) gives you False
     """
     if expected == "scam":
         return result["verdict"] in ("suspicious", "likely_scam")
@@ -210,15 +208,14 @@ def is_correct(expected: str, result: dict) -> bool:
 
 def print_accuracy_table(rows: list[dict]) -> None:
     """
-    Print the results as a table in the terminal.
+    Prints the results as a table in the terminal.
 
-    Example output:
+    Example of what you see:
         Script                   Lang  Expected  Score  Verdict       Time  Right?
         scam_grandparent_en      en    scam         95  likely_scam   0.9s  yes
     """
     print()
     print(f"{'Script':<25}{'Lang':<6}{'Expected':<10}{'Score':>5}  {'Verdict':<13}{'Time':>5}  Right?")
-    print("-" * 75)
     for row in rows:
         score = "-" if row["score"] is None else row["score"]
         print(
@@ -226,8 +223,7 @@ def print_accuracy_table(rows: list[dict]) -> None:
             f"{row['verdict']:<13}{row['seconds']:>4.1f}s  {'yes' if row['correct'] else 'NO'}"
         )
     correct = sum(1 for row in rows if row["correct"])
-    print("-" * 75)
-    print(f"Accuracy: {correct}/{len(rows)} = {correct / len(rows):.0%}\n")
+    print(f"\nAccuracy: {correct} out of {len(rows)} ({correct / len(rows):.0%})\n")
 
 
 @pytest.mark.skipif(
@@ -235,7 +231,7 @@ def print_accuracy_table(rows: list[dict]) -> None:
     reason="Add NEBIUS_API_KEY to .env to run the real accuracy test",
 )
 def test_accuracy_on_all_scripts():
-    """Run every sample script through the real Nemotron and print a table."""
+    """Runs every sample script through the real Nemotron and prints a table."""
     rows = []
     for script in list_scripts():
         started = time.perf_counter()
@@ -254,4 +250,4 @@ def test_accuracy_on_all_scripts():
 
     print_accuracy_table(rows)
     correct = sum(1 for row in rows if row["correct"])
-    assert correct / len(rows) >= 0.75, "Detector got fewer than 3 out of 4 calls right"
+    assert correct / len(rows) >= 0.75, "The detector got fewer than 3 out of 4 calls right"

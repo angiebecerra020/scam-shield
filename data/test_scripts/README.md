@@ -1,5 +1,5 @@
 <!--
-  README for data/test_scripts/ — explains what goes in this folder.
+  This README explains what goes in the data/test_scripts folder.
 -->
 
 # Test call scripts

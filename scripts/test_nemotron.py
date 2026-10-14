@@ -1,7 +1,9 @@
 """
-test_nemotron.py — Day-1 check (tracker T3): can we reach NVIDIA Nemotron on
-Nebius Token Factory, does it answer in our format, and is it fast enough for
-a live call?
+test_nemotron.py
+
+Day one check for tracker task T3. Can we reach NVIDIA Nemotron on Nebius
+Token Factory, does it answer in our format, and is it fast enough for a
+live call?
 
 How it fits in: run this once your NEBIUS_API_KEY is in .env, before we build
 anything else on top of Nemotron. Every check prints PASS or FAIL.
@@ -15,14 +17,14 @@ import sys
 import time
 from pathlib import Path
 
-# "python scripts/test_nemotron.py" only lets Python see the scripts/ folder.
-# This line adds the project folder too, so "from app ..." works.
+# When you run "python scripts/test_nemotron.py", Python can only see the
+# scripts/ folder. This line lets it see the whole project, so "from app ..." works.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import find_missing_settings, get_settings  # noqa: E402
 from app.detector import make_client, score_call  # noqa: E402
 
-# Our goal for one Nemotron check during a live call.
+# Our goal for how long one Nemotron check can take during a live call.
 SPEED_GOAL_SECONDS = 3.0
 
 SAMPLE_SCAM_CALL = (
@@ -35,15 +37,15 @@ SAMPLE_SCAM_CALL = (
 
 def report(passed: bool, check: str, detail: str = "") -> bool:
     """
-    Print one PASS/FAIL line and hand the result back.
+    Prints one PASS or FAIL line and hands the result back.
 
-    Input:  passed — did the check pass?
-            check  — what we checked
-            detail — optional extra info, shown in brackets
-    Output: the same True/False, so callers can keep it
+    Input:  passed, whether the check passed
+            check, what we checked
+            detail, any extra info (shown in brackets)
+    Output: the same True or False, so we can keep track of it
 
     Example:
-        report(True, "Settings in .env")  prints  "PASS  Settings in .env"
+        report(True, "Settings in .env") prints "PASS  Settings in .env"
     """
     label = "PASS" if passed else "FAIL"
     line = f"{label}  {check}"
@@ -55,12 +57,14 @@ def report(passed: bool, check: str, detail: str = "") -> bool:
 
 def check_settings() -> bool:
     """
-    Make sure the three Nebius settings are filled in, in .env.
+    Makes sure the three Nebius settings are filled in, in .env.
 
+    Input:  nothing
     Output: True if they're all there
 
     Example:
-        NEBIUS_API_KEY is blank  ->  prints "FAIL  Settings in .env  (missing: NEBIUS_API_KEY)"
+        If NEBIUS_API_KEY is blank, it prints
+        "FAIL  Settings in .env  (missing: NEBIUS_API_KEY)"
     """
     missing = find_missing_settings(
         get_settings(), ["NEBIUS_API_KEY", "NEBIUS_BASE_URL", "NEMOTRON_MODEL"]
@@ -72,42 +76,45 @@ def check_settings() -> bool:
 
 def check_model_available() -> bool:
     """
-    Ask Nebius which models we can use, print the Nemotron ones, and check
-    that NEMOTRON_MODEL in .env is one of them.
+    Asks Nebius which models we can use, prints the Nemotron ones, and checks
+    that the NEMOTRON_MODEL in .env is one of them.
 
+    Input:  nothing
     Output: True if we connected and our model is on the list
 
     Example:
-        prints "PASS  NEMOTRON_MODEL is available  (nvidia/Nemotron-3_5-Lightning)"
+        It prints "PASS  NEMOTRON_MODEL is available  (nvidia/Nemotron-3_5-Lightning)"
     """
     wanted = get_settings().nemotron_model
     try:
         all_models = [model.id for model in make_client().models.list()]
     except Exception as error:
-        # Usually a wrong API key or no internet. Show the reason, don't crash.
+        # This is usually a wrong API key or no internet. We show why and keep going.
         return report(False, "Connect to Nebius", f"{type(error).__name__}: {error}")
     report(True, "Connect to Nebius", f"{len(all_models)} models available")
 
     print("      Nemotron models on your account:")
     for name in all_models:
         if "nemotron" in name.lower():
-            marker = "   <- the one in your .env" if name == wanted else ""
+            marker = "   (this is the one in your .env)" if name == wanted else ""
             print(f"        {name}{marker}")
     return report(wanted in all_models, "NEMOTRON_MODEL is available", wanted)
 
 
 def check_scam_scoring() -> bool:
     """
-    Score a sample grandparent scam twice and time both.
+    Scores a sample grandparent scam twice and times both.
 
-    The first request to any server is slower (it's opening the connection),
-    so we judge speed on the second one, which is what happens during a call.
+    The first request to any server is slower because it's opening the
+    connection. So we go by the second one, since that's what happens during
+    a real call.
 
+    Input:  nothing
     Output: True if Nemotron answered in our format, caught the scam, and
             was fast enough
 
     Example:
-        prints "PASS  Caught the scam  (score 95)"
+        It prints "PASS  Caught the scam  (score 95)"
     """
     seconds = []
     result = None
@@ -135,15 +142,17 @@ def check_scam_scoring() -> bool:
 
 def main() -> int:
     """
-    Run every check and print an overall result.
+    Runs every check and prints the overall result.
 
-    Output: 0 if everything passed, 1 if anything failed (the usual exit
-            codes for command-line tools)
+    Input:  nothing
+    Output: 0 if everything passed and 1 if anything failed (that's the
+            usual way command line tools report how it went)
 
     Example:
-        python scripts/test_nemotron.py   ->  ... "RESULT: PASS. Nemotron is ready."
+        Running python scripts/test_nemotron.py ends with
+        "RESULT: PASS. Nemotron is ready."
     """
-    print("Day-1 check T3: NVIDIA Nemotron on Nebius Token Factory\n")
+    print("Day one check T3: NVIDIA Nemotron on Nebius Token Factory\n")
     if not check_settings():
         print("\nAdd your Nebius API key to .env, then run this again.")
         return 1
@@ -154,7 +163,7 @@ def main() -> int:
     if model_ok and scoring_ok:
         print("\nRESULT: PASS. Nemotron is ready.")
         return 0
-    print("\nRESULT: FAIL. See the lines above.")
+    print("\nRESULT: FAIL. Check the lines above.")
     return 1
 
 
