@@ -1,0 +1,16 @@
+{
+  "id": "normal_pharmacy_en",
+  "title": "Normal: the pharmacy says a prescription is ready",
+  "language": "en",
+  "expected": "normal",
+  "caller_number": "+13055550110",
+  "lines": [
+    {"speaker": "caller", "text": "Hi, this is Maria from Sunshine Pharmacy on Coral Way. Is this Mrs. Díaz?"},
+    {"speaker": "senior", "text": "Yes, that's me."},
+    {"speaker": "caller", "text": "Your blood pressure refill from Dr. Patel is ready for pickup. We're open until 8 tonight."},
+    {"speaker": "senior", "text": "Oh good. Do I need to pay anything now?"},
+    {"speaker": "caller", "text": "No, nothing over the phone. Your insurance covered it. You can pay the five dollar copay at the counter when you pick it up."},
+    {"speaker": "senior", "text": "Perfect, I'll come by tomorrow morning."},
+    {"speaker": "caller", "text": "Sounds good. Have a nice evening, Mrs. Díaz."}
+  ]
+}

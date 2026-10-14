@@ -1,0 +1,16 @@
+{
+  "id": "normal_granddaughter_es",
+  "title": "Normal: su nieta Sofía llama por el almuerzo del domingo",
+  "language": "es",
+  "expected": "normal",
+  "caller_number": "+13055550123",
+  "lines": [
+    {"speaker": "caller", "text": "¡Hola, abuela! Soy Sofía."},
+    {"speaker": "senior", "text": "¡Mi niña! ¿Cómo estás?"},
+    {"speaker": "caller", "text": "Bien, abuela. Te llamo por el almuerzo del domingo en casa de mami. ¿Vas a hacer tu flan?"},
+    {"speaker": "senior", "text": "Claro que sí. ¿Viene tu hermano Danny también?"},
+    {"speaker": "caller", "text": "Sí, llega el sábado de la universidad. Yo te paso a buscar a las doce, ¿está bien?"},
+    {"speaker": "senior", "text": "Perfecto, mi amor. Te espero."},
+    {"speaker": "caller", "text": "Te quiero, abuela. ¡Nos vemos el domingo!"}
+  ]
+}
