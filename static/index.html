@@ -1,10 +1,12 @@
 <!--
-  index.html — The family dashboard page (a placeholder for now).
+  index.html — The family dashboard page.
 
   How it fits in: the web server (app/main.py) sends this page when someone
   opens http://localhost:8000. It loads styles.css (the look) and app.js (the
-  behavior). The real dashboard (live risk meter, reasons, source links, call
-  history) is coming in a later step.
+  behavior). Right now it has the sign-up form: a family member enters the
+  senior's details, we text the senior, and the page waits for their YES.
+  The live risk meter, reasons, source links and call history are coming in
+  a later step.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -16,10 +18,57 @@
 </head>
 <body>
   <main class="card">
-    <p class="badge">Coming soon</p>
     <h1>🛡️ Scam Shield</h1>
     <p class="tagline">Catches scam calls while they happen, and tells the family right away.</p>
-    <!-- aria-live makes screen readers announce the status when it changes -->
+
+    <!-- Step 1: the family member fills this in -->
+    <form id="signup-form" class="form">
+      <h2>Protect someone's calls</h2>
+      <p class="hint">We'll text them to ask for their OK. Nothing is listened to until they reply YES.</p>
+
+      <fieldset>
+        <legend>Who are we protecting?</legend>
+        <label>Their name <input name="senior_name" required maxlength="40" autocomplete="off"></label>
+        <label>Their phone <input name="senior_phone" type="tel" required autocomplete="off"></label>
+        <label>Their language
+          <select name="senior_language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Who gets the alerts?</legend>
+        <label>Your name <input name="family_name" required maxlength="40" autocomplete="name"></label>
+        <label>Your phone <input name="family_phone" type="tel" required autocomplete="tel"></label>
+        <label>Your language
+          <select name="family_language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <button type="submit">Text them for their OK</button>
+      <p id="signup-error" class="error" role="alert"></p>
+    </form>
+
+    <!-- Step 2: waiting for the senior's answer (hidden until they sign up) -->
+    <section id="consent-status" class="panel" hidden>
+      <h2>Waiting for <span id="senior-name"></span></h2>
+      <!-- aria-live makes screen readers announce the status when it changes -->
+      <p id="consent-message" aria-live="polite"></p>
+
+      <!-- Demo-only buttons, shown when the server is in demo mode -->
+      <div id="demo-tools" class="demo-tools" hidden>
+        <p class="badge">Demo mode</p>
+        <button type="button" id="demo-reply-yes">Pretend they texted YES</button>
+        <button type="button" id="demo-scam-call" hidden>Pretend a scam call starts</button>
+        <p id="demo-result" class="hint"></p>
+      </div>
+    </section>
+
     <p class="status">Server status: <span id="server-status" aria-live="polite">checking…</span></p>
   </main>
   <script src="/static/app.js"></script>

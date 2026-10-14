@@ -1,0 +1,27 @@
+<!--
+  join.html — The "Join call" page the family alert text links to.
+
+  How it fits in: the family member taps the link in the alert
+  (http://.../join/<secret>) and the server (app/main.py) sends this page.
+  join.js checks the call is still going, and when they tap the button,
+  our server rings THEIR phone and adds them to the call as a 3-way call.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Join call · Scam Shield</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="card">
+    <p class="badge badge-alert">Scam alert</p>
+    <h1>🛡️ Join the call</h1>
+    <p id="join-message" aria-live="polite">Checking the call…</p>
+    <button type="button" id="join-button" class="button-big" hidden>Call me into the call</button>
+    <p id="join-hint" class="hint" hidden>We'll ring your phone. When you answer, you'll be on the call. Everyone hears a short tone when you join.</p>
+  </main>
+  <script src="/static/join.js"></script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+"""
+consent.py — Makes sure the senior agrees before we ever listen to their calls.
+
+How it fits in: when a family member sets up Scam Shield, we don't start
+listening right away. We text the SENIOR's phone:
+    "Ana wants to protect your phone calls... Reply YES or NO."
+Only a YES sent from that phone turns protection on. That way a stranger who
+types in someone else's number can't start listening to their calls: they
+would need the senior's phone to say YES.
+
+The steps:
+  1. start_enrollment()     — family signs up; we text the senior (status "pending")
+  2. handle_senior_reply()  — Twilio forwards the senior's reply to us:
+       YES  -> "active"   (calls.py will now protect their calls)
+       NO   -> "declined"
+       STOP -> "revoked"  (works any time, even months later)
+  3. No answer within 24 hours -> "expired"; the family can ask again.
+
+To keep people from using us to spam strangers, we don't re-ask someone who
+is already waiting to answer, and we wait 30 days before asking someone who
+said NO again.
+"""
+
+import re
+import secrets
+import unicodedata
+from datetime import datetime, timedelta, timezone
+
+from app import storage
+from app.alerts import send_sms
+from app.languages import message, pick_language
+from app.phone_numbers import mask_phone, normalize_phone
+
+# How long the senior has to answer the first text.
+ANSWER_WINDOW = timedelta(hours=24)
+# How long we wait before asking someone who said NO (or STOP) again.
+ASK_AGAIN_AFTER_NO = timedelta(days=30)
+
+# Words we accept as an answer. Replies are cleaned up first (see clean_reply),
+# so "Yes!", "  yes " and "Sí" all match.
+YES_WORDS = {"yes", "y", "yeah", "yep", "ok", "okay", "si", "s"}
+NO_WORDS = {"no", "n", "nope"}
+# STOP and friends are the standard US words for "stop texting me". Twilio
+# also handles them itself, but we use them to turn protection off.
+STOP_WORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "parar", "alto"}
+
+# Names go into a text message sent to the senior, so we only allow letters,
+# spaces, and a few name characters. This blocks someone from slipping a link
+# or a long ad into the text through the "name" box. A dot must be followed by
+# a space ("J. Smith"), so web addresses like "scam.com" don't fit.
+NAME_PATTERN = re.compile(r"^[^\W\d_]+(?:(?:\. |[ '\-])[^\W\d_]+)*\.?$")
+MAX_NAME_LENGTH = 40
+
+
+class EnrollmentError(Exception):
+    """
+    A sign-up we can't accept, with a message the family member can read.
+
+    status_code is the web status main.py sends back, e.g. 400 for a typo in
+    a phone number or 409 when the senior is already signed up.
+
+    Example:
+        raise EnrollmentError("That phone number doesn't look right.", 400)
+    """
+
+    def __init__(self, text: str, status_code: int):
+        super().__init__(text)
+        self.text = text
+        self.status_code = status_code
+
+
+def clean_name(raw: str, label: str) -> str:
+    """
+    Check a person's name from the sign-up form and tidy up its spaces.
+
+    Input:  raw   — the name as typed, e.g. "  Rosa  María "
+            label — what to call the box in an error, e.g. "Senior's name"
+    Output: the tidy name, e.g. "Rosa María"
+    Raises: EnrollmentError if the name is blank, too long, or has
+            characters a name shouldn't have (digits, links, ...)
+
+    Example:
+        clean_name("Rosa", "Senior's name")         ->  "Rosa"
+        clean_name("visit scam.com", "Your name")   ->  EnrollmentError
+    """
+    name = " ".join((raw or "").split())
+    if not name:
+        raise EnrollmentError(f"{label} is required.", 400)
+    if len(name) > MAX_NAME_LENGTH:
+        raise EnrollmentError(f"{label} must be {MAX_NAME_LENGTH} characters or fewer.", 400)
+    if not NAME_PATTERN.match(name):
+        raise EnrollmentError(f"{label} can only use letters, spaces, ' - and .", 400)
+    return name
+
+
+def clean_phone(raw: str, label: str) -> str:
+    """
+    Check a phone number from the sign-up form and put it in E.164 format.
+
+    Example:
+        clean_phone("(305) 555-0100", "Senior's phone")  ->  "+13055550100"
+    """
+    phone = normalize_phone(raw or "")
+    if phone is None:
+        raise EnrollmentError(f"{label} doesn't look like a phone number.", 400)
+    return phone
+
+
+def is_expired(enrollment: dict, now: datetime) -> bool:
+    """
+    Has a "pending" enrollment run out of time for the senior to answer?
+
+    Example:
+        created 25 hours ago, still pending  ->  True
+    """
+    created = storage.parse_time(enrollment["created_at"])
+    return enrollment["status"] == "pending" and now - created > ANSWER_WINDOW
+
+
+def expire_old_requests(enrollments: list[dict]) -> list[dict]:
+    """
+    Mark pending enrollments past the 24-hour window as "expired".
+
+    We do this whenever we look at a senior's enrollments, instead of running
+    a separate timer job. Simpler, and the result is the same.
+
+    Input:  enrollments — one senior's enrollments
+    Output: the same list, with any expired ones updated
+
+    Example:
+        [{"status": "pending", created 2 days ago}]  ->  [{"status": "expired", ...}]
+    """
+    now = datetime.now(timezone.utc)
+    for enrollment in enrollments:
+        if is_expired(enrollment, now):
+            storage.set_enrollment_status(enrollment["id"], "expired", answered=False)
+            enrollment["status"] = "expired"
+    return enrollments
+
+
+def check_allowed_to_ask(senior_phone: str) -> None:
+    """
+    Make sure we're allowed to send this senior a consent text right now.
+
+    Input:  senior_phone — E.164 number
+    Output: nothing if it's fine
+    Raises: EnrollmentError when the senior is already protected, is already
+            waiting to answer, or said NO in the last 30 days
+
+    Example:
+        check_allowed_to_ask("+13055550100")  ->  (nothing: OK to ask)
+    """
+    now = datetime.now(timezone.utc)
+    enrollments = expire_old_requests(storage.find_enrollments_for_senior(senior_phone))
+
+    for enrollment in enrollments:
+        if enrollment["status"] == "active":
+            raise EnrollmentError("This person is already protected by Scam Shield.", 409)
+        if enrollment["status"] == "pending":
+            raise EnrollmentError(
+                "We already texted this person. They have 24 hours to answer.", 409
+            )
+        if enrollment["status"] in ("declined", "revoked"):
+            answered = storage.parse_time(enrollment["answered_at"])
+            if now - answered < ASK_AGAIN_AFTER_NO:
+                raise EnrollmentError(
+                    "This person said no recently, so we won't text them again yet.", 409
+                )
+
+
+def start_enrollment(
+    senior_name: str,
+    senior_phone: str,
+    family_name: str,
+    family_phone: str,
+    senior_language: str = "en",
+    family_language: str = "en",
+) -> dict:
+    """
+    Sign a senior up for Scam Shield and text them to ask for their YES.
+
+    Nothing is listened to yet: the enrollment starts as "pending".
+
+    Input:  senior_name, senior_phone — the person whose calls we'd protect
+            family_name, family_phone — the person signing up, who gets alerts
+            senior_language, family_language — "en" or "es"
+    Output: the new enrollment (as public_view() shows it)
+    Raises: EnrollmentError if something in the form is wrong, or if we
+            aren't allowed to ask this senior right now
+
+    Example:
+        start_enrollment("Rosa", "305-555-0100", "Ana", "305-555-0101", "es", "en")
+        ->  {"id": "...", "status": "pending", ...}
+        and Rosa gets: "Scam Shield: Ana quiere proteger sus llamadas..."
+    """
+    enrollment = {
+        # A long random ID, because it appears in the dashboard's web address.
+        # Counting 1, 2, 3... would let anyone peek at other families.
+        "id": secrets.token_urlsafe(16),
+        "senior_name": clean_name(senior_name, "Senior's name"),
+        "senior_phone": clean_phone(senior_phone, "Senior's phone"),
+        "family_name": clean_name(family_name, "Your name"),
+        "family_phone": clean_phone(family_phone, "Your phone"),
+        "senior_language": pick_language(senior_language),
+        "family_language": pick_language(family_language),
+        "status": "pending",
+        "created_at": storage.now_text(),
+        "answered_at": None,
+    }
+
+    if enrollment["senior_phone"] == enrollment["family_phone"]:
+        raise EnrollmentError("The senior's phone and your phone must be different.", 400)
+
+    check_allowed_to_ask(enrollment["senior_phone"])
+    storage.save_enrollment(enrollment)
+
+    send_sms(
+        enrollment["senior_phone"],
+        message(
+            "consent_request",
+            enrollment["senior_language"],
+            family_name=enrollment["family_name"],
+        ),
+    )
+    return public_view(enrollment)
+
+
+def clean_reply(body: str) -> str:
+    """
+    Simplify a text reply so we can match it against our answer words.
+
+    Lowercases it, removes accents (so "Sí" becomes "si"), and keeps only the
+    first word, without punctuation.
+
+    Examples:
+        clean_reply("Yes!")          ->  "yes"
+        clean_reply("Sí, claro")     ->  "si"
+        clean_reply("   ")           ->  ""
+    """
+    without_accents = unicodedata.normalize("NFKD", body or "")
+    without_accents = "".join(c for c in without_accents if not unicodedata.combining(c))
+    words = re.findall(r"[a-z]+", without_accents.lower())
+    return words[0] if words else ""
+
+
+def read_answer(body: str) -> str:
+    """
+    Work out what the senior meant by their reply.
+
+    Output: "yes", "no", "stop", or "unclear"
+
+    Examples:
+        read_answer("YES")       ->  "yes"
+        read_answer("Si")        ->  "yes"
+        read_answer("no thanks") ->  "no"
+        read_answer("STOP")      ->  "stop"
+        read_answer("who is this?") -> "unclear"
+    """
+    word = clean_reply(body)
+    if word in YES_WORDS:
+        return "yes"
+    if word in NO_WORDS:
+        return "no"
+    if word in STOP_WORDS:
+        return "stop"
+    return "unclear"
+
+
+def handle_senior_reply(from_phone: str, body: str) -> str | None:
+    """
+    Act on a text a senior sent to our Twilio number.
+
+    Twilio sends every text our number receives to main.py, which hands it
+    here. The reply only counts because it came FROM the senior's phone.
+
+    Input:  from_phone — who sent the text (Twilio gives E.164)
+            body       — what the text says
+    Output: the text to send back to the senior, or None to stay quiet
+            (we don't answer numbers that never signed up)
+
+    Examples:
+        Rosa is pending and replies "Sí"   ->  "Gracias, Rosa. Scam Shield ahora protege..."
+                                               (and Ana gets "Rosa said YES")
+        Rosa is active and replies "STOP"  ->  "Scam Shield está apagado..."
+        a stranger texts "hi"              ->  None
+    """
+    phone = normalize_phone(from_phone or "")
+    if phone is None:
+        return None
+
+    enrollments = expire_old_requests(storage.find_enrollments_for_senior(phone))
+    answer = read_answer(body)
+
+    # STOP turns off everything for this senior, whatever state it's in.
+    if answer == "stop":
+        turned_off = [e for e in enrollments if e["status"] in ("pending", "active")]
+        if not turned_off:
+            return None
+        for enrollment in turned_off:
+            storage.set_enrollment_status(enrollment["id"], "revoked", answered=True)
+            if enrollment["status"] == "active":
+                tell_family(enrollment, "family_told_off")
+        return message("consent_revoked", turned_off[0]["senior_language"])
+
+    pending = [e for e in enrollments if e["status"] == "pending"]
+    if not pending:
+        return None
+    enrollment = pending[0]
+    language = enrollment["senior_language"]
+
+    if answer == "yes":
+        storage.set_enrollment_status(enrollment["id"], "active", answered=True)
+        tell_family(enrollment, "family_told_yes")
+        return message("consent_yes", language, senior_name=enrollment["senior_name"])
+
+    if answer == "no":
+        storage.set_enrollment_status(enrollment["id"], "declined", answered=True)
+        tell_family(enrollment, "family_told_no")
+        return message("consent_no", language)
+
+    return message("consent_unclear", language)
+
+
+def tell_family(enrollment: dict, message_key: str) -> None:
+    """
+    Text the family member what the senior decided, in the family's language.
+
+    Example:
+        tell_family(rosa_enrollment, "family_told_yes")
+        ->  Ana gets "Scam Shield: Rosa said YES. Their calls are now protected."
+    """
+    send_sms(
+        enrollment["family_phone"],
+        message(
+            message_key,
+            enrollment["family_language"],
+            senior_name=enrollment["senior_name"],
+        ),
+    )
+
+
+def get_enrollment_status(enrollment_id: str) -> dict | None:
+    """
+    Look up an enrollment for the dashboard, marking it expired if it timed out.
+
+    Example:
+        get_enrollment_status("abc")  ->  {"status": "active", ...}
+    """
+    enrollment = storage.get_enrollment(enrollment_id)
+    if enrollment is None:
+        return None
+    expire_old_requests([enrollment])
+    return public_view(enrollment)
+
+
+def public_view(enrollment: dict) -> dict:
+    """
+    The parts of an enrollment that are safe to show on the dashboard.
+
+    We hide most of each phone number, so a leaked dashboard link doesn't
+    give away the family's numbers.
+
+    Example:
+        public_view(rosa)  ->  {"id": "abc", "senior_name": "Rosa",
+                                "senior_phone": "•••-•••-0100", "status": "pending", ...}
+    """
+    return {
+        "id": enrollment["id"],
+        "senior_name": enrollment["senior_name"],
+        "senior_phone": mask_phone(enrollment["senior_phone"]),
+        "family_name": enrollment["family_name"],
+        "family_phone": mask_phone(enrollment["family_phone"]),
+        "status": enrollment["status"],
+    }

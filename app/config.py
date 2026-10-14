@@ -43,6 +43,7 @@ class Settings:
     test_sms_to_number: str
     demo_mode: bool
     public_base_url: str
+    database_path: str
 
 
 def read_text_setting(name: str, default: str = "") -> str:
@@ -110,6 +111,11 @@ def get_settings() -> Settings:
         # it means we never place real phone calls by accident.
         demo_mode=read_true_false_setting("DEMO_MODE", default=True),
         public_base_url=read_text_setting("PUBLIC_BASE_URL", "http://localhost:8000"),
+        # Where we save sign-ups and calls. A file next to the code, so a
+        # restart doesn't forget who said YES.
+        database_path=read_text_setting(
+            "DATABASE_PATH", str(PROJECT_ROOT / "data" / "scam_shield.db")
+        ),
     )
 
 

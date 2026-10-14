@@ -1,0 +1,452 @@
+"""
+calls.py — Connects a protected senior's calls through a conference "room", so
+a family member can join the call as a 3-way call.
+
+How it fits in: the senior's calls forward to our Twilio number. For a senior
+who said YES (see consent.py), we don't connect the two phones directly.
+Instead, every phone joins the same Twilio conference room:
+
+    caller (maybe a scammer) --\\
+                                 >-- conference room "scam-shield-<id>"
+    senior's phone ------------/            ^
+                                            |  only if the family taps
+    family member's phone ------------------/  "Join call" in the alert
+
+A plain two-person call can't take a third person later, but a conference
+room can. So when the detector (detector.py) decides the call looks like a
+scam, it calls send_family_alert(). The family gets a text with a secret
+"Join call" link. Tapping it makes Twilio ring the FAMILY MEMBER'S OWN phone
+and put them in the room. Everyone hears a short tone when they join, so
+nobody is listening in secret.
+
+Seniors who haven't said YES get a normal call: we pass it straight to their
+phone and don't listen.
+
+In demo mode we never place real calls; we record what we would have done in
+DEMO_CALL_LOG instead.
+"""
+
+import secrets
+from datetime import datetime, timedelta, timezone
+
+from twilio.twiml.voice_response import VoiceResponse
+
+from app import storage
+from app.alerts import send_sms, twilio_client
+from app.config import get_settings
+from app.languages import message
+from app.phone_numbers import normalize_phone
+
+# Calls we "placed" while DEMO_MODE=true. Each one is a dict like
+#   {"to": "+13055550101", "conference": "scam-shield-abc", "who": "family"}
+DEMO_CALL_LOG: list[dict] = []
+
+# How long to ring the senior's phone before giving up (seconds).
+SENIOR_RING_SECONDS = 25
+# Wait this long before ringing the family again if they tap the link twice.
+FAMILY_RING_COOLDOWN = timedelta(seconds=60)
+
+
+class JoinError(Exception):
+    """
+    A "Join call" request we can't do, with a message the family can read.
+
+    Example:
+        raise JoinError("This call has already ended.", 410)
+    """
+
+    def __init__(self, text: str, status_code: int):
+        super().__init__(text)
+        self.text = text
+        self.status_code = status_code
+
+
+def public_url(path: str) -> str:
+    """
+    Make a full web address on our server, for links and Twilio callbacks.
+
+    Example:
+        PUBLIC_BASE_URL=https://abc.ngrok.app
+        public_url("/join/xyz")  ->  "https://abc.ngrok.app/join/xyz"
+    """
+    return get_settings().public_base_url.rstrip("/") + path
+
+
+# ---------------------------------------------------------------------------
+# A call comes in
+# ---------------------------------------------------------------------------
+
+
+def find_senior_for_call(forwarded_from: str | None) -> dict | None:
+    """
+    Work out which senior a forwarded call belongs to.
+
+    When a phone forwards a call, the carrier usually tells Twilio whose phone
+    it was (ForwardedFrom). Not every carrier does, so if there's only ONE
+    senior signed up (true for our hackathon demo), we use them.
+
+    Input:  forwarded_from — the senior's number from Twilio, or None
+    Output: that senior's newest enrollment (any status), or None
+
+    Example:
+        find_senior_for_call("+13055550100")  ->  {"senior_name": "Rosa", ...}
+    """
+    phone = normalize_phone(forwarded_from or "")
+    if phone:
+        enrollments = storage.find_enrollments_for_senior(phone)
+        active = [e for e in enrollments if e["status"] == "active"]
+        if active:
+            return active[0]
+        if enrollments:
+            return enrollments[0]
+        return None
+
+    active = storage.find_active_enrollments()
+    if len(active) == 1:
+        return active[0]
+    return None
+
+
+def handle_incoming_call(caller: str, call_sid: str, forwarded_from: str | None) -> str:
+    """
+    Decide what to do with a call that reached our Twilio number.
+
+    Input:  caller         — who is calling (Twilio's "From")
+            call_sid       — Twilio's ID for this call
+            forwarded_from — whose phone forwarded it (may be None)
+    Output: TwiML: the instructions Twilio follows for this call
+
+    What happens:
+      - senior said YES  -> caller goes into a conference room, and we ring
+                            the senior into the same room
+      - senior hasn't said YES -> we pass the call straight to their phone,
+                            without a room and without listening
+      - nobody signed up -> a short message, then hang up
+
+    Example:
+        handle_incoming_call("+15555550199", "CA123", "+13055550100")
+        ->  '<Response><Dial><Conference ...>scam-shield-...</Conference></Dial></Response>'
+    """
+    enrollment = find_senior_for_call(forwarded_from)
+    response = VoiceResponse()
+
+    if enrollment is None:
+        response.say("Sorry, this Scam Shield number is not set up yet. Goodbye.")
+        response.hangup()
+        return str(response)
+
+    if enrollment["status"] != "active":
+        # No YES, no listening: connect the call like any normal phone call.
+        response.dial(enrollment["senior_phone"], caller_id=caller)
+        return str(response)
+
+    call = start_protected_call(enrollment, caller, call_sid)
+
+    # Coming soon: <Start><Transcription> goes here, so detector.py can read
+    # the call as it happens. Only calls from seniors who said YES get it.
+
+    dial = response.dial()
+    dial.conference(
+        call["conference_name"],
+        # The caller waits (in silence) until the senior picks up...
+        start_conference_on_enter=False,
+        wait_url="",
+        # ...and when the caller hangs up, the call is over for everyone.
+        end_conference_on_exit=True,
+        beep=False,
+        status_callback=public_url("/twilio/conference-status"),
+        status_callback_event="end",
+    )
+    return str(response)
+
+
+def start_protected_call(enrollment: dict, caller: str, call_sid: str) -> dict:
+    """
+    Save a new protected call and ring the senior into its conference room.
+
+    Input:  enrollment — the senior's active enrollment
+            caller     — who is calling
+            call_sid   — Twilio's ID for the caller's side of the call
+    Output: the saved call (a dict)
+
+    Example:
+        start_protected_call(rosa, "+15555550199", "CA123")
+        ->  {"id": "...", "conference_name": "scam-shield-...", "status": "live", ...}
+    """
+    call_id = secrets.token_urlsafe(9)
+    call = {
+        "id": call_id,
+        "call_sid": call_sid,
+        "enrollment_id": enrollment["id"],
+        "caller_number": caller,
+        "conference_name": f"scam-shield-{call_id}",
+        # The secret part of the family's "Join call" link. Long and random,
+        # so nobody can guess their way into a call.
+        "join_token": secrets.token_urlsafe(24),
+        "status": "live",
+        "started_at": storage.now_text(),
+    }
+    storage.save_call(call)
+
+    ring_into_conference(
+        to=enrollment["senior_phone"],
+        conference_name=call["conference_name"],
+        who="senior",
+        # The senior starts the conversation when they pick up, and when they
+        # hang up the call is over for everyone.
+        start_conference_on_enter=True,
+        end_conference_on_exit=True,
+        beep="false",
+        status_callback=public_url(f"/twilio/senior-status?call_id={call_id}"),
+    )
+    return call
+
+
+def ring_into_conference(
+    to: str,
+    conference_name: str,
+    who: str,
+    start_conference_on_enter: bool,
+    end_conference_on_exit: bool,
+    beep: str,
+    status_callback: str | None = None,
+) -> None:
+    """
+    Ask Twilio to call a phone and put whoever answers into a conference room.
+
+    Input:  to              — the phone to ring
+            conference_name — which room
+            who             — "senior" or "family" (a label for logs)
+            start_conference_on_enter, end_conference_on_exit, beep — Twilio's
+                              conference options for this person
+            status_callback — where Twilio reports how the call went
+    Output: nothing. In demo mode, the call is added to DEMO_CALL_LOG instead.
+
+    Example:
+        ring_into_conference("+13055550101", "scam-shield-abc", "family",
+                             start_conference_on_enter=True,
+                             end_conference_on_exit=False, beep="onEnter")
+    """
+    settings = get_settings()
+
+    if settings.demo_mode:
+        DEMO_CALL_LOG.append({"to": to, "conference": conference_name, "who": who})
+        print(f"[demo mode] would ring {who} at {to} into {conference_name}")
+        return
+
+    options = {
+        "from_": settings.twilio_phone_number,
+        "to": to,
+        "label": who,
+        "beep": beep,
+        "start_conference_on_enter": start_conference_on_enter,
+        "end_conference_on_exit": end_conference_on_exit,
+        "timeout": SENIOR_RING_SECONDS,
+    }
+    if status_callback:
+        options["status_callback"] = status_callback
+        options["status_callback_event"] = ["completed"]
+
+    # Twilio lets us use the room's name here; it makes the room if needed.
+    twilio_client().conferences(conference_name).participants.create(**options)
+
+
+# ---------------------------------------------------------------------------
+# Twilio tells us how the call is going
+# ---------------------------------------------------------------------------
+
+
+def handle_senior_status(call_id: str, call_status: str) -> None:
+    """
+    React when the senior's side of the call finishes ringing or ends.
+
+    If the senior never picked up (busy, no answer, failed), the caller is
+    still waiting in a silent room. We tell them, and hang up.
+
+    Input:  call_id     — our ID for the call (we put it in the callback URL)
+            call_status — Twilio's CallStatus, e.g. "no-answer" or "completed"
+    Output: nothing
+
+    Example:
+        handle_senior_status("abc", "no-answer")
+        ->  the caller hears "The person you are calling is not available."
+    """
+    if call_status not in ("busy", "no-answer", "failed", "canceled"):
+        return
+
+    call = storage.get_call(call_id)
+    if call is None or call["status"] != "live":
+        return
+
+    storage.mark_call_ended(call_id)
+    if get_settings().demo_mode:
+        return
+
+    goodbye = VoiceResponse()
+    goodbye.say("The person you are calling is not available. Goodbye.")
+    goodbye.hangup()
+    twilio_client().calls(call["call_sid"]).update(twiml=str(goodbye))
+
+
+def handle_conference_status(conference_name: str, event: str) -> None:
+    """
+    Mark a call as over when its conference room closes.
+
+    After this, the family's "Join call" link stops working.
+
+    Input:  conference_name — Twilio's FriendlyName for the room
+            event           — Twilio's StatusCallbackEvent, e.g. "conference-end"
+    Output: nothing
+
+    Example:
+        handle_conference_status("scam-shield-abc", "conference-end")
+    """
+    if event != "conference-end":
+        return
+    call = storage.get_call_by_conference_name(conference_name)
+    if call and call["status"] == "live":
+        storage.mark_call_ended(call["id"])
+
+
+# ---------------------------------------------------------------------------
+# The family alert and the "Join call" link
+# ---------------------------------------------------------------------------
+
+
+def join_link(call: dict) -> str:
+    """
+    The "Join call" link we text to the family.
+
+    Example:
+        join_link(call)  ->  "https://abc.ngrok.app/join/Xy7..."
+    """
+    return public_url(f"/join/{call['join_token']}")
+
+
+def send_family_alert(call: dict) -> None:
+    """
+    Text the family member that the senior may be on a scam call, with the
+    "Join call" link, in the family member's language.
+
+    detector.py will call this when the scam score gets high.
+
+    Input:  call — the live call (from storage)
+    Output: nothing
+
+    Example:
+        send_family_alert(call)
+        ->  Ana gets "Scam Shield ALERT: Rosa may be on a scam call right now.
+                      Tap to join the call: https://.../join/Xy7..."
+    """
+    enrollment = storage.get_enrollment(call["enrollment_id"])
+    send_sms(
+        enrollment["family_phone"],
+        message(
+            "family_alert",
+            enrollment["family_language"],
+            senior_name=enrollment["senior_name"],
+            join_link=join_link(call),
+        ),
+    )
+
+
+def find_live_call(join_token: str) -> tuple[dict, dict]:
+    """
+    Find the call and enrollment behind a "Join call" link, if it can be joined.
+
+    Input:  join_token — the secret part of the link
+    Output: (call, enrollment)
+    Raises: JoinError if the link is wrong, the call is over, or the senior
+            turned Scam Shield off
+
+    Example:
+        find_live_call("Xy7...")  ->  ({"status": "live", ...}, {"senior_name": "Rosa", ...})
+    """
+    call = storage.get_call_by_join_token(join_token)
+    if call is None:
+        raise JoinError("This link doesn't match any call.", 404)
+    if call["status"] != "live":
+        raise JoinError("This call has already ended.", 410)
+
+    enrollment = storage.get_enrollment(call["enrollment_id"])
+    if enrollment is None or enrollment["status"] != "active":
+        raise JoinError("Scam Shield is turned off for this person.", 403)
+    return call, enrollment
+
+
+def describe_call(join_token: str) -> dict:
+    """
+    What the "Join call" page shows before the family taps the button.
+
+    Example:
+        describe_call("Xy7...")  ->  {"senior_name": "Rosa", "status": "live"}
+    """
+    call, enrollment = find_live_call(join_token)
+    return {"senior_name": enrollment["senior_name"], "status": call["status"]}
+
+
+def join_call(join_token: str) -> dict:
+    """
+    Ring the family member's phone and add them to the live call (3-way call).
+
+    We ALWAYS ring the phone number the family signed up with, never a number
+    from the web page. So even if someone else got hold of the link, the only
+    phone that can join is the family member's own.
+
+    Input:  join_token — the secret part of the "Join call" link
+    Output: {"status": "calling", "senior_name": ...}
+    Raises: JoinError if the call can't be joined, or if we rang them less
+            than a minute ago
+
+    Example:
+        join_call("Xy7...")  ->  {"status": "calling", "senior_name": "Rosa"}
+        and Ana's phone rings; when she answers she's in the call with
+        Rosa and the caller, and they all hear a tone as she joins.
+    """
+    call, enrollment = find_live_call(join_token)
+
+    if call["family_called_at"]:
+        last_rang = storage.parse_time(call["family_called_at"])
+        if datetime.now(timezone.utc) - last_rang < FAMILY_RING_COOLDOWN:
+            raise JoinError("We're already calling your phone. Please answer it.", 429)
+
+    ring_into_conference(
+        to=enrollment["family_phone"],
+        conference_name=call["conference_name"],
+        who="family",
+        start_conference_on_enter=True,
+        # If the family member hangs up, the senior's call keeps going.
+        end_conference_on_exit=False,
+        # Everyone hears a tone when the family member joins. No secret
+        # listening, and it lets a scammer know someone else is on the line.
+        beep="onEnter",
+    )
+    storage.mark_family_called(call["id"])
+    return {"status": "calling", "senior_name": enrollment["senior_name"]}
+
+
+# ---------------------------------------------------------------------------
+# Demo mode
+# ---------------------------------------------------------------------------
+
+
+def start_demo_call() -> dict:
+    """
+    Pretend a scam call just came in for the senior who said YES, and send
+    the family alert, so we can show the "Join call" flow with no real phones.
+
+    Only works in demo mode (main.py checks that).
+
+    Output: {"call_id": ..., "join_link": ...}
+    Raises: JoinError if no senior has said YES yet
+
+    Example:
+        start_demo_call()  ->  {"call_id": "abc", "join_link": "http://localhost:8000/join/Xy7..."}
+    """
+    active = storage.find_active_enrollments()
+    if not active:
+        raise JoinError("No senior has said YES yet. Sign someone up first.", 409)
+
+    call = start_protected_call(active[0], caller="+15555550199", call_sid="demo")
+    send_family_alert(call)
+    return {"call_id": call["id"], "join_link": join_link(call)}
