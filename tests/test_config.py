@@ -30,6 +30,7 @@ def make_fake_settings(**changes) -> Settings:
         "test_sms_to_number": "+15555550101",
         "demo_mode": True,
         "public_base_url": "http://localhost:8000",
+        "database_path": "/tmp/fake-scam-shield.db",
     }
     values.update(changes)
     return Settings(**values)

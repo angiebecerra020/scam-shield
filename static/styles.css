@@ -15,6 +15,7 @@
   --color-surface: #262626;  /* cards: a little lighter than the background */
   --color-text: #F5F5F5;     /* main text: near-white, easy to read on black */
   --color-muted: #B3B3B3;    /* secondary text */
+  --color-alert: #E5484D;    /* scam alerts and errors */
   --radius: 16px;            /* rounded corners */
 }
 
@@ -84,6 +85,110 @@ h1 {
   font-weight: 700;
 }
 
+h2 {
+  margin: 0 0 8px;
+  color: var(--color-gold);
+  font-size: 1.25rem;
+}
+
+/* ----- Sign-up form ----- */
+
+.form,
+.panel {
+  margin: 0 0 24px;
+  text-align: left;
+}
+
+fieldset {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid #444;
+  border-radius: 12px;
+}
+
+legend {
+  padding: 0 6px;
+  color: var(--color-muted);
+  font-size: 16px;
+}
+
+label {
+  display: block;
+  margin: 8px 0;
+}
+
+input,
+select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: var(--color-black);
+  color: var(--color-text);
+  font: inherit;
+}
+
+/* A clear gold ring for keyboard users, so they can see where they are */
+input:focus,
+select:focus,
+button:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+button {
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-gold);
+  color: var(--color-black);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* The big "Call me into the call" button: easy to hit in a hurry */
+.button-big {
+  padding: 18px 16px;
+  font-size: 1.2rem;
+}
+
+.hint {
+  color: var(--color-muted);
+  font-size: 16px;
+}
+
+.error {
+  min-height: 1.5em;
+  color: var(--color-alert);
+}
+
+.badge-alert {
+  background: var(--color-alert);
+  color: var(--color-text);
+}
+
+a {
+  color: var(--color-gold);
+}
+
+/* Demo-only buttons get a dashed border, so nobody mistakes them for real */
+.demo-tools {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px dashed var(--color-gold);
+  border-radius: 12px;
+}
+
 /* Tablets and computers: a bit more breathing room */
 @media (min-width: 768px) {
   .card {
@@ -93,4 +198,9 @@ h1 {
   h1 {
     font-size: 2.5rem;
   }
+}
+
+/* Make sure the "hidden" attribute always wins over display rules above */
+[hidden] {
+  display: none !important;
 }

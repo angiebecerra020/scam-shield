@@ -24,3 +24,6 @@ __pycache__/
 # Logs and real call recordings (privacy: never upload real calls)
 *.log
 recordings/
+
+# Our local database: it holds real names and phone numbers
+*.db
