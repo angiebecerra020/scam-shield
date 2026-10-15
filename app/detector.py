@@ -63,6 +63,9 @@ MAX_TRANSCRIPT_CHARACTERS = 8000
 MAX_REASONS = 5
 MAX_TEXT_LENGTH = 300
 
+# The family alert shows up like a text message, so we keep it short too.
+MAX_ALERT_LENGTH = 240
+
 # This is the exact shape we want Nemotron's answer in (it's called a "JSON
 # schema"). Nebius can make the model stick to it, so we get clean data back
 # instead of a paragraph.
@@ -114,8 +117,10 @@ Answer ONLY with JSON in exactly this shape:
  "verdict": "safe" or "suspicious" or "likely_scam",
  "reasons": [<up to 5 short reasons, each pointing to what the caller said>],
  "claimed_identity": <who the caller claims to be, like "grandson Danny" or "Social Security officer", or null>,
- "family_alert_message": <null if safe. Otherwise one or two calm sentences for the family that say what is
-                          happening and what to do. Call the senior "your loved one".>}"""
+ "family_alert_message": <null if safe. Otherwise two short, calm sentences (under 200 characters) for the
+                          senior's FAMILY, not the senior. Follow this pattern:
+                          "Your loved one may be on a scam call. The caller says they are <who> and wants <what>;
+                          call your loved one now.">}"""
 
 
 def language_name(language: str) -> str:
@@ -335,6 +340,30 @@ def clean_text(value) -> str | None:
     return text[:MAX_TEXT_LENGTH]
 
 
+def shorten_alert(text: str | None) -> str | None:
+    """
+    Makes sure the family alert isn't too long, and never ends in the middle
+    of a word.
+
+    If it's too long, we keep the sentences that fit. If even the first
+    sentence is too long, we cut at the last full word and add "...".
+
+    Input:  text, the family alert from the model (or None)
+    Output: the alert, short enough to read like a text message
+
+    Example:
+        A 300 character alert with three sentences gives you just the first
+        two sentences, ending on a period
+    """
+    if text is None or len(text) <= MAX_ALERT_LENGTH:
+        return text
+    cut = text[:MAX_ALERT_LENGTH]
+    last_sentence_end = cut.rfind(". ")
+    if last_sentence_end > 60:
+        return cut[: last_sentence_end + 1]
+    return cut.rsplit(" ", 1)[0] + "..."
+
+
 def clean_reasons(value) -> list[str]:
     """
     Keeps up to 5 reasons and drops any empty ones.
@@ -398,7 +427,7 @@ def clean_result(raw: dict) -> dict:
         return unknown_result("Nemotron's answer didn't include a risk score.")
 
     verdict = verdict_for_score(score)
-    alert = clean_text(raw.get("family_alert_message"))
+    alert = shorten_alert(clean_text(raw.get("family_alert_message")))
     if verdict == "safe":
         # We never want to worry a family about a call we think is fine.
         alert = None

@@ -115,6 +115,19 @@ def test_scores_outside_0_to_100_are_fixed():
     assert detector.clamp_score("very high") is None
 
 
+def test_long_family_alert_ends_on_a_full_sentence():
+    """A long alert gets cut after a full sentence, never in the middle of a word."""
+    long_alert = (
+        "Your loved one may be on a scam call. The caller says he is her grandson and wants gift cards. "
+        "Please call her right away and tell her not to buy anything, then call your son to check on him."
+    )
+
+    short = detector.shorten_alert(long_alert)
+
+    assert len(short) <= detector.MAX_ALERT_LENGTH
+    assert short.endswith(".")
+
+
 def test_json_hidden_in_extra_text_is_still_found():
     """Thinking notes, chatty sentences and ```json fences shouldn't mess us up."""
     messy = "<think>gift cards... secrecy...</think>\nSure! ```json\n" + GOOD_SCAM_ANSWER + "\n```"
