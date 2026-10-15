@@ -22,6 +22,11 @@ nobody is listening in secret.
 Seniors who haven't said YES get a normal call: we pass it straight to their
 phone and don't listen.
 
+Caller ID: when we ring the senior, their phone shows the REAL caller's
+number, not ours, so they can still tell their daughter from a stranger.
+Twilio only allows that because we pass along the incoming call's CallToken
+(see caller_id_for).
+
 In demo mode we never place real calls; we record what we would have done in
 DEMO_CALL_LOG instead.
 """
@@ -107,13 +112,20 @@ def find_senior_for_call(forwarded_from: str | None) -> dict | None:
     return None
 
 
-def handle_incoming_call(caller: str, call_sid: str, forwarded_from: str | None) -> str:
+def handle_incoming_call(
+    caller: str,
+    call_sid: str,
+    forwarded_from: str | None,
+    call_token: str | None = None,
+) -> str:
     """
     Decide what to do with a call that reached our Twilio number.
 
     Input:  caller         — who is calling (Twilio's "From")
             call_sid       — Twilio's ID for this call
             forwarded_from — whose phone forwarded it (may be None)
+            call_token     — Twilio's CallToken for this call, which lets the
+                             senior see the real caller's number (may be None)
     Output: TwiML: the instructions Twilio follows for this call
 
     What happens:
@@ -140,7 +152,7 @@ def handle_incoming_call(caller: str, call_sid: str, forwarded_from: str | None)
         response.dial(enrollment["senior_phone"], caller_id=caller)
         return str(response)
 
-    call = start_protected_call(enrollment, caller, call_sid)
+    call = start_protected_call(enrollment, caller, call_sid, call_token)
 
     # Coming soon: <Start><Transcription> goes here, so detector.py can read
     # the call as it happens. Only calls from seniors who said YES get it.
@@ -160,13 +172,16 @@ def handle_incoming_call(caller: str, call_sid: str, forwarded_from: str | None)
     return str(response)
 
 
-def start_protected_call(enrollment: dict, caller: str, call_sid: str) -> dict:
+def start_protected_call(
+    enrollment: dict, caller: str, call_sid: str, call_token: str | None = None
+) -> dict:
     """
     Save a new protected call and ring the senior into its conference room.
 
     Input:  enrollment — the senior's active enrollment
             caller     — who is calling
             call_sid   — Twilio's ID for the caller's side of the call
+            call_token — the incoming call's CallToken (may be None)
     Output: the saved call (a dict)
 
     Example:
@@ -192,6 +207,7 @@ def start_protected_call(enrollment: dict, caller: str, call_sid: str) -> dict:
         to=enrollment["senior_phone"],
         conference_name=call["conference_name"],
         who="senior",
+        caller_id=caller_id_for(caller, call_token),
         # The senior starts the conversation when they pick up, and when they
         # hang up the call is over for everyone.
         start_conference_on_enter=True,
@@ -202,6 +218,34 @@ def start_protected_call(enrollment: dict, caller: str, call_sid: str) -> dict:
     return call
 
 
+def caller_id_for(caller: str, call_token: str | None) -> dict:
+    """
+    Choose the number the senior's phone shows when we ring them.
+
+    Twilio normally only lets us show our own number. But when we pass along
+    the CallToken from the incoming call, Twilio lets us show the REAL
+    caller's number, because we're forwarding their call, not faking one.
+
+    If there's no token, or the caller hid their number ("Anonymous"), we
+    fall back to our own number. The call still works; the senior just sees
+    the Scam Shield number.
+
+    Input:  caller     — the incoming caller's number (Twilio's "From")
+            call_token — Twilio's CallToken for the incoming call, or None
+    Output: {"from_": <number to show>} plus {"call_token": ...} when used
+
+    Examples:
+        caller_id_for("+15555550199", "tok123")
+        ->  {"from_": "+15555550199", "call_token": "tok123"}
+        caller_id_for("Anonymous", "tok123")
+        ->  {"from_": <our Twilio number>}
+    """
+    caller_phone = normalize_phone(caller or "")
+    if call_token and caller_phone:
+        return {"from_": caller_phone, "call_token": call_token}
+    return {"from_": get_settings().twilio_phone_number}
+
+
 def ring_into_conference(
     to: str,
     conference_name: str,
@@ -210,6 +254,7 @@ def ring_into_conference(
     end_conference_on_exit: bool,
     beep: str,
     status_callback: str | None = None,
+    caller_id: dict | None = None,
 ) -> None:
     """
     Ask Twilio to call a phone and put whoever answers into a conference room.
@@ -220,6 +265,8 @@ def ring_into_conference(
             start_conference_on_enter, end_conference_on_exit, beep — Twilio's
                               conference options for this person
             status_callback — where Twilio reports how the call went
+            caller_id       — the number to show, from caller_id_for();
+                              our own Twilio number if left out
     Output: nothing. In demo mode, the call is added to DEMO_CALL_LOG instead.
 
     Example:
@@ -229,13 +276,18 @@ def ring_into_conference(
     """
     settings = get_settings()
 
+    if caller_id is None:
+        caller_id = {"from_": settings.twilio_phone_number}
+
     if settings.demo_mode:
-        DEMO_CALL_LOG.append({"to": to, "conference": conference_name, "who": who})
+        DEMO_CALL_LOG.append(
+            {"to": to, "conference": conference_name, "who": who, "shows": caller_id["from_"]}
+        )
         print(f"[demo mode] would ring {who} at {to} into {conference_name}")
         return
 
     options = {
-        "from_": settings.twilio_phone_number,
+        **caller_id,
         "to": to,
         "label": who,
         "beep": beep,

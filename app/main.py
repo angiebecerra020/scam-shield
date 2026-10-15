@@ -216,7 +216,8 @@ async def receive_call(request: Request):
     """
     Twilio asks us what to do when a call reaches our number.
 
-    Input:  Twilio's form (From, CallSid, and ForwardedFrom when the carrier sends it)
+    Input:  Twilio's form (From, CallSid, CallToken, and ForwardedFrom when
+            the carrier sends it)
     Output: TwiML telling Twilio how to connect the call (see calls.py)
 
     Example:
@@ -231,6 +232,9 @@ async def receive_call(request: Request):
         caller=form.get("From", ""),
         call_sid=form.get("CallSid", ""),
         forwarded_from=form.get("ForwardedFrom"),
+        # Lets the senior's phone show the real caller's number (see calls.py).
+        # Twilio only sends it because our voice webhook uses POST.
+        call_token=form.get("CallToken"),
     )
     return twiml(xml)
 

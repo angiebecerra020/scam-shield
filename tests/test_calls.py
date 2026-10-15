@@ -20,6 +20,7 @@ client = TestClient(app)
 SENIOR_PHONE = "+15555550100"
 FAMILY_PHONE = "+15555550101"
 SCAMMER_PHONE = "+15555550199"
+SCAM_SHIELD_NUMBER = "+15555550150"  # set in conftest.py
 
 
 def sign_up_senior(say_yes: bool = True) -> str:
@@ -38,12 +39,15 @@ def sign_up_senior(say_yes: bool = True) -> str:
     return response.json()["id"]
 
 
-def call_comes_in():
-    """Pretend Twilio is telling us a call was forwarded from Rosa's phone."""
-    return client.post(
-        "/twilio/voice",
-        data={"From": SCAMMER_PHONE, "CallSid": "CA123", "ForwardedFrom": SENIOR_PHONE},
-    )
+def call_comes_in(**extra):
+    """
+    Pretend Twilio is telling us a call was forwarded from Rosa's phone.
+
+    Input: extra — more form fields, e.g. CallToken="tok123"
+    """
+    form = {"From": SCAMMER_PHONE, "CallSid": "CA123", "ForwardedFrom": SENIOR_PHONE}
+    form.update(extra)
+    return client.post("/twilio/voice", data=form)
 
 
 def token_from_alert() -> str:
@@ -58,9 +62,63 @@ def test_protected_call_goes_into_a_conference_room_and_rings_the_senior():
 
     assert "<Conference" in response.text
     assert 'endConferenceOnExit="true"' in response.text
-    assert calls.DEMO_CALL_LOG == [
-        {"to": SENIOR_PHONE, "conference": calls.DEMO_CALL_LOG[0]["conference"], "who": "senior"}
-    ]
+    assert len(calls.DEMO_CALL_LOG) == 1
+    assert calls.DEMO_CALL_LOG[0]["to"] == SENIOR_PHONE
+    assert calls.DEMO_CALL_LOG[0]["who"] == "senior"
+
+
+def test_senior_sees_the_real_callers_number_when_twilio_sends_a_call_token():
+    sign_up_senior()
+
+    call_comes_in(CallToken="tok123")
+
+    assert calls.DEMO_CALL_LOG[0]["shows"] == SCAMMER_PHONE
+
+
+def test_senior_sees_our_number_without_a_call_token():
+    sign_up_senior()
+
+    call_comes_in()
+
+    assert calls.DEMO_CALL_LOG[0]["shows"] == SCAM_SHIELD_NUMBER
+
+
+def test_hidden_caller_falls_back_to_our_number():
+    sign_up_senior()
+
+    call_comes_in(From="Anonymous", CallToken="tok123")
+
+    assert calls.DEMO_CALL_LOG[0]["shows"] == SCAM_SHIELD_NUMBER
+
+
+def test_live_mode_passes_the_call_token_to_twilio(monkeypatch):
+    """
+    Outside demo mode, check exactly what we ask Twilio to do, using a fake
+    Twilio client that just remembers what it was given.
+    """
+    sign_up_senior()
+    enrollment = storage.find_active_enrollments()[0]
+    sent = {}
+
+    class FakeParticipants:
+        def create(self, **options):
+            sent.update(options)
+
+    class FakeTwilio:
+        def conferences(self, name):
+            sent["conference"] = name
+            fake = type("FakeConference", (), {})()
+            fake.participants = FakeParticipants()
+            return fake
+
+    monkeypatch.setattr(calls, "twilio_client", lambda: FakeTwilio())
+    monkeypatch.setenv("DEMO_MODE", "false")
+
+    calls.start_protected_call(enrollment, SCAMMER_PHONE, "CA123", call_token="tok123")
+
+    assert sent["to"] == SENIOR_PHONE
+    assert sent["from_"] == SCAMMER_PHONE
+    assert sent["call_token"] == "tok123"
 
 
 def test_senior_who_hasnt_said_yes_gets_a_normal_call():
