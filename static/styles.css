@@ -200,6 +200,29 @@ a {
   }
 }
 
+/* Numbered setup steps: roomy, so each step is easy to follow */
+.steps {
+  padding-left: 1.4em;
+}
+
+.steps li {
+  margin-bottom: 12px;
+}
+
+/* ----- Calling app (phone.html) ----- */
+
+.caller-number {
+  margin: 8px 0 16px;
+  color: var(--color-gold);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.button-decline {
+  background: var(--color-alert);
+  color: var(--color-text);
+}
+
 /* Make sure the "hidden" attribute always wins over display rules above */
 [hidden] {
   display: none !important;

@@ -27,6 +27,9 @@ def make_fake_settings(**changes) -> Settings:
         "twilio_auth_token": "fake-token",
         # 555-01XX numbers are reserved for fiction, so they never reach a real person
         "twilio_phone_number": "+15555550100",
+        "twilio_api_key_sid": "fake-api-key-sid",
+        "twilio_api_key_secret": "fake-api-key-secret",
+        "twilio_sip_domain": "fake.sip.twilio.com",
         "test_sms_to_number": "+15555550101",
         "demo_mode": True,
         "public_base_url": "http://localhost:8000",

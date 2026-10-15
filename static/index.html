@@ -4,7 +4,8 @@
   How it fits in: the web server (app/main.py) sends this page when someone
   opens http://localhost:8000. It loads styles.css (the look) and app.js (the
   behavior). Right now it has the sign-up form: a family member enters the
-  senior's details, we text the senior, and the page waits for their YES.
+  senior's details, we text the senior (cell) or call them (landline), and
+  the page waits for their YES, then shows the steps to finish setup.
   The live risk meter, reasons, source links and call history are coming in
   a later step.
 -->
@@ -24,12 +25,18 @@
     <!-- Step 1: the family member fills this in -->
     <form id="signup-form" class="form">
       <h2>Protect someone's calls</h2>
-      <p class="hint">We'll text them to ask for their OK. Nothing is listened to until they reply YES.</p>
+      <p class="hint">We'll ask them for their OK first: a text for a cell phone, a phone call for a landline. Nothing is listened to until they say YES.</p>
 
       <fieldset>
         <legend>Who are we protecting?</legend>
         <label>Their name <input name="senior_name" required maxlength="40" autocomplete="off"></label>
         <label>Their phone <input name="senior_phone" type="tel" required autocomplete="off"></label>
+        <label>What kind of phone is it?
+          <select name="phone_type">
+            <option value="cell">Cell phone</option>
+            <option value="landline">Landline (home phone)</option>
+          </select>
+        </label>
         <label>Their language
           <select name="senior_language">
             <option value="en">English</option>
@@ -50,20 +57,27 @@
         </label>
       </fieldset>
 
-      <button type="submit">Text them for their OK</button>
+      <button type="submit">Ask them for their OK</button>
       <p id="signup-error" class="error" role="alert"></p>
     </form>
 
     <!-- Step 2: waiting for the senior's answer (hidden until they sign up) -->
     <section id="consent-status" class="panel" hidden>
-      <h2>Waiting for <span id="senior-name"></span></h2>
+      <h2>Setting up Scam Shield for <span id="senior-name"></span></h2>
       <!-- aria-live makes screen readers announce the status when it changes -->
       <p id="consent-message" aria-live="polite"></p>
+
+      <!-- Step 3: once they say YES, how to finish setting up their phone -->
+      <div id="setup-steps" hidden>
+        <h2>Finish setting up their phone</h2>
+        <ol id="setup-list" class="steps"></ol>
+        <p id="setup-note" class="hint"></p>
+      </div>
 
       <!-- Demo-only buttons, shown when the server is in demo mode -->
       <div id="demo-tools" class="demo-tools" hidden>
         <p class="badge">Demo mode</p>
-        <button type="button" id="demo-reply-yes">Pretend they texted YES</button>
+        <button type="button" id="demo-reply-yes">Pretend they said YES</button>
         <button type="button" id="demo-scam-call" hidden>Pretend a scam call starts</button>
         <p id="demo-result" class="hint"></p>
       </div>

@@ -40,6 +40,9 @@ class Settings:
     twilio_account_sid: str
     twilio_auth_token: str
     twilio_phone_number: str
+    twilio_api_key_sid: str
+    twilio_api_key_secret: str
+    twilio_sip_domain: str
     test_sms_to_number: str
     demo_mode: bool
     public_base_url: str
@@ -109,6 +112,9 @@ def get_settings() -> Settings:
         twilio_account_sid=read_text_setting("TWILIO_ACCOUNT_SID"),
         twilio_auth_token=read_text_setting("TWILIO_AUTH_TOKEN"),
         twilio_phone_number=read_text_setting("TWILIO_PHONE_NUMBER"),
+        twilio_api_key_sid=read_text_setting("TWILIO_API_KEY_SID"),
+        twilio_api_key_secret=read_text_setting("TWILIO_API_KEY_SECRET"),
+        twilio_sip_domain=read_text_setting("TWILIO_SIP_DOMAIN"),
         test_sms_to_number=read_text_setting("TEST_SMS_TO_NUMBER"),
         # Demo mode is ON unless someone turns it off. That's the safe choice:
         # it means we never place real phone calls by accident.
