@@ -1,0 +1,16 @@
+{
+  "id": "scam_ssn_es",
+  "title": "Estafa del Seguro Social: \"su número fue suspendido\"",
+  "language": "es",
+  "expected": "scam",
+  "caller_number": "+13055550177",
+  "lines": [
+    {"speaker": "caller", "text": "Buenas tardes, le habla el oficial Ramírez de la Administración del Seguro Social."},
+    {"speaker": "senior", "text": "¿Sí? ¿Qué pasó?"},
+    {"speaker": "caller", "text": "Su número de Seguro Social fue suspendido por actividad sospechosa en Texas. Hay una orden de arresto a su nombre."},
+    {"speaker": "senior", "text": "¿Arresto? Yo no he hecho nada."},
+    {"speaker": "caller", "text": "Para cancelar la orden hoy mismo, necesito que me confirme su número de Seguro Social completo."},
+    {"speaker": "caller", "text": "Después tiene que sacar su dinero del banco y depositarlo en un cajero de Bitcoin para protegerlo. No cuelgue y no hable con nadie del banco."},
+    {"speaker": "senior", "text": "Me está asustando."}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "scam_grandparent_en",
+  "title": "Grandparent scam: \"Danny\" is in jail and needs gift cards",
+  "language": "en",
+  "expected": "scam",
+  "caller_number": "+13055550142",
+  "lines": [
+    {"speaker": "caller", "text": "Grandma? It's me, Danny."},
+    {"speaker": "senior", "text": "Danny? You sound different, honey."},
+    {"speaker": "caller", "text": "I have a bad cold. Grandma, I'm in trouble. I was in a car accident and the police arrested me."},
+    {"speaker": "senior", "text": "Oh no! Are you hurt? Let me call your mother."},
+    {"speaker": "caller", "text": "No, please don't tell Mom, she'll be so mad. I just need two thousand dollars for bail today."},
+    {"speaker": "caller", "text": "My lawyer says the fastest way is gift cards. Can you go to the store, buy them, and read me the numbers on the back?"},
+    {"speaker": "senior", "text": "Gift cards? For bail?"},
+    {"speaker": "caller", "text": "Yes, it has to be today or I stay in jail. And please, keep this between us."}
+  ]
+}

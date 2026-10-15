@@ -1,17 +1,17 @@
 <!--
-  README for scripts/ — explains the day-1 check scripts that live here.
+  This README explains the day one check scripts that live in this folder.
 -->
 
-# Day-1 checks
+# Day one checks
 
-Small scripts that each check one outside service works **before** we build on it. Each one runs with a single command and prints **PASS** or **FAIL**.
+These are small scripts that each check that one outside service works **before** we build on top of it. Each one runs with a single command and prints **PASS** or **FAIL**.
 
-**Coming soon (Step 2, tracker T3–T7):**
+Run them from the project folder, with the virtual environment turned on (`source .venv/bin/activate`).
 
-| Script | What it checks |
-|---|---|
-| `test_nemotron.py` | Nemotron scores a sample scam call, and how long it takes (goal: under 3 seconds) |
-| `test_tavily.py` | Tavily finds useful results for 3 scam phone numbers + 1 scam script |
-| `test_sms.py` | Twilio can send a text to our test phone |
-| `test_languages.py` | Nemotron handles Spanish and Haitian Creole scam calls |
-| `test_twilio_call.py` | Our Twilio number can receive a phone call |
+| Script | What it checks | Status |
+|---|---|---|
+| `test_nemotron.py` | Nemotron catches a sample scam call, and how long it takes (our goal is under 3 seconds) | Ready: `python scripts/test_nemotron.py` |
+| `test_tavily.py` | Tavily finds useful results for 3 scam phone numbers and 1 scam script | Coming soon |
+| `test_sms.py` | Twilio can send a text to our test phone | Coming soon |
+| `test_languages.py` | Nemotron handles Spanish and Haitian Creole scam calls | Coming soon |
+| `test_twilio_call.py` | Our Twilio number can receive a phone call | Coming soon |

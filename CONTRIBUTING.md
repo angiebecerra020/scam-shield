@@ -1,6 +1,6 @@
 <!--
-  CONTRIBUTING.md — How we build Scam Shield: project context, code style,
-  and team rules. Read this before writing code.
+  CONTRIBUTING.md explains how we build Scam Shield: the project, our code
+  style, and our team rules. Read this before you write any code.
 -->
 
 # Contributing to Scam Shield
@@ -18,7 +18,7 @@ It's our entry for the **Nebius x NVIDIA Global AI Hackathon** (Devpost).
 
 1. The senior's calls forward to a Twilio number, which gives us a live transcript.
 2. Tavily checks the caller's number and current scam news.
-3. NVIDIA Nemotron (via Nebius Token Factory) scores scam risk 0–100 and explains why (gift cards, secrecy, urgency, fake grandchild, "SSN suspended").
+3. NVIDIA Nemotron (via Nebius Token Factory) scores scam risk from 0 to 100 and explains why (gift cards, secrecy, urgency, fake grandchild, "SSN suspended").
 4. "Is it really you?": if the caller claims to be family, text the real person "Are you calling Grandma? YES/NO". If NO, warn the senior.
 5. The family gets a live text alert in THEIR language, with a "Join call" link.
 6. Family web dashboard: live risk meter, reasons, Tavily source links, call history.
@@ -41,11 +41,12 @@ It's our entry for the **Nebius x NVIDIA Global AI Hackathon** (Devpost).
 ## Code style rules
 
 1. **Every file starts with a short header comment** saying what the file does and how it fits in the system.
-2. **Every function has a plain-English docstring** covering what it does, its inputs, its outputs, and an example.
+2. **Every function has a docstring in plain English** that says what it does, its inputs, its outputs, and an example.
 3. **Comment the "why", not just the "what."** Write comments a beginner can follow.
 4. **Small, readable functions.** Clear names. No clever one-liners.
 5. **Never hardcode secrets.** Settings come from `.env` through `app/config.py`. Commit `.env.example`, never `.env`.
 6. **Keep README.md up to date.** Mark unfinished features "Coming soon".
+7. **Write comments like you're talking to a teammate.** Keep it casual, with plain, short sentences. No dashes between words (like — or –), no divider lines like `# -------`, and no arrows like `->`. In examples, write "gives you" instead of an arrow, and write ranges as "0 to 100".
 
 ## Git rules
 
