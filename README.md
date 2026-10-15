@@ -35,7 +35,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 | 5 | **Family alert.** A live text message in the family member's own language, with a "Join call" link. | Text + link done; triggered by the AI score soon |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
 | 6 | **Family dashboard.** A live risk meter, the reasons, source links, and call history. | Coming soon |
-| 7 | **Languages.** English and Spanish, and Haitian Creole calls get caught too. | English and Spanish done. Alerts in Haitian Creole coming soon |
+| 7 | **Languages.** English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. | Done |
 | ★ | **Demo mode.** Replays a scripted call as a live transcript, with no real phone call needed. | Sample calls ready, player coming soon |
 
 ## How it works
@@ -74,7 +74,8 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 - **What we get back.** Token Factory's structured output makes Nemotron answer in an exact JSON shape: a risk score from 0 to 100, a verdict, the reasons, who the caller claims to be, and a short alert for the family written in the family's language.
 - **Fast enough for a live call.** We switch off Nemotron's step by step "thinking" mode for live checks. Each check takes about 1 second (our goal was under 3).
 - **Safe by design.** We set the verdict from the score so they never disagree, safe calls never send an alert, and if anything goes wrong we say "couldn't check" instead of guessing "safe". The transcript is treated as evidence, never as instructions, so a scammer who says "ignore your rules" just looks more like a scammer.
-- **Bigger Nemotron models when it matters.** Lightning catches Haitian Creole scams, but **Nemotron 3 Super** and **Nemotron 3 Ultra** also write the reasons and alert in Creole, in about 2 seconds. Next we'll use Ultra for Haitian Creole calls and for an end of call summary, and keep Lightning for the fast live checks.
+- **The right Nemotron for each job.** Lightning handles the fast live checks. For Haitian Creole calls we switch to **Nemotron 3 Ultra**, which writes the reasons and the family alert in real Creole (score 95, about 2 seconds). Picking the model is one setting in `.env` (`NEMOTRON_SMART_MODEL`).
+- **From score to alert.** [`app/call_monitor.py`](app/call_monitor.py) checks the call every time a new line comes in. The first time the score hits 70, the family gets the alert with the "Join call" link plus a short text with the top red flags. It only alerts once per call, and only for seniors who said YES.
 
 **Where Token Factory sped us up:** one API key gave us the whole Nemotron family (Lightning, Super and Ultra), so trying a bigger model is a one line change in `.env`. Because it's OpenAI compatible, we didn't need a special library. And structured output meant we got clean data back on the first try instead of digging through paragraphs.
 
@@ -92,7 +93,8 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 - **Accuracy:** 4 out of 4, about 1 second per check.
 - **Other languages:** the same grandson scam gets caught in Spanish and in Haitian Creole (score 85 each).
 - **Caller research:** for the real Social Security, IRS and Medicare numbers (scammers love to fake these on caller ID), Tavily warned about scam calls every time. Scam warnings now come from places like the FBI and AARP instead of random posts.
-- **Tests:** 56 automated tests run on GitHub for every change (that's the green badge at the top).
+- **From score to alert:** playing the fake grandson call line by line, the score went from 30 to 85 and the family alert fired the moment "Danny" said he was arrested and needed bail. It fired only once, and Tavily pulled warnings from AARP, the FCC and the BBB.
+- **Tests:** 67 automated tests run on GitHub for every change (that's the green badge at the top).
 
 ## Built with
 
@@ -174,6 +176,7 @@ scam-shield/
 │   ├── main.py            # web server and routes
 │   ├── config.py          # loads settings and API keys from .env
 │   ├── detector.py        # Nemotron scam scoring
+│   ├── call_monitor.py    # checks live calls and sends the family alert at 70 or more
 │   ├── research.py        # Tavily caller checks and scam warnings
 │   ├── alerts.py          # Twilio text messages
 │   ├── consent.py         # senior's YES/NO before we ever listen
@@ -204,9 +207,8 @@ With `DEMO_MODE=false`, every webhook must carry Twilio's signature, so nobody c
 
 ## What's next
 
-- Send the family alert as soon as the AI score gets high (70 or more)
 - The demo player: Grandma's phone, the live transcript, and the risk meter climbing line by line
-- Alerts written in Haitian Creole with Nemotron 3 Ultra, then Vietnamese and Chinese
+- More languages: Vietnamese and Chinese
 - A spoken warning to the senior during the call
 - Trusted contact setup the family can do in two minutes from their phone
 

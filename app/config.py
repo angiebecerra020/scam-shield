@@ -44,6 +44,9 @@ class Settings:
     demo_mode: bool
     public_base_url: str
     database_path: str
+    # The bigger Nemotron we use when a call needs extra smarts, like writing
+    # alerts in Haitian Creole. It's optional, so it has a default (blank).
+    nemotron_smart_model: str = ""
 
 
 def read_text_setting(name: str, default: str = "") -> str:
@@ -116,6 +119,7 @@ def get_settings() -> Settings:
         database_path=read_text_setting(
             "DATABASE_PATH", str(PROJECT_ROOT / "data" / "scam_shield.db")
         ),
+        nemotron_smart_model=read_text_setting("NEMOTRON_SMART_MODEL"),
     )
 
 
