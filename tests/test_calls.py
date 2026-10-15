@@ -63,7 +63,8 @@ def test_protected_call_goes_into_a_conference_room_and_rings_the_senior():
     assert "<Conference" in response.text
     assert 'endConferenceOnExit="true"' in response.text
     assert len(calls.DEMO_CALL_LOG) == 1
-    assert calls.DEMO_CALL_LOG[0]["to"] == SENIOR_PHONE
+    # We ring her calling app, never her own number (that would loop).
+    assert calls.DEMO_CALL_LOG[0]["to"].startswith("client:senior-")
     assert calls.DEMO_CALL_LOG[0]["who"] == "senior"
 
 
@@ -116,7 +117,7 @@ def test_live_mode_passes_the_call_token_to_twilio(monkeypatch):
 
     calls.start_protected_call(enrollment, SCAMMER_PHONE, "CA123", call_token="tok123")
 
-    assert sent["to"] == SENIOR_PHONE
+    assert sent["to"] == f"client:{enrollment['device_id']}"
     assert sent["from_"] == SCAMMER_PHONE
     assert sent["call_token"] == "tok123"
 
@@ -127,7 +128,8 @@ def test_senior_who_hasnt_said_yes_gets_a_normal_call():
     response = call_comes_in()
 
     assert "<Conference" not in response.text
-    assert SENIOR_PHONE in response.text
+    assert "<Client>senior-" in response.text
+    assert SENIOR_PHONE not in response.text
     assert calls.DEMO_CALL_LOG == []
 
 

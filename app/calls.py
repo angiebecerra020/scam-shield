@@ -8,7 +8,7 @@ Instead, every phone joins the same Twilio conference room:
 
     caller (maybe a scammer) --\\
                                  >-- conference room "scam-shield-<id>"
-    senior's phone ------------/            ^
+    senior's device -----------/            ^
                                             |  only if the family taps
     family member's phone ------------------/  "Join call" in the alert
 
@@ -19,13 +19,17 @@ scam, it calls send_family_alert(). The family gets a text with a secret
 and put them in the room. Everyone hears a short tone when they join, so
 nobody is listening in secret.
 
+We ring the senior on their private DEVICE (a calling app on a cell phone,
+or an adapter on a landline; see devices.py), never on their own number:
+that number forwards to us, so ringing it would loop straight back.
+
 Seniors who haven't said YES get a normal call: we pass it straight to their
-phone and don't listen.
+device and don't listen.
 
 Caller ID: when we ring the senior, their phone shows the REAL caller's
 number, not ours, so they can still tell their daughter from a stranger.
-Twilio only allows that because we pass along the incoming call's CallToken
-(see caller_id_for).
+We also pass along the incoming call's CallToken, which is what Twilio asks
+for when a forwarded call keeps the original caller ID (see caller_id_for).
 
 In demo mode we never place real calls; we record what we would have done in
 DEMO_CALL_LOG instead.
@@ -39,6 +43,7 @@ from twilio.twiml.voice_response import VoiceResponse
 from app import storage
 from app.alerts import send_sms, twilio_client
 from app.config import get_settings
+from app.devices import device_address, dial_device
 from app.languages import message
 from app.phone_numbers import normalize_phone
 
@@ -130,8 +135,8 @@ def handle_incoming_call(
 
     What happens:
       - senior said YES  -> caller goes into a conference room, and we ring
-                            the senior into the same room
-      - senior hasn't said YES -> we pass the call straight to their phone,
+                            the senior's device into the same room
+      - senior hasn't said YES -> we pass the call straight to their device,
                             without a room and without listening
       - nobody signed up -> a short message, then hang up
 
@@ -149,7 +154,7 @@ def handle_incoming_call(
 
     if enrollment["status"] != "active":
         # No YES, no listening: connect the call like any normal phone call.
-        response.dial(enrollment["senior_phone"], caller_id=caller)
+        dial_device(response, enrollment, caller)
         return str(response)
 
     call = start_protected_call(enrollment, caller, call_sid, call_token)
@@ -204,7 +209,7 @@ def start_protected_call(
     storage.save_call(call)
 
     ring_into_conference(
-        to=enrollment["senior_phone"],
+        to=device_address(enrollment),
         conference_name=call["conference_name"],
         who="senior",
         caller_id=caller_id_for(caller, call_token),
@@ -259,7 +264,8 @@ def ring_into_conference(
     """
     Ask Twilio to call a phone and put whoever answers into a conference room.
 
-    Input:  to              — the phone to ring
+    Input:  to              — the phone number, calling app ("client:...")
+                              or adapter ("sip:...") to ring
             conference_name — which room
             who             — "senior" or "family" (a label for logs)
             start_conference_on_enter, end_conference_on_exit, beep — Twilio's

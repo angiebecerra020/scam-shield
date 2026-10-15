@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS enrollments (
     senior_phone  TEXT NOT NULL,     -- E.164, e.g. +13055550100
     family_name   TEXT NOT NULL,
     family_phone  TEXT NOT NULL,
+    phone_type    TEXT NOT NULL,     -- "cell" or "landline"
+    device_id     TEXT NOT NULL,     -- name of the senior's app or adapter at Twilio
+    device_key    TEXT NOT NULL,     -- secret part of the calling-app link
     senior_language TEXT NOT NULL,   -- "en" or "es"
     family_language TEXT NOT NULL,
     status        TEXT NOT NULL,     -- pending / active / declined / expired / revoked
@@ -119,11 +122,11 @@ def save_enrollment(enrollment: dict) -> None:
         db.execute(
             """
             INSERT INTO enrollments (id, senior_name, senior_phone, family_name,
-                family_phone, senior_language, family_language, status,
-                created_at, answered_at)
+                family_phone, phone_type, device_id, device_key,
+                senior_language, family_language, status, created_at, answered_at)
             VALUES (:id, :senior_name, :senior_phone, :family_name,
-                :family_phone, :senior_language, :family_language, :status,
-                :created_at, :answered_at)
+                :family_phone, :phone_type, :device_id, :device_key,
+                :senior_language, :family_language, :status, :created_at, :answered_at)
             """,
             enrollment,
         )
@@ -142,6 +145,28 @@ def get_enrollment(enrollment_id: str) -> dict | None:
     with connect() as db:
         row = db.execute(
             "SELECT * FROM enrollments WHERE id = ?", (enrollment_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def find_enrollment_by_device(column: str, value: str) -> dict | None:
+    """
+    Find the enrollment that owns a calling app or phone adapter.
+
+    Input:  column — "device_id" (the name Twilio knows the device by) or
+                     "device_key" (the secret in the calling-app link)
+            value  — what to look for
+    Output: the enrollment as a dict, or None
+
+    Example:
+        find_enrollment_by_device("device_id", "senior-1a2b3c4d")  ->  {"senior_name": "Rosa", ...}
+    """
+    # The column name can't be a "?" placeholder, so we only allow these two.
+    if column not in ("device_id", "device_key"):
+        raise ValueError(f"Can't look up enrollments by {column}")
+    with connect() as db:
+        row = db.execute(
+            f"SELECT * FROM enrollments WHERE {column} = ?", (value,)
         ).fetchone()
     return dict(row) if row else None
 

@@ -12,9 +12,17 @@ Routes:
     GET  /health                  -> a quick "is the server alive?" check
 
   Consent (consent.py): the senior must say YES before we listen
-    POST /api/enrollments         -> family signs a senior up; we text the senior
+    POST /api/enrollments         -> family signs a senior up; we text the
+                                     senior (cell) or call them (landline)
     GET  /api/enrollments/{id}    -> has the senior said YES yet?
     POST /twilio/sms              -> Twilio: the senior texted us back
+    POST /twilio/consent-call     -> Twilio: what to say on the landline consent call
+    POST /twilio/consent-answer   -> Twilio: the key the senior pressed
+
+  The senior's device (devices.py): how we ring them without a loop
+    GET  /phone/{key}             -> the calling app for a cell phone
+    GET  /api/phone/{key}         -> the calling app's login
+    POST /twilio/adapter-call     -> Twilio: a landline senior dialed a number
 
   3-way calls (calls.py): the family can join a risky call
     POST /twilio/voice            -> Twilio: a call reached our number
@@ -37,7 +45,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from twilio.twiml.messaging_response import MessagingResponse
 
-from app import calls, consent
+from app import calls, consent, devices
 from app.alerts import DEMO_OUTBOX
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
@@ -141,7 +149,8 @@ class EnrollmentForm(BaseModel):
     Example:
         {"senior_name": "Rosa", "senior_phone": "305-555-0100",
          "family_name": "Ana", "family_phone": "305-555-0101",
-         "senior_language": "es", "family_language": "en"}
+         "senior_language": "es", "family_language": "en",
+         "phone_type": "landline"}
     """
 
     senior_name: str
@@ -150,6 +159,7 @@ class EnrollmentForm(BaseModel):
     family_phone: str
     senior_language: str = "en"
     family_language: str = "en"
+    phone_type: str = "cell"
 
 
 @app.post("/api/enrollments", status_code=201)
@@ -204,6 +214,89 @@ async def receive_text(request: Request):
     if reply:
         response.message(reply)
     return twiml(str(response))
+
+
+@app.post("/twilio/consent-call")
+async def speak_consent_question(request: Request, enrollment_id: str, attempt: int = 1):
+    """
+    Twilio asks what to say when a landline senior picks up our consent call.
+
+    Example:
+        POST /twilio/consent-call?enrollment_id=abc
+        ->  <Response><Gather ...><Say>Hello Rosa... press 1...</Say></Gather>...
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return error("This request didn't come from Twilio.", 403)
+
+    return twiml(consent.consent_call_twiml(enrollment_id, attempt))
+
+
+@app.post("/twilio/consent-answer")
+async def receive_consent_key(request: Request, enrollment_id: str):
+    """
+    Twilio tells us which key the landline senior pressed on the consent call.
+
+    Example (demo mode, pretending to be Twilio):
+        curl -X POST "localhost:8000/twilio/consent-answer?enrollment_id=abc" \\
+             -d To=+13055550100 -d Digits=1
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return error("This request didn't come from Twilio.", 403)
+
+    xml = consent.handle_consent_digits(
+        enrollment_id, form.get("To", ""), form.get("Digits", "")
+    )
+    return twiml(xml)
+
+
+# ---------------------------------------------------------------------------
+# The senior's device: calling app (cell) and adapter (landline)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/phone/{device_key}")
+def show_calling_app(device_key: str) -> FileResponse:
+    """
+    The calling app a cell-phone senior keeps open. Its JavaScript (phone.js)
+    reads the key from the address and logs in to Twilio.
+
+    Example:
+        Open http://localhost:8000/phone/Xy7...  ->  "Scam Shield is ready for calls"
+    """
+    return FileResponse(STATIC_DIR / "phone.html")
+
+
+@app.get("/api/phone/{device_key}")
+def get_calling_app_login(device_key: str):
+    """
+    Give the calling app its Twilio login, so incoming calls can ring it.
+
+    Example:
+        GET /api/phone/Xy7...  ->  {"senior_name": "Rosa", "demo_mode": false, "token": "eyJ..."}
+    """
+    try:
+        return devices.app_details(device_key)
+    except devices.DeviceError as problem:
+        return error(problem.text, problem.status_code)
+
+
+@app.post("/twilio/adapter-call")
+async def receive_adapter_call(request: Request):
+    """
+    Twilio asks where to send a call a landline senior dialed on their own
+    phone (which is plugged into the adapter).
+
+    Example:
+        POST /twilio/adapter-call From=sip:senior-1a2b@... To=sip:3055550123@...
+        ->  <Response><Dial callerId="..."><Number>+13055550123</Number></Dial></Response>
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return error("This request didn't come from Twilio.", 403)
+
+    return twiml(devices.handle_adapter_call(form.get("From", ""), form.get("To", "")))
 
 
 # ---------------------------------------------------------------------------
