@@ -1,17 +1,17 @@
 <!--
-  README.md — The front page of the Scam Shield repo.
-  Explains the problem, what Scam Shield does, how it works, and how to run it.
+  README.md is the front page of the Scam Shield repo. It explains the problem,
+  what Scam Shield does, how it works, and how to run it.
 -->
 
 # 🛡️ Scam Shield
 
+[![Tests](https://github.com/angiebecerra020/scam-shield/actions/workflows/tests.yml/badge.svg)](https://github.com/angiebecerra020/scam-shield/actions/workflows/tests.yml)
+
 **Catches scam phone calls while they're happening, and alerts the family in their own language.**
 
-Scam Shield follows a senior's phone call through a live transcript, checks the caller against the web, and uses **NVIDIA Nemotron** on **Nebius Token Factory** to spot the warning signs of a scam: gift cards, secrecy, urgency, a "grandchild" in trouble. When the risk is high, the family gets a text right away, in English or Spanish, with a link to join the call.
+Scam Shield follows a senior's phone call through a live transcript, checks the caller against the web, and uses **NVIDIA Nemotron** on **Nebius Token Factory** to spot the warning signs of a scam: gift cards, secrecy, urgency, a "grandchild" in trouble. When the risk is high, the family gets an alert right away, in their own language, with a link to join the call.
 
 > 🚧 **Work in progress** for the Nebius x NVIDIA Global AI Hackathon. Parts marked *Coming soon* are being built now.
-
----
 
 ## The problem
 
@@ -29,14 +29,14 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 |---|---|---|
 | 0 | **Senior's OK first.** When a family member signs someone up, we text the senior: *"Ana wants to protect your calls. Reply YES or NO."* Nothing is listened to until a YES comes from the senior's own phone. STOP turns it off any time. | Done |
 | 1 | **Live transcript.** The senior's calls forward to a Scam Shield number, which turns the call into text as it happens. | Coming soon |
-| 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds current scam news that matches the call. | Coming soon |
-| 3 | **AI scam score.** NVIDIA Nemotron scores the risk from 0 to 100 and explains why: gift cards, secrecy, urgency, a fake grandchild, "your Social Security number is suspended". | Coming soon |
+| 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds scam warnings that match the call. It looks at trusted sites first: the FTC, FBI, Social Security, Medicare, AARP and the BBB. | Done |
+| 3 | **AI scam score.** NVIDIA Nemotron scores the risk from 0 to 100 and explains why: gift cards, secrecy, urgency, a fake grandchild, "your Social Security number is suspended". | Done |
 | 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Coming soon |
 | 5 | **Family alert.** A live text message in the family member's own language, with a "Join call" link. | Text + link done; triggered by the AI score soon |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
 | 6 | **Family dashboard.** A live risk meter, the reasons, source links, and call history. | Coming soon |
-| 7 | **Bilingual.** English and Spanish first. | Coming soon |
-| ★ | **Demo mode.** Replays a scripted call as a live transcript, with no real phone call needed. | Coming soon |
+| 7 | **Languages.** English and Spanish, and Haitian Creole calls get caught too. | English and Spanish done. Alerts in Haitian Creole coming soon |
+| ★ | **Demo mode.** Replays a scripted call as a live transcript, with no real phone call needed. | Sample calls ready, player coming soon |
 
 ## How it works
 
@@ -48,16 +48,16 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
   Senior's phone
        |  calls forward to
        v
-  Twilio number ----> live transcript (what the caller says, line by line)
+  Twilio number, which turns the call into a live transcript
        |
-       |---> Tavily: has this number been reported? any matching scam news today?
+       +  Tavily: has this number been reported? Any scam warnings that match the call?
        |
-       |---> NVIDIA Nemotron (on Nebius Token Factory):
-       |        risk score 0-100 + reasons + who the caller claims to be
+       +  NVIDIA Nemotron (on Nebius Token Factory):
+       |     a risk score from 0 to 100, the reasons, and who the caller claims to be
        |
-       |---> "Is it really you?": caller says he's grandson Danny?
-       |        text the REAL Danny: "Are you calling Grandma? YES / NO"
-       |        NO  ->  warn Grandma right away
+       +  "Is it really you?": caller says he's grandson Danny?
+       |     we text the REAL Danny: "Are you calling Grandma? YES / NO"
+       |     if he says NO, we warn Grandma right away
        v
   Family
        - text alert in THEIR language + "Join call" link
@@ -65,13 +65,42 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
        - live dashboard: risk meter, reasons, source links, call history
 ```
 
+## How we use NVIDIA Nemotron and Nebius Token Factory
+
+Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](app/detector.py).
+
+- **The model.** We use **Nemotron 3.5 Lightning** (`nvidia/Nemotron-3_5-Lightning`) on Nebius Token Factory. Token Factory works just like the OpenAI API, so we call it with the regular `openai` Python library and point it at `https://api.tokenfactory.nebius.com/v1/`.
+- **What we send.** The call so far, plus instructions that list the red flags the FBI and FTC warn about (gift cards, secrecy, rushing, threats of arrest, a grandchild in trouble, "your Social Security number is suspended") and what a normal call looks like, so real family doesn't get flagged.
+- **What we get back.** Token Factory's structured output makes Nemotron answer in an exact JSON shape: a risk score from 0 to 100, a verdict, the reasons, who the caller claims to be, and a short alert for the family written in the family's language.
+- **Fast enough for a live call.** We switch off Nemotron's step by step "thinking" mode for live checks. Each check takes about 1 second (our goal was under 3).
+- **Safe by design.** We set the verdict from the score so they never disagree, safe calls never send an alert, and if anything goes wrong we say "couldn't check" instead of guessing "safe". The transcript is treated as evidence, never as instructions, so a scammer who says "ignore your rules" just looks more like a scammer.
+- **Bigger Nemotron models when it matters.** Lightning catches Haitian Creole scams, but **Nemotron 3 Super** and **Nemotron 3 Ultra** also write the reasons and alert in Creole, in about 2 seconds. Next we'll use Ultra for Haitian Creole calls and for an end of call summary, and keep Lightning for the fast live checks.
+
+**Where Token Factory sped us up:** one API key gave us the whole Nemotron family (Lightning, Super and Ultra), so trying a bigger model is a one line change in `.env`. Because it's OpenAI compatible, we didn't need a special library. And structured output meant we got clean data back on the first try instead of digging through paragraphs.
+
+## Results so far
+
+**Scam detection** on our sample calls (run it yourself with `pytest tests/test_detector.py -s -k accuracy`):
+
+| Call | Language | What happens | Score | Verdict |
+|---|---|---|---|---|
+| Real granddaughter Sofía | Spanish | Calls about Sunday lunch, asks for nothing | 10 | ✅ safe |
+| Pharmacy | English | Refill is ready, nothing to pay over the phone | 5 | ✅ safe |
+| Fake grandson "Danny" | English | In jail, wants gift cards, "don't tell Mom" | 92 | ✅ likely scam |
+| Fake Social Security officer | Spanish | "Your number was suspended," wants Bitcoin | 85 | ✅ likely scam |
+
+- **Accuracy:** 4 out of 4, about 1 second per check.
+- **Other languages:** the same grandson scam gets caught in Spanish and in Haitian Creole (score 85 each).
+- **Caller research:** for the real Social Security, IRS and Medicare numbers (scammers love to fake these on caller ID), Tavily warned about scam calls every time. Scam warnings now come from places like the FBI and AARP instead of random posts.
+- **Tests:** 56 automated tests run on GitHub for every change (that's the green badge at the top).
+
 ## Built with
 
 | Tool | What we use it for |
 |---|---|
-| **NVIDIA Nemotron** | The brain. Reads the transcript, scores the scam risk, explains why, and writes the family alert in their language. |
-| **Nebius Token Factory** | Runs Nemotron for us through a fast, OpenAI-compatible API. |
-| **Tavily** | Real-time web search: reports about the caller's number and current scam news. |
+| **NVIDIA Nemotron** | The brain. Nemotron 3.5 Lightning reads the transcript, scores the scam risk, explains why, and writes the family alert in their language. |
+| **Nebius Token Factory** | Runs Nemotron for us through a fast, OpenAI compatible API with structured JSON output. |
+| **Tavily** | Real-time web search: reports about the caller's number, and scam warnings from trusted sites. |
 | **Twilio** | Phone number, live call transcription, text alerts, and the family "Is it really you?" texts. |
 | **FastAPI** (Python) | Our backend server, which also hosts the dashboard. |
 
@@ -83,7 +112,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 - API keys from:
   - [Nebius Token Factory](https://tokenfactory.nebius.com/) (for Nemotron)
   - [Tavily](https://app.tavily.com/)
-  - [Twilio](https://www.twilio.com/) (a trial account can't send custom text messages; real alerts need an upgraded account)
+  - [Twilio](https://www.twilio.com/) (only for real phone calls; a trial account can't send custom text messages, so real alerts need an upgraded account)
 
 ### 2. Install
 
@@ -103,7 +132,17 @@ cp .env.example .env
 
 Then open `.env` and paste your keys after each `=`. The `.env` file is never uploaded to GitHub.
 
-### 4. Run it
+### 4. Check that everything works
+
+Each of these prints PASS or FAIL:
+
+```bash
+python scripts/test_nemotron.py     # Nemotron answers fast and catches a scam
+python scripts/test_tavily.py       # Tavily checks phone numbers and finds scam warnings
+python scripts/test_languages.py    # scams get caught in Spanish and Haitian Creole
+```
+
+### 5. Run it
 
 ```bash
 uvicorn app.main:app --reload
@@ -111,7 +150,7 @@ uvicorn app.main:app --reload
 
 Open <http://localhost:8000> in your browser.
 
-### 5. Run the tests
+### 6. Run the tests
 
 ```bash
 pytest
@@ -132,10 +171,10 @@ pytest
 ```text
 scam-shield/
 ├── app/                   # Python backend
-│   ├── main.py            # web server + routes
+│   ├── main.py            # web server and routes
 │   ├── config.py          # loads settings and API keys from .env
 │   ├── detector.py        # Nemotron scam scoring
-│   ├── research.py        # Tavily number + scam news lookups
+│   ├── research.py        # Tavily caller checks and scam warnings
 │   ├── alerts.py          # Twilio text messages
 │   ├── consent.py         # senior's YES/NO before we ever listen
 │   ├── calls.py           # conference rooms + "Join call" 3-way calls
@@ -144,11 +183,12 @@ scam-shield/
 │   ├── twilio_security.py # checks webhooks really came from Twilio
 │   ├── verify.py          # "Is it really you?" check
 │   ├── languages.py       # each person's language + translations
-│   └── demo_mode.py       # plays scripted calls as if live
+│   └── demo_mode.py       # loads the sample calls and plays them like they're live
 ├── static/                # family dashboard (HTML, CSS, JavaScript)
-├── data/test_scripts/     # scripted scam + normal calls (English/Spanish)
-├── scripts/               # day-1 checks for each outside service
+├── data/test_scripts/     # sample scam calls and normal calls (English and Spanish)
+├── scripts/               # day one checks for Nemotron, Tavily and languages
 ├── tests/                 # automated tests (pytest)
+├── .github/workflows/     # runs the tests on GitHub for every change
 ├── .env.example           # template for your settings (no real keys)
 └── requirements.txt       # Python libraries we use
 ```
@@ -164,9 +204,11 @@ With `DEMO_MODE=false`, every webhook must carry Twilio's signature, so nobody c
 
 ## What's next
 
-- More languages: Haitian Creole, then Vietnamese and Chinese
+- Send the family alert as soon as the AI score gets high (70 or more)
+- The demo player: Grandma's phone, the live transcript, and the risk meter climbing line by line
+- Alerts written in Haitian Creole with Nemotron 3 Ultra, then Vietnamese and Chinese
 - A spoken warning to the senior during the call
-- Trusted-contact setup the family can do in two minutes from their phone
+- Trusted contact setup the family can do in two minutes from their phone
 
 ## Team
 
