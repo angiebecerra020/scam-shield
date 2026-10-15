@@ -48,7 +48,13 @@ ALERT_FROM = LIKELY_SCAM_FROM
 
 # The languages we can write the reasons and the family alert in.
 # If we get a code we don't know, we just use English.
-LANGUAGE_NAMES = {"en": "English", "es": "Spanish", "ht": "Haitian Creole"}
+LANGUAGE_NAMES = {
+    "en": "English",
+    "es": "Spanish (español)",
+    # We add the name Haitian speakers use, Kreyòl ayisyen. It helps the model
+    # actually write in Creole instead of falling back to English.
+    "ht": "Haitian Creole (Kreyòl ayisyen)",
+}
 
 # If Nemotron takes longer than this many seconds, we stop waiting. That way a
 # slow connection can't freeze the app in the middle of a call.
@@ -154,7 +160,8 @@ def build_messages(transcript: str, language: str) -> list[dict]:
     """
     recent_part = transcript[-MAX_TRANSCRIPT_CHARACTERS:]
     request = (
-        f"Write the reasons and the family alert in {language_name(language)}.\n\n"
+        f"Write the reasons and the family alert in {language_name(language)}. "
+        "Use that language even if the call is in a different language.\n\n"
         "<call_transcript>\n"
         f"{recent_part}\n"
         "</call_transcript>"
