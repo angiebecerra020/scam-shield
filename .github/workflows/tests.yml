@@ -1,0 +1,35 @@
+# tests.yml
+# This runs all our tests on GitHub every time someone pushes code to main or
+# opens a pull request. If everything passes, the PR gets a green check.
+#
+# The tests use pretend versions of Nemotron and Tavily, so they don't need our
+# API keys and they don't use up any credits. The real accuracy test skips
+# itself here, since GitHub doesn't have our keys (and it never should).
+
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Get a copy of our code
+      - uses: actions/checkout@v4
+
+      # Use the same Python version we have on our computers
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      # Install our libraries
+      - name: Install libraries
+        run: pip install -r requirements.txt
+
+      # Run every test
+      - name: Run tests
+        run: pytest -v
