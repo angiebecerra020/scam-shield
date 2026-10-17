@@ -2,19 +2,25 @@
 consent.py — Makes sure the senior agrees before we ever listen to their calls.
 
 How it fits in: when a family member sets up Scam Shield, we don't start
-listening right away. We text the SENIOR's phone:
-    "Ana wants to protect your phone calls... Reply YES or NO."
-Only a YES sent from that phone turns protection on. That way a stranger who
-types in someone else's number can't start listening to their calls: they
-would need the senior's phone to say YES.
+listening right away. We ask the SENIOR, on their own phone:
+  - cell phone: we text "Ana wants to protect your phone calls... Reply YES or NO."
+  - landline (can't get texts): we call and say "...press 1 to allow, 2 to say no."
+Only a YES from that phone turns protection on. That way a stranger who types
+in someone else's number can't start listening to their calls: they would
+need the senior's phone to say YES.
 
 The steps:
-  1. start_enrollment()     — family signs up; we text the senior (status "pending")
-  2. handle_senior_reply()  — Twilio forwards the senior's reply to us:
-       YES  -> "active"   (calls.py will now protect their calls)
-       NO   -> "declined"
-       STOP -> "revoked"  (works any time, even months later)
+  1. start_enrollment()      — family signs up; we text or call the senior
+                               (status "pending")
+  2. handle_senior_reply()   — cell: Twilio forwards the senior's text to us
+     handle_consent_digits() — landline: the senior presses a key on our call
+       YES / 1 -> "active"   (calls.py will now protect their calls)
+       NO / 2  -> "declined"
+       STOP    -> "revoked"  (texts only; works any time, even months later)
   3. No answer within 24 hours -> "expired"; the family can ask again.
+
+Ask BEFORE turning on call forwarding: once the senior's number forwards to
+us, our consent call would come straight back to us instead of ringing them.
 
 To keep people from using us to spam strangers, we don't re-ask someone who
 is already waiting to answer, and we wait 30 days before asking someone who
@@ -26,10 +32,16 @@ import secrets
 import unicodedata
 from datetime import datetime, timedelta, timezone
 
+from twilio.twiml.voice_response import VoiceResponse
+
 from app import storage
-from app.alerts import send_sms
-from app.languages import message, pick_language
+from app.alerts import send_sms, twilio_client
+from app.calls import DEMO_CALL_LOG, public_url
+from app.config import get_settings
+from app.languages import message, pick_language, spoken_language
 from app.phone_numbers import mask_phone, normalize_phone
+
+PHONE_TYPES = ("cell", "landline")
 
 # How long the senior has to answer the first text.
 ANSWER_WINDOW = timedelta(hours=24)
@@ -175,15 +187,18 @@ def start_enrollment(
     family_phone: str,
     senior_language: str = "en",
     family_language: str = "en",
+    phone_type: str = "cell",
 ) -> dict:
     """
-    Sign a senior up for Scam Shield and text them to ask for their YES.
+    Sign a senior up for Scam Shield and ask them for their YES: by text for
+    a cell phone, by phone call for a landline.
 
     Nothing is listened to yet: the enrollment starts as "pending".
 
     Input:  senior_name, senior_phone — the person whose calls we'd protect
             family_name, family_phone — the person signing up, who gets alerts
             senior_language, family_language — "en" or "es"
+            phone_type — "cell" or "landline": the kind of phone senior_phone is
     Output: the new enrollment (as public_view() shows it)
     Raises: EnrollmentError if something in the form is wrong, or if we
             aren't allowed to ask this senior right now
@@ -201,6 +216,12 @@ def start_enrollment(
         "senior_phone": clean_phone(senior_phone, "Senior's phone"),
         "family_name": clean_name(family_name, "Your name"),
         "family_phone": clean_phone(family_phone, "Your phone"),
+        "phone_type": clean_phone_type(phone_type),
+        # The name Twilio knows the senior's calling app or phone adapter by.
+        "device_id": "senior-" + secrets.token_hex(4),
+        # The secret part of the calling-app link. Long and random, because
+        # anyone with the link could answer the senior's calls.
+        "device_key": secrets.token_urlsafe(24),
         "senior_language": pick_language(senior_language),
         "family_language": pick_language(family_language),
         "status": "pending",
@@ -214,15 +235,165 @@ def start_enrollment(
     check_allowed_to_ask(enrollment["senior_phone"])
     storage.save_enrollment(enrollment)
 
-    send_sms(
-        enrollment["senior_phone"],
+    if enrollment["phone_type"] == "landline":
+        call_senior_for_consent(enrollment)
+    else:
+        send_sms(
+            enrollment["senior_phone"],
+            message(
+                "consent_request",
+                enrollment["senior_language"],
+                family_name=enrollment["family_name"],
+            ),
+        )
+    return public_view(enrollment)
+
+
+def clean_phone_type(raw: str) -> str:
+    """
+    Check the "What kind of phone?" answer from the sign-up form.
+
+    Example:
+        clean_phone_type("Landline")  ->  "landline"
+        clean_phone_type("fax")       ->  EnrollmentError
+    """
+    phone_type = (raw or "").strip().lower()
+    if phone_type not in PHONE_TYPES:
+        raise EnrollmentError("Please choose cell phone or landline.", 400)
+    return phone_type
+
+
+# ---------------------------------------------------------------------------
+# Landlines: asking for consent with a phone call
+# ---------------------------------------------------------------------------
+
+
+def call_senior_for_consent(enrollment: dict) -> None:
+    """
+    Phone a landline senior to ask for their YES (landlines can't get texts).
+
+    When they pick up, Twilio asks us what to say (consent_call_twiml).
+
+    Input:  enrollment — the new, pending enrollment
+    Output: nothing. In demo mode, the call goes into DEMO_CALL_LOG instead.
+
+    Example:
+        call_senior_for_consent(rosa)  ->  Rosa's landline rings
+    """
+    settings = get_settings()
+    url = public_url(f"/twilio/consent-call?enrollment_id={enrollment['id']}")
+
+    if settings.demo_mode:
+        DEMO_CALL_LOG.append(
+            {"to": enrollment["senior_phone"], "who": "consent", "conference": None}
+        )
+        print(f"[demo mode] would call {enrollment['senior_phone']} to ask for consent")
+        return
+
+    twilio_client().calls.create(
+        to=enrollment["senior_phone"],
+        from_=settings.twilio_phone_number,
+        url=url,
+    )
+
+
+def consent_call_twiml(enrollment_id: str, attempt: int = 1) -> str:
+    """
+    What the senior hears on the consent call, in their language.
+
+    We ask twice. If they still don't press anything, we say goodbye and the
+    enrollment stays pending (and expires after 24 hours).
+
+    Input:  enrollment_id — whose call this is
+            attempt       — 1 the first time, 2 when we ask again
+    Output: TwiML that reads the question and listens for one key press
+
+    Example:
+        consent_call_twiml("abc")
+        ->  '<Response><Gather numDigits="1" ...><Say>Hello Rosa...</Say></Gather>...'
+    """
+    response = VoiceResponse()
+    enrollment = storage.get_enrollment(enrollment_id)
+    if enrollment is None or enrollment["status"] != "pending":
+        response.hangup()
+        return str(response)
+
+    language = enrollment["senior_language"]
+    gather = response.gather(
+        num_digits=1,
+        timeout=8,
+        action=public_url(f"/twilio/consent-answer?enrollment_id={enrollment_id}"),
+    )
+    gather.say(
         message(
-            "consent_request",
-            enrollment["senior_language"],
+            "consent_call_prompt",
+            language,
+            senior_name=enrollment["senior_name"],
             family_name=enrollment["family_name"],
         ),
+        language=spoken_language(language),
     )
-    return public_view(enrollment)
+
+    # Only reached if they didn't press anything.
+    if attempt < 2:
+        response.redirect(
+            public_url(f"/twilio/consent-call?enrollment_id={enrollment_id}&attempt=2")
+        )
+    else:
+        response.say(message("consent_call_goodbye", language), language=spoken_language(language))
+        response.hangup()
+    return str(response)
+
+
+def handle_consent_digits(enrollment_id: str, called_phone: str, digits: str) -> str:
+    """
+    Act on the key the senior pressed during the consent call.
+
+    The answer only counts if it came on OUR call TO the senior's phone, so we
+    check the number Twilio says it called.
+
+    Input:  enrollment_id — whose consent call this is
+            called_phone  — the number we called (Twilio's "To")
+            digits        — the key they pressed, e.g. "1"
+    Output: TwiML: what they hear next
+
+    Examples:
+        handle_consent_digits("abc", "+15555550100", "1")  ->  "Thank you. Scam Shield is now on..."
+        handle_consent_digits("abc", "+15555550100", "7")  ->  asks the question again
+    """
+    response = VoiceResponse()
+    enrollment = storage.get_enrollment(enrollment_id)
+    if (
+        enrollment is None
+        or enrollment["status"] != "pending"
+        or normalize_phone(called_phone or "") != enrollment["senior_phone"]
+    ):
+        response.hangup()
+        return str(response)
+
+    language = enrollment["senior_language"]
+    voice = spoken_language(language)
+
+    if digits == "1":
+        storage.set_enrollment_status(enrollment_id, "active", answered=True)
+        tell_family(enrollment, "family_told_yes")
+        response.say(
+            message("consent_call_yes", language, family_name=enrollment["family_name"]),
+            language=voice,
+        )
+    elif digits == "2":
+        storage.set_enrollment_status(enrollment_id, "declined", answered=True)
+        tell_family(enrollment, "family_told_no")
+        response.say(message("consent_call_no", language), language=voice)
+    else:
+        # A different key: ask again.
+        response.redirect(
+            public_url(f"/twilio/consent-call?enrollment_id={enrollment_id}&attempt=2")
+        )
+        return str(response)
+
+    response.hangup()
+    return str(response)
 
 
 def clean_reply(body: str) -> str:
@@ -355,14 +526,16 @@ def get_enrollment_status(enrollment_id: str) -> dict | None:
 
 def public_view(enrollment: dict) -> dict:
     """
-    The parts of an enrollment that are safe to show on the dashboard.
+    The parts of an enrollment that are safe to show on the dashboard,
+    including what the family needs to finish setting up the senior's phone.
 
     We hide most of each phone number, so a leaked dashboard link doesn't
     give away the family's numbers.
 
     Example:
         public_view(rosa)  ->  {"id": "abc", "senior_name": "Rosa",
-                                "senior_phone": "•••-•••-0100", "status": "pending", ...}
+                                "senior_phone": "•••-•••-0100", "status": "pending",
+                                "phone_type": "cell", "setup": {...}}
     """
     return {
         "id": enrollment["id"],
@@ -371,4 +544,29 @@ def public_view(enrollment: dict) -> dict:
         "family_name": enrollment["family_name"],
         "family_phone": mask_phone(enrollment["family_phone"]),
         "status": enrollment["status"],
+        "phone_type": enrollment["phone_type"],
+        "setup": setup_details(enrollment),
     }
+
+
+def setup_details(enrollment: dict) -> dict:
+    """
+    What the family needs to finish setup once the senior says YES.
+
+    Every senior's number forwards to our Scam Shield number. Then:
+      - cell phone: the senior's phone runs our calling app (the app_link page)
+      - landline:  the senior's phone plugs into an adapter that signs in to
+                   our SIP domain with this username
+
+    Example:
+        setup_details(rosa)  ->  {"forward_to": "+15555550150",
+                                  "app_link": "http://.../phone/Xy7..."}
+    """
+    settings = get_settings()
+    details = {"forward_to": settings.twilio_phone_number}
+    if enrollment["phone_type"] == "landline":
+        details["adapter_username"] = enrollment["device_id"]
+        details["adapter_domain"] = settings.twilio_sip_domain
+    else:
+        details["app_link"] = public_url(f"/phone/{enrollment['device_key']}")
+    return details

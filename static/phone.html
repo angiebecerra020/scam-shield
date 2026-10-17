@@ -1,0 +1,51 @@
+<!--
+  phone.html — The Scam Shield calling app for a senior with a CELL phone.
+
+  How it fits in: the senior's cell number forwards to our Scam Shield number,
+  so we can't ring them back on it (that would loop). Instead, Scam Shield
+  rings THIS page over the internet, using Twilio's calling library. The
+  family opens the secret link (/phone/<key>) on the senior's phone once,
+  taps "Turn on calls", and adds it to the home screen. phone.js does the rest.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scam Shield calls</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="card">
+    <h1>🛡️ Scam Shield</h1>
+    <p id="phone-status" aria-live="polite">Loading…</p>
+
+    <!-- A tap is needed first: browsers only allow ringing and the
+         microphone after the person has touched the page. -->
+    <button type="button" id="turn-on" class="button-big" hidden>Turn on calls</button>
+
+    <!-- Shown while a call is ringing -->
+    <section id="incoming" hidden>
+      <p>Call from</p>
+      <p id="caller-number" class="caller-number"></p>
+      <button type="button" id="answer" class="button-big">Answer</button>
+      <button type="button" id="decline" class="button-big button-decline">Decline</button>
+    </section>
+
+    <!-- Shown during a call -->
+    <section id="in-call" hidden>
+      <p>On a call with</p>
+      <p id="in-call-number" class="caller-number"></p>
+      <button type="button" id="hang-up" class="button-big button-decline">Hang up</button>
+    </section>
+
+    <p class="hint">Keep this page open so calls can ring.</p>
+  </main>
+  <!-- Twilio's calling library, pinned to one version. "integrity" makes the
+       browser refuse the file if it was changed in any way. -->
+  <script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.18.5/dist/twilio.min.js"
+          integrity="sha384-LUG7DmzDPWNKRYoqyGpV4d/IByMLiya/oUhMSc/4/6hi0wbzO/8PffM4lzeFEYS8"
+          crossorigin="anonymous"></script>
+  <script src="/static/phone.js"></script>
+</body>
+</html>

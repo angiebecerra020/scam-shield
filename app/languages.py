@@ -11,13 +11,16 @@ English. This file remembers each person's language, so:
 We start with English and Spanish. Haitian Creole is next (it's widely spoken
 in Florida), and we test it in Step 2.
 
-Right now this file holds the text messages for the consent check (consent.py)
-and the family alert with the "Join call" link (calls.py). The rest is coming
-soon.
+Right now this file holds the text messages and spoken phone messages for the
+consent check (consent.py) and the family alert with the "Join call" link
+(calls.py). The rest is coming soon.
 """
 
 SUPPORTED_LANGUAGES = ("en", "es")
 DEFAULT_LANGUAGE = "en"
+
+# The voice Twilio uses to read our spoken messages, for each language.
+SPOKEN_LANGUAGE = {"en": "en-US", "es": "es-US"}
 
 # Every text message we send, in every language. {curly} words are filled in
 # by message() below. Keep each message short: a text over 160 characters is
@@ -46,6 +49,18 @@ MESSAGES = {
             "Scam Shield ALERT: {senior_name} may be on a scam call right now. "
             "Tap to join the call: {join_link}"
         ),
+        # SPOKEN on the consent phone call to a landline (landlines can't get texts).
+        "consent_call_prompt": (
+            "Hello {senior_name}. This is Scam Shield. {family_name} wants to "
+            "protect your phone calls from scammers. We would listen to your calls, "
+            "and alert {family_name} if one sounds like a scam. "
+            "To allow it, press 1. To say no, press 2."
+        ),
+        "consent_call_yes": (
+            "Thank you. Scam Shield is now on. {family_name} will finish setting it up. Goodbye."
+        ),
+        "consent_call_no": "OK. Scam Shield will not listen to your calls. Goodbye.",
+        "consent_call_goodbye": "We didn't hear an answer. Goodbye.",
     },
     "es": {
         "consent_request": (
@@ -67,6 +82,17 @@ MESSAGES = {
             "ALERTA de Scam Shield: {senior_name} puede estar en una llamada de "
             "estafa ahora mismo. Toque para unirse a la llamada: {join_link}"
         ),
+        "consent_call_prompt": (
+            "Hola {senior_name}. Le habla Scam Shield. {family_name} quiere "
+            "proteger sus llamadas contra estafadores. Escucharíamos sus llamadas, "
+            "y avisaríamos a {family_name} si una parece una estafa. "
+            "Para permitirlo, marque 1. Para negarlo, marque 2."
+        ),
+        "consent_call_yes": (
+            "Gracias. Scam Shield ya está activado. {family_name} terminará de configurarlo. Adiós."
+        ),
+        "consent_call_no": "Entendido. Scam Shield no escuchará sus llamadas. Adiós.",
+        "consent_call_goodbye": "No escuchamos una respuesta. Adiós.",
     },
 }
 
@@ -101,3 +127,13 @@ def message(key: str, language: str, **details: str) -> str:
     """
     template = MESSAGES[pick_language(language)][key]
     return template.format(**details)
+
+
+def spoken_language(language: str) -> str:
+    """
+    The language code Twilio needs to read a message out loud.
+
+    Example:
+        spoken_language("es")  ->  "es-US"
+    """
+    return SPOKEN_LANGUAGE[pick_language(language)]

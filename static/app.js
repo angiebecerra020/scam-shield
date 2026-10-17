@@ -4,8 +4,10 @@
   How it fits in: index.html loads this file. It:
     - asks our server "are you running?" (GET /health) and shows the answer
     - sends the sign-up form (POST /api/enrollments), which texts the senior
+      (cell phone) or calls them (landline)
     - checks every few seconds whether the senior said YES
       (GET /api/enrollments/{id})
+    - once they do, shows the steps to finish setting up their phone
     - in demo mode, shows buttons that pretend to be the senior's phone
   Later it will show the live risk meter, reasons, source links and call history.
 */
@@ -16,6 +18,7 @@ const CHECK_EVERY_MS = 3000;
 // What to tell the family member for each enrollment status.
 const STATUS_MESSAGES = {
   pending: "We texted them. Waiting for them to reply YES…",
+  pendingLandline: "We're calling them now. Waiting for them to press 1…",
   active: "They said YES. Their calls are now protected. ✅",
   declined: "They said NO, so we won't listen to their calls.",
   expired: "They didn't answer within 24 hours. You can ask again.",
@@ -25,6 +28,8 @@ const STATUS_MESSAGES = {
 // Remembered while the page is open.
 let demoMode = false;
 let seniorPhone = "";
+let enrollmentId = "";
+let phoneType = "cell";
 let statusTimer = null;
 
 /**
@@ -102,11 +107,13 @@ async function submitSignup(event) {
 
   // Kept only so the demo button can pretend to be this phone.
   seniorPhone = fields.senior_phone;
+  enrollmentId = data.id;
+  phoneType = data.phone_type;
   form.hidden = true;
   document.getElementById("consent-status").hidden = false;
   document.getElementById("senior-name").textContent = data.senior_name;
   document.getElementById("demo-tools").hidden = !demoMode;
-  showConsentStatus(data.status);
+  showConsentStatus(data);
 
   statusTimer = setInterval(() => checkConsent(data.id), CHECK_EVERY_MS);
 }
@@ -123,30 +130,112 @@ async function checkConsent(enrollmentId) {
   if (!ok) {
     return;
   }
-  showConsentStatus(data.status);
+  showConsentStatus(data);
   if (data.status !== "pending") {
     clearInterval(statusTimer);
   }
 }
 
 /**
- * Show the message for an enrollment status, and the right demo buttons.
+ * Show the message for an enrollment's status, the setup steps once they
+ * said YES, and the right demo buttons.
  *
- * Example: showConsentStatus("active") -> "They said YES…" and the
- *          "Pretend a scam call starts" button appears (in demo mode)
+ * Input:  enrollment — what the server sent, e.g. {status: "active", setup: {...}}
+ * Example: status "active" -> "They said YES…", the setup steps, and the
+ *          "Pretend a scam call starts" button (in demo mode)
  */
-function showConsentStatus(status) {
-  document.getElementById("consent-message").textContent = STATUS_MESSAGES[status] || status;
+function showConsentStatus(enrollment) {
+  const status = enrollment.status;
+  const messageKey = status === "pending" && phoneType === "landline" ? "pendingLandline" : status;
+  document.getElementById("consent-message").textContent = STATUS_MESSAGES[messageKey] || status;
   document.getElementById("demo-reply-yes").hidden = status !== "pending";
   document.getElementById("demo-scam-call").hidden = status !== "active";
+
+  const setupSteps = document.getElementById("setup-steps");
+  setupSteps.hidden = status !== "active";
+  if (status === "active") {
+    showSetupSteps(enrollment);
+  }
 }
 
 /**
- * Demo mode: pretend the senior texted YES, the way Twilio would tell us.
+ * Add one numbered step to the setup list. Parts can be plain text or a link.
+ *
+ * Input:  parts — e.g. ["Open ", {link: "https://..."}, " on their phone."]
+ * Example: addStep(["Dial *72 then ", "+15555550150"])
+ */
+function addStep(parts) {
+  const item = document.createElement("li");
+  for (const part of parts) {
+    if (typeof part === "string") {
+      item.append(part);
+    } else {
+      const link = document.createElement("a");
+      link.href = part.link;
+      link.target = "_blank";
+      link.textContent = part.label || part.link;
+      item.appendChild(link);
+    }
+  }
+  document.getElementById("setup-list").appendChild(item);
+}
+
+/**
+ * Show the steps to finish setup, which depend on the kind of phone.
+ *
+ * Every senior's number forwards to the Scam Shield number. Then Scam Shield
+ * rings a calling app (cell phone) or a phone adapter (landline), never their
+ * number itself, which would just forward back to us.
+ *
+ * Example: a landline -> "1. Set up the adapter... 2. Dial *72... 3. Plug in..."
+ */
+function showSetupSteps(enrollment) {
+  const setup = enrollment.setup;
+  const name = enrollment.senior_name;
+  const forwardTo = setup.forward_to || "(your Scam Shield number)";
+  document.getElementById("setup-list").replaceChildren();
+
+  if (phoneType === "landline") {
+    addStep([
+      "Connect the phone adapter to their internet router and sign it in with username ",
+      setup.adapter_username, " at ", setup.adapter_domain || "(your SIP domain)", ".",
+    ]);
+    addStep([
+      `While ${name}'s phone is still plugged into the wall, pick it up and dial *72 then `,
+      forwardTo, ". Wait for the tone, then hang up.",
+    ]);
+    addStep([`Unplug ${name}'s phone from the wall and plug it into the adapter.`]);
+    document.getElementById("setup-note").textContent =
+      "To turn Scam Shield off later: plug the phone back into the wall and dial *73.";
+  } else {
+    addStep([
+      `On ${name}'s phone, open `, { link: setup.app_link, label: "this calling app link" },
+      ", tap “Turn on calls”, and add it to the home screen.",
+    ]);
+    addStep([
+      "Turn on call forwarding to ", forwardTo,
+      ". On most phones, dial **21* then the number then #. On Verizon, dial *72 then the number.",
+    ]);
+    document.getElementById("setup-note").textContent =
+      "To turn Scam Shield off later: dial ##21# (Verizon: *73), or text STOP to the Scam Shield number.";
+  }
+}
+
+/**
+ * Demo mode: pretend the senior said YES, the way Twilio would tell us:
+ * a YES text for a cell phone, or pressing 1 on the consent call for a landline.
  *
  * Example: tap the button -> a few seconds later the page says "They said YES…"
  */
 async function demoReplyYes() {
+  if (phoneType === "landline") {
+    await sendRequest(`/twilio/consent-answer?enrollment_id=${enrollmentId}`, {
+      method: "POST",
+      body: new URLSearchParams({ To: seniorPhone, Digits: "1" }),
+    });
+    document.getElementById("demo-result").textContent = "Pressed 1 on the consent call.";
+    return;
+  }
   await sendRequest("/twilio/sms", {
     method: "POST",
     body: new URLSearchParams({ From: seniorPhone, Body: "YES" }),
