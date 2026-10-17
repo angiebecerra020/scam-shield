@@ -1,0 +1,14 @@
+{
+  "id": "normal_delivery_en",
+  "title": "Normal: the delivery driver left a package with a neighbor",
+  "language": "en",
+  "expected": "normal",
+  "caller_number": "+13055550146",
+  "lines": [
+    {"speaker": "caller", "text": "Hi, this is Luis with Speedy Delivery. I had a package for Mrs. Díaz at apartment 4C."},
+    {"speaker": "senior", "text": "Yes, that's me."},
+    {"speaker": "caller", "text": "Nobody answered the door, so I left it with your neighbor in 4D, Mr. Patel. He said that was fine."},
+    {"speaker": "senior", "text": "Oh good, that's my medicine. Thank you."},
+    {"speaker": "caller", "text": "No problem. There's nothing to pay, it's all taken care of. Have a good day!"}
+  ]
+}

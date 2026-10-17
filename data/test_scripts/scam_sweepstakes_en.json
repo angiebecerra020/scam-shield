@@ -1,0 +1,15 @@
+{
+  "id": "scam_sweepstakes_en",
+  "title": "Prize scam: \"you won $2.5 million,\" just pay the fees first",
+  "language": "en",
+  "expected": "scam",
+  "caller_number": "+13055550137",
+  "lines": [
+    {"speaker": "caller", "text": "Congratulations! This is Mark Davis from the National Sweepstakes Bureau. You've won two and a half million dollars and a brand new car!"},
+    {"speaker": "senior", "text": "Really? I don't remember entering anything."},
+    {"speaker": "caller", "text": "Your name was picked from all the shoppers in Florida. To release the prize, you just need to pay the taxes and processing fee of $1,200 first."},
+    {"speaker": "senior", "text": "Can't you take the fee out of the prize?"},
+    {"speaker": "caller", "text": "No ma'am, federal rules don't allow that. You can wire it through Western Union today, and we'll deliver the check tomorrow."},
+    {"speaker": "caller", "text": "Keep this quiet until the check arrives. People get jealous."}
+  ]
+}

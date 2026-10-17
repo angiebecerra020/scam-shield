@@ -1,0 +1,15 @@
+{
+  "id": "normal_church_es",
+  "title": "Normal: una amiga de la iglesia llama por el almuerzo",
+  "language": "es",
+  "expected": "normal",
+  "caller_number": "+13055550145",
+  "lines": [
+    {"speaker": "caller", "text": "Hola Rosa, soy Lupita de la iglesia. ¿Cómo sigue tu rodilla?"},
+    {"speaker": "senior", "text": "Mejor, gracias a Dios. ¿Y tú?"},
+    {"speaker": "caller", "text": "Bien. Te llamo porque el domingo después de misa hacemos el almuerzo de la parroquia. ¿Puedes traer tu arroz con pollo?"},
+    {"speaker": "senior", "text": "Claro, lo hago con gusto."},
+    {"speaker": "caller", "text": "Qué bueno. Si quieres, el padre Tomás te pasa a buscar a las once."},
+    {"speaker": "senior", "text": "Perfecto, dile que gracias."}
+  ]
+}

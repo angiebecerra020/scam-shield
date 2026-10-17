@@ -1,0 +1,15 @@
+{
+  "id": "scam_tech_support_en",
+  "title": "Tech support scam: \"Microsoft\" says the computer has a virus",
+  "language": "en",
+  "expected": "scam",
+  "caller_number": "+13055550131",
+  "lines": [
+    {"speaker": "caller", "text": "Hello, this is Kevin from Microsoft Windows support. We got an alert that your computer is sending out viruses."},
+    {"speaker": "senior", "text": "Oh my goodness, I didn't know that."},
+    {"speaker": "caller", "text": "Don't worry, I can fix it right now. Please go to your computer and download the app called QuickHelp so I can connect to it."},
+    {"speaker": "senior", "text": "I'm not very good with computers."},
+    {"speaker": "caller", "text": "That's okay, I'll do everything. Once I'm connected, there's a one-time security fee of $399. You can pay with a Google Play gift card."},
+    {"speaker": "caller", "text": "Please don't turn off the computer or hang up, or the hackers will steal your bank information today."}
+  ]
+}

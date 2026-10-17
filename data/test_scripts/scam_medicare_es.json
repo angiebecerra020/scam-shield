@@ -1,0 +1,15 @@
+{
+  "id": "scam_medicare_es",
+  "title": "Estafa de Medicare: \"le vamos a mandar una tarjeta nueva\"",
+  "language": "es",
+  "expected": "scam",
+  "caller_number": "+13055550132",
+  "lines": [
+    {"speaker": "caller", "text": "Buenos días, le llamo de Medicare. Estamos enviando las tarjetas nuevas con chip y la suya ya está lista."},
+    {"speaker": "senior", "text": "Ah, qué bien. ¿Tengo que hacer algo?"},
+    {"speaker": "caller", "text": "Solo necesito que me confirme su número de Medicare y su número de Seguro Social para activarla."},
+    {"speaker": "senior", "text": "¿Por teléfono?"},
+    {"speaker": "caller", "text": "Sí, es rápido. Si no la activa hoy, va a perder sus beneficios este mes."},
+    {"speaker": "caller", "text": "También necesito el número de su cuenta del banco para depositarle un reembolso."}
+  ]
+}
