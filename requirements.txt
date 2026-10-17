@@ -23,7 +23,9 @@ tavily-python==0.8.5
 # Phone calls and text messages
 twilio==9.11.2
 
+# Talks to Supabase to check who's logged in (auth.py).
+# FastAPI's test client uses it too.
+httpx==0.28.1
+
 # Testing
 pytest==9.1.1
-# FastAPI's test client needs httpx
-httpx==0.28.1

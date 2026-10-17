@@ -2,7 +2,8 @@
   index.html — The family dashboard page.
 
   How it fits in: the web server (app/main.py) sends this page when someone
-  opens http://localhost:8000. It loads styles.css (the look) and app.js (the
+  opens http://localhost:8000/dashboard. It loads styles.css (the look),
+  auth.js (sends people who aren't logged in to /login) and app.js (the
   behavior). Right now it has the sign-up form: a family member enters the
   senior's details, we text the senior (cell) or call them (landline), and
   the page waits for their YES, then shows the steps to finish setup.
@@ -18,7 +19,15 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <main class="card">
+  <!-- Hidden until app.js checks the login, so nobody sees a flash of the
+       dashboard before being sent to /login -->
+  <main class="card" id="dashboard" hidden>
+    <!-- Who's logged in, with a way out. Hidden when login is off. -->
+    <div id="account-bar" class="account-bar" hidden>
+      <span>Logged in as <strong id="account-email"></strong></span>
+      <button type="button" id="log-out" class="button-link">Log out</button>
+    </div>
+
     <h1>🛡️ Scam Shield</h1>
     <p class="tagline">Catches scam calls while they happen, and tells the family right away.</p>
 
@@ -85,6 +94,8 @@
 
     <p class="status">Server status: <span id="server-status" aria-live="polite">checking…</span></p>
   </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/auth.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

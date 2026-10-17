@@ -24,5 +24,9 @@ def fresh_demo_setup(tmp_path, monkeypatch):
     monkeypatch.setenv("PUBLIC_BASE_URL", "http://testserver")
     # Our fake Scam Shield number (555-01XX numbers are reserved for fiction)
     monkeypatch.setenv("TWILIO_PHONE_NUMBER", "+15555550150")
+    # Login off, even if your .env has Supabase keys. Tests that need login
+    # turn it on themselves (see test_auth.py).
+    monkeypatch.setenv("SUPABASE_URL", "")
+    monkeypatch.setenv("SUPABASE_PUBLISHABLE_KEY", "")
     alerts.DEMO_OUTBOX.clear()
     calls.DEMO_CALL_LOG.clear()

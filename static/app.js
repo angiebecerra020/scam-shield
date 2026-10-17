@@ -1,7 +1,8 @@
 /*
   app.js — Makes the dashboard page interactive.
 
-  How it fits in: index.html loads this file. It:
+  How it fits in: index.html loads this file after auth.js. It:
+    - checks the family member is logged in (or sends them to /login)
     - asks our server "are you running?" (GET /health) and shows the answer
     - sends the sign-up form (POST /api/enrollments), which texts the senior
       (cell phone) or calls them (landline)
@@ -67,8 +68,14 @@ async function showServerStatus() {
  * Example: await sendRequest("/api/demo/scam-call", {method: "POST"})
  *          -> {ok: true, data: {call_id: "...", join_link: "..."}}
  */
-async function sendRequest(url, options) {
-  const response = await fetch(url, options);
+async function sendRequest(url, options = {}) {
+  // Add the login token, so the server knows who's asking (app/auth.py).
+  const headers = { ...options.headers, ...(await loginHeaders()) };
+  const response = await fetch(url, { ...options, headers });
+  if (response.status === 401) {
+    // The login ran out (or they logged out in another tab). Back to /login.
+    window.location.replace("/login");
+  }
   let data = {};
   try {
     data = await response.json();
@@ -264,7 +271,36 @@ async function demoScamCall() {
   result.appendChild(link);
 }
 
+/**
+ * Check the login, then show the dashboard.
+ *
+ * Input:  nothing
+ * Output: nothing; it shows the page, or auth.js sends them to /login.
+ * Example: Ana is logged in  gives you  the dashboard with "Logged in as ana@example.com"
+ */
+async function startDashboard() {
+  let login;
+  try {
+    login = await requireLogin();
+  } catch (error) {
+    // We couldn't even ask the server about logins. Say so instead of
+    // leaving a blank page.
+    document.body.textContent = "We couldn't reach the server. Please refresh the page.";
+    return;
+  }
+  if (login.loginOn && login.user === null) {
+    return; // requireLogin() is already taking them to /login
+  }
+  if (login.user !== null) {
+    document.getElementById("account-email").textContent = login.user.email;
+    document.getElementById("account-bar").hidden = false;
+  }
+  document.getElementById("dashboard").hidden = false;
+  showServerStatus();
+}
+
 document.getElementById("signup-form").addEventListener("submit", submitSignup);
 document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
 document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);
-showServerStatus();
+document.getElementById("log-out").addEventListener("click", logOut);
+startDashboard();

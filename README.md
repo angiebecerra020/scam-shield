@@ -151,7 +151,9 @@ python scripts/test_languages.py    # scams get caught in Spanish and Haitian Cr
 uvicorn app.main:app --reload
 ```
 
-Open <http://localhost:8000> in your browser.
+Open <http://localhost:8000> in your browser. That's the landing page. The family dashboard is at <http://localhost:8000/dashboard>.
+
+**Family logins (optional):** families sign up and log in with an email and password, kept by [Supabase](https://supabase.com/) (free). Make a Supabase project, then copy its URL and publishable key into `.env` as `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. In Supabase, under Authentication, then URL Configuration, set the Site URL to your app's address so the "confirm your email" link comes back to us. Leave both settings blank and login is off: the dashboard is open to anyone.
 
 ### 6. Run the tests
 
@@ -163,7 +165,7 @@ pytest
 
 *Coming soon.*
 
-- **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>.
+- **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000/dashboard>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>.
 - **Backup demo (no phone needed):** with `DEMO_MODE=true`, Scam Shield plays a scripted scam call as if it were live, so you can watch the risk score climb and the family alert go out.
 - **Live demo:** a teammate calls the Scam Shield number and acts out a scam script. Another teammate plays the senior with the calling app open in a browser, so no forwarding or adapter is needed on stage.
 
@@ -186,10 +188,11 @@ scam-shield/
 │   ├── storage.py         # SQLite database: sign-ups and calls
 │   ├── phone_numbers.py   # cleans up phone numbers (+1XXXXXXXXXX)
 │   ├── twilio_security.py # checks webhooks really came from Twilio
+│   ├── auth.py            # family logins: checks Supabase login tokens
 │   ├── verify.py          # "Is it really you?" check
 │   ├── languages.py       # each person's language + translations
 │   └── demo_mode.py       # loads the sample calls and plays them like they're live
-├── static/                # family dashboard, "Join call" page, senior's calling app
+├── static/                # landing page, login, family dashboard, "Join call" page, senior's calling app
 ├── data/test_scripts/     # sample scam calls and normal calls (English and Spanish)
 ├── scripts/               # day one checks for Nemotron, Tavily and languages
 ├── tests/                 # automated tests (pytest)

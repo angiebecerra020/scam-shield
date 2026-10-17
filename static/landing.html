@@ -1,0 +1,104 @@
+<!--
+  landing.html — The home page: what Scam Shield does and how it works.
+
+  How it fits in: the web server (app/main.py) sends this page at /. It's the
+  first thing judges and families see. The buttons go to /login, where people
+  make an account or log in, and then on to the dashboard (/dashboard).
+  No JavaScript needed here, it's all plain HTML and styles.css.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scam Shield</title>
+  <meta name="description" content="Scam Shield catches scam phone calls while they happen and tells the family right away.">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="landing">
+  <header class="site-header">
+    <a class="brand" href="/">🛡️ Scam Shield</a>
+    <nav class="site-nav" aria-label="Account">
+      <a href="/login">Log in</a>
+      <a class="button button-small" href="/login?mode=signup">Sign up</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- The big first impression: what it is, and one clear next step -->
+    <section class="hero">
+      <div class="hero-text">
+        <p class="badge badge-alert">Live scam call protection</p>
+        <h1>Stop scam calls <span class="text-red">while they happen.</span></h1>
+        <p class="lead">Scam Shield listens for scam tricks on your loved one's calls, with their OK, and tells you right away, in your language.</p>
+        <div class="hero-actions">
+          <a class="button" href="/login?mode=signup">Protect a loved one</a>
+          <a class="button button-outline" href="/login">Log in</a>
+        </div>
+      </div>
+
+      <!-- A sample family alert, so people see what they'd get -->
+      <aside class="alert-preview" aria-label="Example of a family alert">
+        <p class="alert-preview-label">⚠️ Scam alert for Grandma Rosa</p>
+        <p class="risk-score"><span>92</span>/100 risk</p>
+        <ul class="reasons">
+          <li>Caller asked for gift cards</li>
+          <li>Said "don't tell anyone"</li>
+          <li>Claims to be her grandson</li>
+        </ul>
+        <span class="button button-danger" aria-hidden="true">Join call</span>
+      </aside>
+    </section>
+
+    <section class="section" aria-labelledby="how-title">
+      <h2 id="how-title">How it works</h2>
+      <ol class="step-cards">
+        <li>
+          <h3>They say YES</h3>
+          <p>We text or call your loved one first. Nothing is listened to until they agree.</p>
+        </li>
+        <li>
+          <h3>We watch for scams</h3>
+          <p>NVIDIA Nemotron scores each call from 0 to 100 and spots tricks like gift cards, secrecy and rush.</p>
+        </li>
+        <li>
+          <h3>You get the alert</h3>
+          <p>A text tells you why the call looks risky, with a link to join the call yourself.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section" aria-labelledby="features-title">
+      <h2 id="features-title">Built for families</h2>
+      <div class="feature-grid">
+        <article class="feature">
+          <h3>📞 "Is it really you?"</h3>
+          <p>If a caller says they're family, we text the real person to check.</p>
+        </article>
+        <article class="feature">
+          <h3>🔎 Caller check</h3>
+          <p>We look up the number and the latest scam news while the call is going.</p>
+        </article>
+        <article class="feature">
+          <h3>🌎 Your language</h3>
+          <p>Alerts in English and Spanish, so everyone in the family understands.</p>
+        </article>
+        <article class="feature">
+          <h3>🏠 Cell or landline</h3>
+          <p>Works with a cell phone app or a home phone adapter.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section cta">
+      <h2>Give your family peace of mind.</h2>
+      <a class="button" href="/login?mode=signup">Get started free</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p>We only listen with permission. Our demos use acted, simulated calls.</p>
+  </footer>
+</body>
+</html>
