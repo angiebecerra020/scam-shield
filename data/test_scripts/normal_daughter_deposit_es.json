@@ -1,0 +1,15 @@
+{
+  "id": "normal_daughter_deposit_es",
+  "title": "Normal (tricky): su hija le deposita dinero para las medicinas",
+  "language": "es",
+  "expected": "normal",
+  "caller_number": "+13055550149",
+  "lines": [
+    {"speaker": "caller", "text": "Hola mami, soy Ana. ¿Cómo amaneciste?"},
+    {"speaker": "senior", "text": "Bien, mija. Un poco cansada."},
+    {"speaker": "caller", "text": "Te llamo para decirte que ya te deposité el dinero para tus medicinas en tu cuenta, para que no te preocupes."},
+    {"speaker": "senior", "text": "Ay, gracias, mi amor. No tenías que hacerlo."},
+    {"speaker": "caller", "text": "Claro que sí. El sábado paso con los niños y te llevo a la farmacia."},
+    {"speaker": "senior", "text": "Aquí los espero."}
+  ]
+}

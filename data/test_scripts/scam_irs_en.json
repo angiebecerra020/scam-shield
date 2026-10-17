@@ -1,0 +1,15 @@
+{
+  "id": "scam_irs_en",
+  "title": "IRS scam: back taxes and an arrest in two hours",
+  "language": "en",
+  "expected": "scam",
+  "caller_number": "+13055550133",
+  "lines": [
+    {"speaker": "caller", "text": "This is Officer Johnson with the Internal Revenue Service. Am I speaking with Mrs. Díaz?"},
+    {"speaker": "senior", "text": "Yes, who is this?"},
+    {"speaker": "caller", "text": "You owe $4,800 in back taxes. There is a warrant for your arrest, and the police will come to your house in two hours."},
+    {"speaker": "senior", "text": "That can't be right. I've always paid my taxes."},
+    {"speaker": "caller", "text": "To stop the warrant you must pay today. Go to Walgreens, buy Target gift cards, and call me back with the numbers."},
+    {"speaker": "caller", "text": "Do not talk to anyone about this case, or it will count as obstruction."}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "scam_lawyer_cash_pickup_es",
+  "title": "Estafa del abogado: un mensajero recoge el dinero de la fianza en su casa",
+  "language": "es",
+  "expected": "scam",
+  "caller_number": "+13055550138",
+  "lines": [
+    {"speaker": "caller", "text": "Buenas tardes, soy el licenciado Morales. Represento a su nieto Daniel, que tuvo un accidente de carro y está detenido."},
+    {"speaker": "senior", "text": "¡Dios mío! ¿Daniel está bien?"},
+    {"speaker": "caller", "text": "Está bien, pero el juez puso una fianza de 9,000 dólares. Si la paga hoy, sale esta noche."},
+    {"speaker": "senior", "text": "No tengo tanto en la cuenta, tendría que ir al banco."},
+    {"speaker": "caller", "text": "Vaya al banco y saque el efectivo. Si le preguntan, diga que es para arreglar su casa. Un mensajero del juzgado pasa a buscarlo a su casa a las cinco."},
+    {"speaker": "caller", "text": "El juez puso una orden de silencio, así que no le diga nada a nadie de la familia."}
+  ]
+}

@@ -252,11 +252,11 @@ def print_accuracy_table(rows: list[dict]) -> None:
         scam_grandparent_en      en    scam         95  likely_scam   0.9s  yes
     """
     print()
-    print(f"{'Script':<25}{'Lang':<6}{'Expected':<10}{'Score':>5}  {'Verdict':<13}{'Time':>5}  Right?")
+    print(f"{'Script':<30}{'Lang':<6}{'Expected':<10}{'Score':>5}  {'Verdict':<13}{'Time':>5}  Right?")
     for row in rows:
         score = "-" if row["score"] is None else row["score"]
         print(
-            f"{row['id']:<25}{row['language']:<6}{row['expected']:<10}{score:>5}  "
+            f"{row['id']:<30}{row['language']:<6}{row['expected']:<10}{score:>5}  "
             f"{row['verdict']:<13}{row['seconds']:>4.1f}s  {'yes' if row['correct'] else 'NO'}"
         )
     correct = sum(1 for row in rows if row["correct"])
@@ -287,4 +287,4 @@ def test_accuracy_on_all_scripts():
 
     print_accuracy_table(rows)
     correct = sum(1 for row in rows if row["correct"])
-    assert correct / len(rows) >= 0.75, "The detector got fewer than 3 out of 4 calls right"
+    assert correct / len(rows) >= 0.75, "The detector got fewer than 75% of the calls right"

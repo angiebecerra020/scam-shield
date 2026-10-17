@@ -83,20 +83,19 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 
 ## Results so far
 
-**Scam detection** on our sample calls (run it yourself with `pytest tests/test_detector.py -s -k accuracy`):
+**Scam detection** on 20 test calls we wrote, 10 scams and 10 normal calls in English and Spanish (run it yourself with `pytest tests/test_detector.py -s -k accuracy`, and see them all in [data/test_scripts](data/test_scripts/README.md)):
 
-| Call | Language | What happens | Score | Verdict |
-|---|---|---|---|---|
-| Real granddaughter Sofía | Spanish | Calls about Sunday lunch, asks for nothing | 10 | ✅ safe |
-| Pharmacy | English | Refill is ready, nothing to pay over the phone | 5 | ✅ safe |
-| Fake grandson "Danny" | English | In jail, wants gift cards, "don't tell Mom" | 92 | ✅ likely scam |
-| Fake Social Security officer | Spanish | "Your number was suspended," wants Bitcoin | 85 | ✅ likely scam |
+| Kind of call | Examples | Scores | Result |
+|---|---|---|---|
+| 10 scams | fake grandson in jail, fake IRS, fake Medicare, fake Microsoft support, fake bank "safe account", romance scam, fake electric company, fake sweepstakes, fake lawyer with cash pickup, fake Social Security | 85 to 92 | ✅ all caught |
+| 7 normal calls | pharmacy, doctor's office, church friend, neighbor, delivery driver, cable company, granddaughter | 5 to 15 | ✅ all safe |
+| 3 tricky normal calls | the real bank checking a charge, the real grandson asking for a ride, a daughter depositing money | 15 | ✅ all safe |
 
-- **Accuracy:** 4 out of 4, about 1 second per check.
+- **Accuracy:** 20 out of 20, about 1 second per check. These are calls we wrote ourselves, so the next step is testing with more people's scripts.
 - **Other languages:** the same grandson scam gets caught in Spanish and in Haitian Creole (score 85 each).
 - **Caller research:** for the real Social Security, IRS and Medicare numbers (scammers love to fake these on caller ID), Tavily warned about scam calls every time. Scam warnings now come from places like the FBI and AARP instead of random posts.
 - **From score to alert:** playing the fake grandson call line by line, the score went from 30 to 85 and the family alert fired the moment "Danny" said he was arrested and needed bail. It fired only once, and Tavily pulled warnings from AARP, the FCC and the BBB.
-- **Tests:** 67 automated tests run on GitHub for every change (that's the green badge at the top).
+- **Tests:** 90 automated tests run on GitHub for every change (that's the green badge at the top).
 
 ## Built with
 

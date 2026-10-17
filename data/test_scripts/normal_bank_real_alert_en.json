@@ -1,0 +1,15 @@
+{
+  "id": "normal_bank_real_alert_en",
+  "title": "Normal (tricky): the real bank checks a charge and asks for nothing",
+  "language": "en",
+  "expected": "normal",
+  "caller_number": "+13055550143",
+  "lines": [
+    {"speaker": "caller", "text": "Hi, this is the card security team at Sunshine Community Bank. We saw a $45 charge at a Target in Orlando and want to make sure it was you."},
+    {"speaker": "senior", "text": "Orlando? No, I haven't been there."},
+    {"speaker": "caller", "text": "Thank you. We've blocked that card, and a new one will come in the mail in about a week."},
+    {"speaker": "senior", "text": "Do you need my card number or anything?"},
+    {"speaker": "caller", "text": "No, and we'll never ask for your PIN, a code, or for you to move money. If you have questions, call the number on the back of your card."},
+    {"speaker": "senior", "text": "Okay, thank you for catching it."}
+  ]
+}

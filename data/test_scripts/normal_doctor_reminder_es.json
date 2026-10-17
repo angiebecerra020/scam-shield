@@ -1,0 +1,15 @@
+{
+  "id": "normal_doctor_reminder_es",
+  "title": "Normal: el consultorio recuerda una cita",
+  "language": "es",
+  "expected": "normal",
+  "caller_number": "+13055550141",
+  "lines": [
+    {"speaker": "caller", "text": "Buenos días, le habla Carmen del consultorio del doctor Ramos. La llamo para recordarle su cita del martes a las diez de la mañana."},
+    {"speaker": "senior", "text": "Ah sí, gracias. ¿Tengo que llevar algo?"},
+    {"speaker": "caller", "text": "Solo su tarjeta del seguro y la lista de sus medicinas, como siempre."},
+    {"speaker": "senior", "text": "Perfecto. ¿Tengo que pagar algo ahora?"},
+    {"speaker": "caller", "text": "No, no hay que pagar nada por teléfono. Si necesita cambiar la cita, llámenos al número que está en su tarjeta de citas."},
+    {"speaker": "senior", "text": "Muy bien, allí estaré."}
+  ]
+}

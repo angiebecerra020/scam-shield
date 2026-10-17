@@ -1,0 +1,15 @@
+{
+  "id": "scam_romance_en",
+  "title": "Romance scam: an online sweetheart needs money for customs",
+  "language": "en",
+  "expected": "scam",
+  "caller_number": "+13055550135",
+  "lines": [
+    {"speaker": "caller", "text": "Hello my love, it's David. I miss you so much, I can't wait to finally meet you in person."},
+    {"speaker": "senior", "text": "Oh David, I've been counting the days!"},
+    {"speaker": "caller", "text": "My darling, there's a problem. I'm stuck at the airport in Dubai and customs is holding my bags. I need $3,500 to get them released."},
+    {"speaker": "senior", "text": "That's a lot of money..."},
+    {"speaker": "caller", "text": "I'll pay you back the second I land, I promise. You can send it with Bitcoin, I'll show you how."},
+    {"speaker": "caller", "text": "And please don't tell your kids about us yet. They wouldn't understand our love."}
+  ]
+}

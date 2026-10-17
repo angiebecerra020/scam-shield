@@ -1,0 +1,15 @@
+{
+  "id": "scam_bank_safe_account_en",
+  "title": "Fake bank fraud department: read the code and move money to a \"safe account\"",
+  "language": "en",
+  "expected": "scam",
+  "caller_number": "+13055550134",
+  "lines": [
+    {"speaker": "caller", "text": "Hi, this is Sarah from the fraud department at Sunshine Community Bank. We stopped a suspicious charge on your account."},
+    {"speaker": "senior", "text": "Oh no, what happened?"},
+    {"speaker": "caller", "text": "Someone in another state is trying to take your savings. I just sent a 6 digit code to your phone. Can you read it to me so I can verify you?"},
+    {"speaker": "senior", "text": "Okay, let me look. It says 4, 8, 2..."},
+    {"speaker": "caller", "text": "Perfect. Now, to protect your money, you need to move it to a new safe account we opened for you. I'll give you the account number."},
+    {"speaker": "caller", "text": "Please don't go to the branch. Some of the employees there might be part of the fraud."}
+  ]
+}

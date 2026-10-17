@@ -1,0 +1,14 @@
+{
+  "id": "normal_neighbor_es",
+  "title": "Normal: la vecina pregunta si necesita algo del mercado",
+  "language": "es",
+  "expected": "normal",
+  "caller_number": "+13055550147",
+  "lines": [
+    {"speaker": "caller", "text": "Doña Rosa, soy Marta, la vecina de al lado. Voy al mercado ahorita, ¿necesita algo?"},
+    {"speaker": "senior", "text": "Ay, Marta, qué amable. Me hacen falta leche y pan."},
+    {"speaker": "caller", "text": "Con gusto. ¿Le traigo también los plátanos que le gustan?"},
+    {"speaker": "senior", "text": "Sí, por favor. Te pago cuando vuelvas."},
+    {"speaker": "caller", "text": "No se preocupe, después me paga. En una hora estoy de vuelta."}
+  ]
+}

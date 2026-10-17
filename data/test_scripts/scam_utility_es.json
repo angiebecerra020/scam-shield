@@ -1,0 +1,15 @@
+{
+  "id": "scam_utility_es",
+  "title": "Estafa de la luz: \"le cortamos la electricidad en 30 minutos\"",
+  "language": "es",
+  "expected": "scam",
+  "caller_number": "+13055550136",
+  "lines": [
+    {"speaker": "caller", "text": "Señora, le llamo de la compañía de luz. Su cuenta tiene un pago atrasado de 286 dólares."},
+    {"speaker": "senior", "text": "Pero si yo pagué la semana pasada."},
+    {"speaker": "caller", "text": "No aparece en el sistema. Si no paga en los próximos 30 minutos, el técnico le va a cortar la electricidad hoy."},
+    {"speaker": "senior", "text": "Ay no, tengo mis medicinas en la nevera."},
+    {"speaker": "caller", "text": "Por eso la quiero ayudar. Vaya a la farmacia, compre una tarjeta prepagada y deme el número por teléfono."},
+    {"speaker": "caller", "text": "No cuelgue, yo la espero en la línea."}
+  ]
+}

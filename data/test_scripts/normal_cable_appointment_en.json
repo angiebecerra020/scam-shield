@@ -1,0 +1,14 @@
+{
+  "id": "normal_cable_appointment_en",
+  "title": "Normal: the cable company confirms a repair visit",
+  "language": "en",
+  "expected": "normal",
+  "caller_number": "+13055550148",
+  "lines": [
+    {"speaker": "caller", "text": "Hi, this is an automated reminder from Coastal Cable. A technician will visit tomorrow between 9 and 11 a.m. to fix your TV service."},
+    {"speaker": "senior", "text": "Oh good, it's been out since Monday."},
+    {"speaker": "caller", "text": "Press 1 to confirm, or press 2 to pick a different time."},
+    {"speaker": "senior", "text": "One."},
+    {"speaker": "caller", "text": "Thank you, your visit is confirmed. The technician will show a Coastal Cable badge, and there is no charge for this repair."}
+  ]
+}

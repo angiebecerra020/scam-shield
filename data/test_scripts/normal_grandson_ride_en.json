@@ -1,0 +1,15 @@
+{
+  "id": "normal_grandson_ride_en",
+  "title": "Normal (tricky): the real grandson asks for a ride, and gas money comes up",
+  "language": "en",
+  "expected": "normal",
+  "caller_number": "+13055550144",
+  "lines": [
+    {"speaker": "caller", "text": "Hey Grandma, it's Danny! How are you feeling?"},
+    {"speaker": "senior", "text": "Danny! I'm good, sweetheart. How's school?"},
+    {"speaker": "caller", "text": "Good! Hey, my car's at the shop till Thursday. Could you pick me up after practice tomorrow at four?"},
+    {"speaker": "senior", "text": "Of course, honey."},
+    {"speaker": "caller", "text": "Thanks! Mom said she'll give you twenty dollars for gas on Sunday. I'll text her that you're picking me up."},
+    {"speaker": "senior", "text": "Don't worry about the gas. See you tomorrow."}
+  ]
+}
