@@ -1,0 +1,856 @@
+/*
+  demo.css
+
+  The look of the demo player. We're going for elegant and calm, more like
+  a nice magazine than a tech dashboard: a serif font for headlines and the
+  big score, thin gold lines, and lots of room to breathe.
+
+  How it fits in: demo.html loads this file. Our colors are set once in :root
+  below. Gold is the brand, black is the base, and red only ever means danger
+  (a likely scam, an alert, Grandma's warning).
+
+  Phones first: the main styles are for small screens, and bigger screens
+  get the side by side layout at the bottom.
+*/
+
+:root {
+  --black: #1C1C1C;      /* page background */
+  --surface: #232220;    /* phones and panels, a little lighter than the page */
+  --surface-2: #2C2A27;  /* the caller's messages and texts */
+  --line: #3A3733;       /* thin borders */
+  --gold: #C9A227;       /* the brand: headings, highlights, buttons */
+  --gold-soft: rgba(201, 162, 39, 0.14);
+  --red: #B3261E;        /* danger backgrounds */
+  --red-text: #E5484D;   /* danger text on black (easy to read) */
+  --ivory: #F3EEE3;      /* main text */
+  --muted: #A8A196;      /* secondary text */
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --sans: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
+  --radius: 14px;
+}
+
+/* Make width and padding add up the way you'd expect */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--black);
+  color: var(--ivory);
+  font-family: var(--sans);
+  /* Bigger than usual, since people of all ages will read this */
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  margin: 0;
+}
+
+a {
+  color: var(--gold);
+}
+
+/* Small capital labels, like the ones in a magazine */
+.eyebrow,
+.phone-owner span,
+.caller-label,
+.facts h3,
+.meter-marks,
+.sources .site {
+  font-variant: all-small-caps;
+  letter-spacing: 0.08em;
+}
+
+/* Lucide icons come in as svg tags. Keep them thin and the size of the text. */
+svg.lucide {
+  width: 1.1em;
+  height: 1.1em;
+  stroke-width: 1.5;
+  vertical-align: -0.15em;
+}
+
+/* Top bar */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.wordmark {
+  color: var(--ivory);
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  text-decoration: none;
+}
+
+.wordmark svg.lucide {
+  color: var(--gold);
+}
+
+.nav {
+  display: flex;
+  gap: 18px;
+}
+
+.nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.nav a[aria-current="page"] {
+  color: var(--gold);
+  border-bottom: 1px solid var(--gold);
+}
+
+main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+/* Intro and controls */
+
+.intro {
+  padding: 40px 0 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  color: var(--gold);
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.intro h1 {
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  line-height: 1.12;
+  max-width: 18ch;
+  margin-bottom: 14px;
+}
+
+.lead {
+  color: var(--muted);
+  max-width: 62ch;
+  margin: 0 0 28px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 320px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.field-small {
+  flex: 0 1 150px;
+}
+
+select {
+  appearance: none;
+  width: 100%;
+  padding: 12px 40px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23C9A227' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 14px center;
+  color: var(--ivory);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.primary {
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: var(--black);
+}
+
+.primary:hover:not(:disabled) {
+  background: #D8B33A;
+}
+
+.secondary {
+  border: 1px solid var(--gold);
+  background: transparent;
+  color: var(--gold);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--gold-soft);
+}
+
+.danger {
+  border: 1px solid var(--red);
+  background: var(--red);
+  color: var(--ivory);
+}
+
+.icon-button {
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+.icon-button[aria-pressed="true"] {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+/* A clear gold ring for keyboard users, so they always know where they are */
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.error {
+  min-height: 1.5em;
+  margin: 14px 0 0;
+  color: var(--red-text);
+}
+
+/* The stage: Rosa's phone, the AI, and the family */
+
+.stage {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.family {
+  display: grid;
+  gap: 20px;
+}
+
+/* Phones */
+
+.phone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 34px;
+  background: var(--surface);
+}
+
+/* The little speaker slot at the top, so it reads as a phone */
+.phone::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 54px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--line);
+  transform: translateX(-50%);
+}
+
+.phone-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 4px 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+
+.phone-owner {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--ivory);
+}
+
+.phone-owner span {
+  margin-left: 6px;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+}
+
+.call-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.call-status.live {
+  color: var(--gold);
+}
+
+.caller-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  margin-bottom: 14px;
+}
+
+.caller-card svg.lucide {
+  color: var(--gold);
+  width: 1.4em;
+  height: 1.4em;
+}
+
+.caller-label,
+.caller-number {
+  margin: 0;
+}
+
+.caller-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.caller-number {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+}
+
+/* The conversation */
+
+.transcript,
+.texts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.transcript {
+  min-height: 300px;
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.transcript li {
+  max-width: 88%;
+  padding: 10px 14px;
+  animation: rise 0.35s ease-out;
+}
+
+.transcript .who {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant: all-small-caps;
+  letter-spacing: 0.08em;
+}
+
+.transcript .caller {
+  align-self: flex-start;
+  background: var(--surface-2);
+  border-radius: 16px 16px 16px 4px;
+}
+
+.transcript .senior {
+  align-self: flex-end;
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  border-radius: 16px 16px 4px 16px;
+}
+
+.transcript .senior .who {
+  color: var(--gold);
+}
+
+.transcript .ended {
+  align-self: center;
+  max-width: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* The "someone is talking" dots */
+.typing {
+  display: inline-flex;
+  gap: 5px;
+  padding: 14px 16px !important;
+}
+
+.typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: blink 1.2s infinite;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+/* Grandma's warning: big, red and impossible to miss */
+.senior-warning {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: var(--red);
+  color: var(--ivory);
+  animation: rise 0.4s ease-out;
+}
+
+.senior-warning svg.lucide {
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  margin-top: 2px;
+}
+
+.senior-warning p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 1.35;
+}
+
+/* What the AI sees */
+
+.ai {
+  padding: 28px 4px;
+  border-top: 1px solid var(--gold);
+  border-bottom: 1px solid var(--line);
+}
+
+.ai h2 {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+}
+
+.score {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.score-number {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 4.6rem;
+  line-height: 1;
+  color: var(--ivory);
+  transition: color 0.4s;
+}
+
+.score-number small {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.verdict {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+/* Each verdict gets its color: ivory is safe, gold is suspicious, red is a likely scam */
+.ai[data-verdict="safe"] .verdict {
+  color: var(--ivory);
+}
+
+.ai[data-verdict="suspicious"] .score-number,
+.ai[data-verdict="suspicious"] .verdict {
+  color: var(--gold);
+}
+
+.ai[data-verdict="likely_scam"] .score-number,
+.ai[data-verdict="likely_scam"] .verdict {
+  color: var(--red-text);
+}
+
+.meter {
+  margin: 20px 0 6px;
+}
+
+.meter-track {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+/* Thin marks at 40 (suspicious) and 70 (the family gets alerted) */
+.meter-track::before,
+.meter-track::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--muted);
+  z-index: 1;
+}
+
+.meter-track::before {
+  left: 40%;
+}
+
+.meter-track::after {
+  left: 70%;
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0;
+  background: var(--ivory);
+  transition: width 0.6s ease, background 0.4s;
+}
+
+.ai[data-verdict="suspicious"] .meter-fill {
+  background: var(--gold);
+}
+
+.ai[data-verdict="likely_scam"] .meter-fill {
+  background: var(--red-text);
+}
+
+.meter-marks {
+  position: relative;
+  height: 1.4em;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.meter-marks span {
+  position: absolute;
+  white-space: nowrap;
+}
+
+.mark-suspicious {
+  left: 40%;
+  transform: translateX(-50%);
+}
+
+.mark-alert {
+  right: 0;
+}
+
+/* A little bar for every line we checked, so you can see the score climb */
+.trail {
+  list-style: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 46px;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.trail li {
+  width: 12px;
+  min-height: 4px;
+  border-radius: 3px 3px 0 0;
+  background: var(--muted);
+  transition: height 0.5s ease;
+}
+
+.trail .suspicious {
+  background: var(--gold);
+}
+
+.trail .likely_scam {
+  background: var(--red-text);
+}
+
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 0;
+  color: var(--gold);
+  font-size: 0.95rem;
+}
+
+.pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: blink 1s infinite;
+}
+
+.facts h3 {
+  margin: 26px 0 8px;
+  font-family: var(--sans);
+  font-size: 1rem;
+  color: var(--gold);
+}
+
+.claimed {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+}
+
+.reasons,
+.sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reasons li {
+  position: relative;
+  padding: 8px 0 8px 22px;
+  border-bottom: 1px solid var(--line);
+  animation: rise 0.35s ease-out;
+}
+
+/* A small gold square instead of a bullet */
+.reasons li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.95em;
+  width: 7px;
+  height: 7px;
+  background: var(--gold);
+}
+
+.reasons .empty::before {
+  display: none;
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.sources li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  animation: rise 0.35s ease-out;
+}
+
+.sources .site {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.sources .official {
+  margin-left: 8px;
+  color: var(--gold);
+}
+
+.sources a {
+  color: var(--ivory);
+  text-decoration-color: rgba(201, 162, 39, 0.5);
+  text-underline-offset: 3px;
+}
+
+.sources a:hover {
+  text-decoration-color: var(--gold);
+}
+
+.model-line {
+  margin: 24px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Texts on Ana's and Danny's phones */
+
+.phone-small {
+  padding-bottom: 20px;
+}
+
+.texts {
+  min-height: 90px;
+}
+
+.texts li {
+  align-self: flex-start;
+  max-width: 92%;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--surface-2);
+  font-size: 0.97rem;
+  animation: rise 0.35s ease-out;
+}
+
+/* The family alert gets a red edge, so it stands out from the other texts */
+.texts .alert {
+  border-left: 3px solid var(--red-text);
+}
+
+.texts .reply {
+  align-self: flex-end;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--gold);
+  color: var(--black);
+  font-weight: 600;
+}
+
+.texts .empty {
+  background: none;
+  padding: 0;
+}
+
+.verify-buttons {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* Footer */
+
+.footer {
+  padding: 28px 16px 40px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.footer p {
+  margin: 4px 0;
+}
+
+.footer strong {
+  color: var(--ivory);
+  font-weight: 600;
+}
+
+/* Animations */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Some people get dizzy from motion, so we turn the animations off for them */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Tablets: Rosa's phone and the family side by side, the AI on top */
+@media (min-width: 760px) {
+  .stage {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ai {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+}
+
+/* Laptops: everything side by side, with the AI in the middle */
+@media (min-width: 1120px) {
+  .stage {
+    grid-template-columns: minmax(300px, 350px) minmax(340px, 1fr) minmax(270px, 320px);
+  }
+
+  .ai {
+    grid-column: auto;
+    order: 0;
+    padding: 28px 8px;
+  }
+}
+
+/* Hide the nav on really small phones so the logo has room */
+@media (max-width: 380px) {
+  .nav a:first-child {
+    display: none;
+  }
+}
+
+/* Make sure the "hidden" attribute always wins over the display rules above */
+[hidden] {
+  display: none !important;
+}

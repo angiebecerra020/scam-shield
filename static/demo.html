@@ -1,0 +1,155 @@
+<!--
+  demo.html
+
+  The demo player. This is the page judges use to watch Scam Shield catch a
+  scam live, with no real phone call.
+
+  How it fits in: app/demo_api.py sends this page at /demo. It loads demo.css
+  (the look) and demo.js (the behavior). The page has the call on Rosa's
+  phone, what Nemotron sees in the middle, and the phones of Ana (her
+  daughter) and Danny (her grandson) on the side.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live demo · Scam Shield</title>
+  <meta name="description" content="Watch Scam Shield catch a scam phone call as it happens, using NVIDIA Nemotron on Nebius Token Factory and Tavily.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/demo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="/"><i data-lucide="shield-check" aria-hidden="true"></i> Scam Shield</a>
+    <nav class="nav" aria-label="Main">
+      <a href="/">Protect someone</a>
+      <a href="/demo" aria-current="page">Live demo</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <p class="eyebrow">Live demo</p>
+      <h1>Watch a scam get caught, as it happens.</h1>
+      <p class="lead">
+        Pick a call and press Play. Every line goes to NVIDIA Nemotron while the call is still going,
+        and the family gets warned the moment it looks like a scam. These are scripted calls with
+        made up people, so no real phone is involved.
+      </p>
+
+      <div class="controls">
+        <label class="field">
+          <span>The call</span>
+          <select id="call-picker"></select>
+        </label>
+        <label class="field field-small">
+          <span>Ana reads</span>
+          <select id="family-language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+        <div class="buttons">
+          <button type="button" id="play" class="primary"><i data-lucide="play" aria-hidden="true"></i> <span>Play</span></button>
+          <button type="button" id="step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span>Next line</span></button>
+          <button type="button" id="restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span>Start over</span></button>
+          <button type="button" id="sound" class="icon-button" aria-pressed="true" aria-label="Spoken warnings are on. Turn them off.">
+            <i data-lucide="volume-2" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+      <p id="demo-error" class="error" role="alert"></p>
+    </section>
+
+    <div class="stage">
+      <!-- Rosa's phone: the call itself, line by line, and her warning -->
+      <section class="phone" aria-labelledby="rosa-title">
+        <header class="phone-header">
+          <p class="phone-owner" id="rosa-title">Rosa's phone <span>grandma</span></p>
+          <p class="call-status" id="call-status">Waiting</p>
+        </header>
+        <div class="caller-card">
+          <i data-lucide="phone-incoming" aria-hidden="true"></i>
+          <div>
+            <p class="caller-label">Incoming call</p>
+            <p class="caller-number" id="caller-number">No call yet</p>
+          </div>
+        </div>
+        <ol id="transcript" class="transcript" aria-live="polite" aria-label="What's being said on the call"></ol>
+        <div id="senior-warning" class="senior-warning" role="alert" hidden>
+          <i data-lucide="triangle-alert" aria-hidden="true"></i>
+          <p id="senior-warning-text"></p>
+        </div>
+      </section>
+
+      <!-- What Nemotron sees: the risk, the reasons, and what Tavily found -->
+      <section class="ai" id="ai" data-verdict="waiting" aria-labelledby="ai-title" aria-busy="false">
+        <p class="eyebrow">What the AI sees</p>
+        <h2 id="ai-title">Scam risk</h2>
+
+        <div class="score">
+          <p class="score-number"><span id="score">0</span><small>/100</small></p>
+          <p class="verdict" id="verdict">Press Play to start the call</p>
+        </div>
+
+        <div class="meter" aria-hidden="true">
+          <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+          <div class="meter-marks"><span class="mark-suspicious">40 suspicious</span><span class="mark-alert">70 family alerted</span></div>
+        </div>
+
+        <ol id="trail" class="trail" aria-label="The score after each line"></ol>
+
+        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> Nemotron is reading the call</p>
+
+        <div class="facts">
+          <h3>Who they say they are</h3>
+          <p id="claimed" class="claimed">Nobody yet</p>
+
+          <h3>Why</h3>
+          <ul id="reasons" class="reasons"></ul>
+
+          <h3><i data-lucide="search" aria-hidden="true"></i> What the web says</h3>
+          <p id="research-note" class="note">Once the call seems suspicious, Tavily checks the caller's number and looks for matching scam warnings.</p>
+          <ul id="sources" class="sources"></ul>
+        </div>
+
+        <p class="model-line" id="model-line"></p>
+      </section>
+
+      <!-- The family: Ana gets the alerts, Danny gets "Is it really you?" -->
+      <div class="family">
+        <section class="phone phone-small" id="ana-phone" aria-labelledby="ana-title">
+          <header class="phone-header">
+            <p class="phone-owner" id="ana-title">Ana's phone <span>daughter</span></p>
+            <i data-lucide="message-square" aria-hidden="true"></i>
+          </header>
+          <ol id="family-texts" class="texts" aria-live="polite" aria-label="Texts Ana got"></ol>
+        </section>
+
+        <section class="phone phone-small" id="danny-phone" aria-labelledby="danny-title">
+          <header class="phone-header">
+            <p class="phone-owner" id="danny-title">Danny's phone <span>grandson</span></p>
+            <i data-lucide="user-check" aria-hidden="true"></i>
+          </header>
+          <ol id="contact-texts" class="texts" aria-live="polite" aria-label="Texts Danny got"></ol>
+          <div id="verify-buttons" class="verify-buttons" hidden>
+            <button type="button" id="verify-yes" class="secondary">Yes, it's me</button>
+            <button type="button" id="verify-no" class="danger">No, it's not me</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, and <strong>Tavily</strong>.</p>
+    <p>Scripted calls with made up people. Every phone number here is fake.</p>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="/static/demo.js"></script>
+</body>
+</html>
