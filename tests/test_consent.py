@@ -200,3 +200,69 @@ def test_fake_twilio_requests_are_refused_in_live_mode(monkeypatch):
     assert response.status_code == 403
     monkeypatch.setenv("DEMO_MODE", "true")
     assert status_of(enrollment_id) == "pending"
+
+
+# Haitian Creole (text only, so cell phones only for the senior)
+
+
+def test_creole_speaking_senior_gets_creole_texts_and_can_answer_wi():
+    """Rosa speaks Creole: she gets the request in Creole, and "Wi" turns protection on."""
+    enrollment_id = sign_up(senior_language="ht").json()["id"]
+    assert "Reponn WI" in DEMO_OUTBOX[0]["body"]
+
+    response = senior_texts("Wi")
+
+    assert status_of(enrollment_id) == "active"
+    assert "Mèsi" in response.text
+
+
+def test_creole_speaking_senior_can_say_non():
+    """"Non" is NO in Creole."""
+    enrollment_id = sign_up(senior_language="ht").json()["id"]
+
+    senior_texts("Non")
+
+    assert status_of(enrollment_id) == "declined"
+
+
+def test_creole_speaking_family_gets_creole_updates():
+    """Ana reads Creole, so "Rosa said YES" comes to her in Creole."""
+    sign_up(family_language="ht")
+
+    senior_texts("YES")
+
+    assert "di WI" in DEMO_OUTBOX[-1]["body"]
+
+
+def test_creole_landline_senior_is_turned_away_kindly():
+    """We can't speak Creole on the landline consent call yet, so the form says so."""
+    response = sign_up(senior_language="ht", phone_type="landline")
+
+    assert response.status_code == 400
+    assert "cell phones" in response.json()["error"]
+    assert DEMO_OUTBOX == []
+
+
+def test_creole_family_with_a_landline_senior_is_fine():
+    """Only the SENIOR's language is spoken. A Creole-reading family member is fine with a landline."""
+    response = sign_up(family_language="ht", phone_type="landline")
+
+    assert response.status_code == 201
+
+
+def test_every_creole_text_matches_english():
+    """Every text message we send has a Creole version, with the same blanks to fill in."""
+    from string import Formatter
+
+    from app.languages import MESSAGES, SPOKEN_LANGUAGE
+
+    def blanks(text):
+        return {name for _, name, _, _ in Formatter().parse(text) if name}
+
+    spoken_keys = {key for key in MESSAGES["en"] if key.startswith("consent_call_")}
+    for key, english in MESSAGES["en"].items():
+        if key in spoken_keys:
+            assert key not in MESSAGES["ht"]
+            continue
+        assert blanks(MESSAGES["ht"][key]) == blanks(english), key
+    assert "ht" not in SPOKEN_LANGUAGE

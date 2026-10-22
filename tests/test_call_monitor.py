@@ -206,3 +206,8 @@ def test_unknown_call_id_gives_a_clear_error():
     """Asking about a call that doesn't exist gives a clear error."""
     with pytest.raises(ValueError):
         call_monitor.check_live_call("no-such-call", "Caller: hi")
+
+
+def test_the_why_text_is_in_creole_for_a_creole_family():
+    """A family member who reads Creole gets "Poukisa nou enkyete" with the red flags."""
+    assert call_monitor.why_text(SCAM_RESULT, "ht").startswith("Poukisa nou enkyete: ")

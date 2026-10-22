@@ -66,6 +66,7 @@
           <select name="senior_language">
             <option value="en">English</option>
             <option value="es">Español</option>
+            <option value="ht">Kreyòl ayisyen</option>
           </select>
         </label>
       </fieldset>
@@ -78,10 +79,13 @@
           <select name="family_language">
             <option value="en">English</option>
             <option value="es">Español</option>
+            <option value="ht">Kreyòl ayisyen</option>
           </select>
         </label>
       </fieldset>
 
+      <!-- Shown when they pick Haitian Creole for a landline (app.js) -->
+      <p id="creole-landline-note" class="hint" hidden>Haitian Creole works with cell phones for now, since we text them. For a landline, pick English or Spanish.</p>
       <button type="submit">Ask them for their OK</button>
       <p id="signup-error" class="error" role="alert"></p>
     </form>

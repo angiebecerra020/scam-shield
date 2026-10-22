@@ -35,6 +35,7 @@ RESEARCH_BY_CALL_ID: dict[str, dict] = {}
 WHY_START = {
     "en": "Why we're worried: ",
     "es": "Por qué nos preocupa: ",
+    "ht": "Poukisa nou enkyete: ",
 }
 
 

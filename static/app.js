@@ -140,6 +140,21 @@ async function submitSignup(event) {
 }
 
 /**
+ * Show a note when the senior's language is Haitian Creole and their phone is
+ * a landline. We ask for a landline's OK with a spoken phone call, and our
+ * phone voices can't speak Creole yet (see app/languages.py).
+ *
+ * Input:  nothing (it reads the form)
+ * Output: nothing; it shows or hides the note.
+ * Example: pick Landline and Kreyòl ayisyen  gives you  "Haitian Creole works with cell phones for now..."
+ */
+function checkCreoleLandline() {
+  const form = document.getElementById("signup-form");
+  const creoleLandline = form.phone_type.value === "landline" && form.senior_language.value === "ht";
+  document.getElementById("creole-landline-note").hidden = !creoleLandline;
+}
+
+/**
  * Ask the server whether the senior has answered yet.
  *
  * Input:  enrollmentId — the ID the server gave us at sign-up
@@ -349,6 +364,7 @@ function openSignupIfAsked() {
 }
 
 document.getElementById("signup-form").addEventListener("submit", submitSignup);
+document.getElementById("signup-form").addEventListener("change", checkCreoleLandline);
 document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
 document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);
 // Tapping "Protect someone" while already on the dashboard only changes the
