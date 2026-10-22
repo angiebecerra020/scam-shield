@@ -1,9 +1,11 @@
 /*
   styles.css — The look of the Scam Shield dashboard.
 
-  How it fits in: index.html loads this file. Our brand colors are defined
-  ONCE as variables (in :root below), so the whole app stays on-brand
-  (black + gold) and a color change only happens in one place.
+  How it fits in: every page in static/ loads this file. Our brand colors
+  are defined ONCE as variables (in :root below), so the whole app stays
+  on-brand (black, gold and red) and a color change only happens in one place.
+  Gold is for actions and headings. Red is for danger: scam alerts, risk
+  scores and errors.
 
   Mobile-first: the main styles are for phones. Bigger screens get a few
   extras in the @media block at the bottom.
@@ -11,11 +13,14 @@
 
 :root {
   --color-black: #1C1C1C;    /* page background */
-  --color-gold: #C9A227;     /* brand accent: headings, highlights */
+  --color-gold: #C9A227;     /* brand accent: headings, buttons, highlights */
+  --color-gold-light: #E3C55A; /* gold buttons when you hover over them */
   --color-surface: #262626;  /* cards: a little lighter than the background */
   --color-text: #F5F5F5;     /* main text: near-white, easy to read on black */
   --color-muted: #B3B3B3;    /* secondary text */
-  --color-alert: #E5484D;    /* scam alerts and errors */
+  --color-red: #C8102E;      /* danger: alert cards, "Join call", red stripes */
+  --color-alert: #FF5A5F;    /* red text on black (brighter, so it's easy to read) */
+  --color-success: #7BD88F;  /* "it worked" messages */
   --radius: 16px;            /* rounded corners */
 }
 
@@ -46,6 +51,8 @@ body {
   padding: 32px 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-gold);
+  /* A red stripe along the top: our "danger" color, used as an accent */
+  border-top: 6px solid var(--color-red);
   border-radius: var(--radius);
   text-align: center;
 }
@@ -173,7 +180,7 @@ button:disabled {
 }
 
 .badge-alert {
-  background: var(--color-alert);
+  background: var(--color-red);
   color: var(--color-text);
 }
 
@@ -219,8 +226,322 @@ a {
 }
 
 .button-decline {
-  background: var(--color-alert);
+  background: var(--color-red);
   color: var(--color-text);
+}
+
+/* ----- Buttons that are links (a class="button") ----- */
+
+/* Looks just like our gold <button>, but it's a link to another page */
+.button {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: var(--color-gold);
+  color: var(--color-black);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Hovering makes any button a little brighter, whatever its color */
+.button:hover,
+button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.button-small {
+  padding: 8px 16px;
+  font-size: 16px;
+}
+
+/* Second choice next to a gold button: same shape, just an outline */
+.button-outline {
+  background: transparent;
+  border: 2px solid var(--color-gold);
+  color: var(--color-gold);
+}
+
+.button-outline:hover {
+  background: var(--color-gold);
+  color: var(--color-black);
+}
+
+.button-danger {
+  background: var(--color-red);
+  color: var(--color-text);
+}
+
+/* A button that looks like a plain link, for small things like "Log out" */
+.button-link {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: var(--color-gold);
+  font-weight: 400;
+  text-decoration: underline;
+}
+
+.button-link:hover:not(:disabled) {
+  color: var(--color-gold-light);
+}
+
+/* ----- Login page (login.html) and dashboard account bar ----- */
+
+.brand {
+  display: inline-block;
+  margin: 0 0 16px;
+  color: var(--color-gold);
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+/* The "Log in" and "Sign up" switch at the top of the login card */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 4px;
+  border: 1px solid #444;
+  border-radius: 999px;
+}
+
+.tab {
+  margin: 0;
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.tab[aria-pressed="true"] {
+  background: var(--color-gold);
+  color: var(--color-black);
+}
+
+.success {
+  color: var(--color-success);
+}
+
+.account-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid #444;
+  color: var(--color-muted);
+  font-size: 16px;
+  /* Long emails wrap instead of pushing the card wider than the phone */
+  overflow-wrap: anywhere;
+}
+
+/* ----- Landing page (landing.html) ----- */
+
+/* The landing page scrolls like a normal web page, instead of one centered card */
+body.landing {
+  display: block;
+  /* Undo the centering from body above. New browsers center block pages
+     with it too, which would squeeze the header and footer. */
+  place-items: normal;
+  padding: 0;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.site-header .brand {
+  margin: 0;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.site-nav a:not(.button) {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.hero {
+  display: grid;
+  gap: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  margin-bottom: 16px;
+  line-height: 1.15;
+}
+
+.text-red {
+  color: var(--color-alert);
+}
+
+.lead {
+  margin: 0 0 24px;
+  color: var(--color-muted);
+  font-size: 1.15rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* The pretend family alert next to the headline */
+.alert-preview {
+  padding: 24px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-red);
+  border-radius: var(--radius);
+  /* A soft red glow, like the alert is calling for attention */
+  box-shadow: 0 0 40px rgba(200, 16, 46, 0.35);
+}
+
+.alert-preview-label {
+  margin: 0 0 8px;
+  color: var(--color-alert);
+  font-weight: 700;
+}
+
+.risk-score {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+}
+
+.risk-score span {
+  color: var(--color-alert);
+  font-size: 3rem;
+  font-weight: 800;
+}
+
+.reasons {
+  margin: 0 0 20px;
+  padding-left: 1.2em;
+}
+
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 16px;
+  border-top: 1px solid #333;
+}
+
+.section h2 {
+  margin-bottom: 24px;
+  font-size: 1.8rem;
+}
+
+h3 {
+  margin: 0 0 8px;
+  color: var(--color-gold);
+  font-size: 1.15rem;
+}
+
+/* "How it works": three numbered cards. The numbers come from the CSS
+   counter below, drawn in a red circle. */
+.step-cards {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step-cards li,
+.feature {
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid #3a3a3a;
+  border-radius: var(--radius);
+}
+
+.step-cards li::before {
+  counter-increment: step;
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--color-red);
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.step-cards p,
+.feature p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.feature-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.feature {
+  border-left: 4px solid var(--color-gold);
+}
+
+.cta {
+  text-align: center;
+}
+
+.site-footer {
+  padding: 24px 16px 40px;
+  border-top: 1px solid #333;
+  color: var(--color-muted);
+  font-size: 15px;
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 4px 0;
+}
+
+/* Tablets and computers: headline and alert side by side, cards in rows */
+@media (min-width: 768px) {
+  .hero {
+    grid-template-columns: 1.3fr 1fr;
+    align-items: center;
+    padding-top: 64px;
+    padding-bottom: 80px;
+  }
+
+  .hero h1 {
+    font-size: 3.4rem;
+  }
+
+  .step-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Make sure the "hidden" attribute always wins over display rules above */

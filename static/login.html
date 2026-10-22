@@ -1,0 +1,53 @@
+<!--
+  login.html — Where family members log in or make an account.
+
+  How it fits in: the web server (app/main.py) sends this page at /login.
+  Supabase keeps the accounts (see static/auth.js and app/auth.py). After
+  logging in, the person goes to the dashboard at /dashboard.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in · Scam Shield</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="card">
+    <a class="brand" href="/">🛡️ Scam Shield</a>
+
+    <!-- The two buttons switch the form between "log in" and "sign up" -->
+    <div class="tabs" role="group" aria-label="Log in or make an account">
+      <button type="button" id="tab-login" class="tab" aria-pressed="true">Log in</button>
+      <button type="button" id="tab-signup" class="tab" aria-pressed="false">Sign up</button>
+    </div>
+
+    <form id="login-form" class="form">
+      <h1 id="login-title">Welcome back</h1>
+      <p id="login-hint" class="hint">Log in to see the calls you're protecting.</p>
+
+      <label>Email <input name="email" type="email" required autocomplete="email"></label>
+      <label>Password
+        <input name="password" type="password" required minlength="6" autocomplete="current-password">
+      </label>
+
+      <button type="submit" id="login-button">Log in</button>
+      <p id="login-error" class="error" role="alert"></p>
+      <p id="login-message" class="success" aria-live="polite"></p>
+    </form>
+
+    <!-- Shown instead of the form when Supabase isn't set up in .env -->
+    <section id="login-off" class="panel" hidden>
+      <p class="badge">Login is off</p>
+      <p>Logins aren't set up on this server yet, so the dashboard is open to anyone.</p>
+      <a class="button" href="/dashboard">Go to the dashboard</a>
+    </section>
+
+    <p class="hint"><a href="/">Back to the home page</a></p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/login.js"></script>
+</body>
+</html>

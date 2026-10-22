@@ -8,13 +8,18 @@ will hold all of our web routes: Twilio call webhooks, demo mode, and live
 dashboard updates.
 
 Routes:
-    GET  /                        -> the dashboard page (sign-up form for now)
+    GET  /                        -> the landing page (what Scam Shield is)
     GET  /health                  -> a quick "is the server alive?" check
 
+  Family logins (auth.py): routes marked [login] need a logged in family member
+    GET  /login                   -> the log in and sign up page
+    GET  /dashboard               -> the family dashboard (sign-up form for now)
+    GET  /api/auth-config         -> what the browser needs to talk to Supabase
+
   Consent (consent.py): the senior must say YES before we listen
-    POST /api/enrollments         -> family signs a senior up; we text the
-                                     senior (cell) or call them (landline)
-    GET  /api/enrollments/{id}    -> has the senior said YES yet?
+    POST /api/enrollments         -> [login] family signs a senior up; we text
+                                     the senior (cell) or call them (landline)
+    GET  /api/enrollments/{id}    -> [login] has the senior said YES yet?
     POST /twilio/sms              -> Twilio: the senior texted us back
     POST /twilio/consent-call     -> Twilio: what to say on the landline consent call
     POST /twilio/consent-answer   -> Twilio: the key the senior pressed
@@ -33,13 +38,13 @@ Routes:
     POST /api/join/{token}        -> ring the family member into the call
 
   Demo mode only
-    POST /api/demo/scam-call      -> pretend a scam call came in; send the alert
-    GET  /api/demo/outbox         -> the texts and calls we would have sent
+    POST /api/demo/scam-call      -> [login] pretend a scam call came in; send the alert
+    GET  /api/demo/outbox         -> [login] the texts and calls we would have sent
 """
 
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -47,6 +52,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 from app import calls, consent, devices
 from app.alerts import DEMO_OUTBOX
+from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
 
@@ -63,17 +69,61 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/")
-def show_dashboard() -> FileResponse:
+def show_landing_page() -> FileResponse:
     """
-    Send the family dashboard page to the browser.
+    Send the landing page: what Scam Shield does, with buttons to sign up or log in.
 
     Input:  nothing (someone opens http://localhost:8000/ in a browser)
-    Output: the static/index.html page.
+    Output: the static/landing.html page.
 
     Example:
-        Open http://localhost:8000 -> you see the Scam Shield page.
+        Open http://localhost:8000 -> you see "Stop scam calls while they happen".
+    """
+    return FileResponse(STATIC_DIR / "landing.html")
+
+
+@app.get("/login")
+def show_login_page() -> FileResponse:
+    """
+    Send the page where families log in or make an account.
+
+    Example:
+        Open http://localhost:8000/login -> you see the email and password form.
+    """
+    return FileResponse(STATIC_DIR / "login.html")
+
+
+@app.get("/dashboard")
+def show_dashboard() -> FileResponse:
+    """
+    Send the family dashboard page. The page itself sends people who aren't
+    logged in to /login (see static/auth.js), and the API routes it uses
+    check the login again on the server, so nobody can skip it.
+
+    Example:
+        Open http://localhost:8000/dashboard -> you see the sign-up form.
     """
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/auth-config")
+def show_auth_config() -> dict:
+    """
+    Tell the browser how to reach Supabase, so the login page can work.
+
+    The publishable key is made to be public (Supabase's own rules decide what
+    it can do), so it's safe to send. We never send secret keys here.
+
+    Example:
+        GET /api/auth-config
+        -> {"login_on": true, "supabase_url": "https://abc.supabase.co", "supabase_publishable_key": "sb_publishable_..."}
+    """
+    settings = get_settings()
+    return {
+        "login_on": login_is_on(settings),
+        "supabase_url": settings.supabase_url,
+        "supabase_publishable_key": settings.supabase_publishable_key,
+    }
 
 
 @app.get("/health")
@@ -162,7 +212,7 @@ class EnrollmentForm(BaseModel):
     phone_type: str = "cell"
 
 
-@app.post("/api/enrollments", status_code=201)
+@app.post("/api/enrollments", status_code=201, dependencies=[Depends(require_login)])
 def create_enrollment(form: EnrollmentForm):
     """
     Sign a senior up and text them to ask for their YES.
@@ -180,7 +230,7 @@ def create_enrollment(form: EnrollmentForm):
         return error(problem.text, problem.status_code)
 
 
-@app.get("/api/enrollments/{enrollment_id}")
+@app.get("/api/enrollments/{enrollment_id}", dependencies=[Depends(require_login)])
 def show_enrollment(enrollment_id: str):
     """
     Show whether the senior has answered yet. The dashboard asks every few seconds.
@@ -412,7 +462,7 @@ def join_call(join_token: str):
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/demo/scam-call")
+@app.post("/api/demo/scam-call", dependencies=[Depends(require_login)])
 def start_demo_scam_call():
     """
     Pretend a scam call came in for the senior who said YES, and send the
@@ -429,7 +479,7 @@ def start_demo_scam_call():
         return error(problem.text, problem.status_code)
 
 
-@app.get("/api/demo/outbox")
+@app.get("/api/demo/outbox", dependencies=[Depends(require_login)])
 def show_demo_outbox():
     """
     Show the texts and calls we would have sent, newest first. Demo mode only,
