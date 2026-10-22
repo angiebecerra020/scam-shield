@@ -11,6 +11,8 @@ in. Each time, we:
   3. the first time the score hits 70 or more, send the family alert with the
      "Join call" link (calls.send_family_alert), plus a short text that says
      WHY we're worried
+  4. save the score, the reasons and the Tavily links with the call, so the
+     family can look back at it later on the dashboard (family.py)
 
 We only alert the family once per call, so they don't get ten texts. And we
 only alert for seniors who said YES to Scam Shield (that's the consent check
@@ -136,6 +138,27 @@ def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
     if extra:
         alerts.send_sms(enrollment["family_phone"], extra)
     ALERTED_CALL_IDS.add(call["id"])
+    storage.mark_call_alerted(call["id"])
+
+
+def all_sources(found: dict | None) -> list[dict]:
+    """
+    Puts the Tavily links from both searches (the caller's number and the scam
+    news) into one list, with just what the dashboard shows: the title and link.
+
+    Input:  found, what research.research_call() gave back, or None
+    Output: a list like [{"title": "FTC: grandparent scams", "url": "https://..."}]
+
+    Example:
+        all_sources(None) gives you []
+    """
+    if not found:
+        return []
+    sources = []
+    for search in ("caller", "news"):
+        for source in (found.get(search) or {}).get("sources", []):
+            sources.append({"title": source.get("title", ""), "url": source.get("url", "")})
+    return sources
 
 
 def check_live_call(call_id: str, transcript: str) -> dict:
@@ -165,6 +188,12 @@ def check_live_call(call_id: str, transcript: str) -> dict:
 
     result = detector.score_call(transcript, language)
     found = research_once(call, result)
+
+    # Save it for the call history. We save the links every time because the
+    # search might finish after the call's highest score.
+    storage.save_call_score(call_id, result)
+    if found:
+        storage.save_call_sources(call_id, all_sources(found))
 
     alert_sent_now = False
     if should_alert(call, enrollment, result):

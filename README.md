@@ -35,7 +35,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 | 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Coming soon |
 | 5 | **Family alert.** A live text message in the family member's own language, with a "Join call" link. | Text + link done; triggered by the AI score soon |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
-| 6 | **Family dashboard.** A live risk meter, the reasons, source links, and call history. | Coming soon |
+| 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
 | 7 | **Languages.** English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. | Done |
 | ★ | **Demo mode.** Replays a scripted call as a live transcript, with no real phone call needed. | Sample calls ready, player coming soon |
 
@@ -165,7 +165,7 @@ pytest
 
 *Coming soon.*
 
-- **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000/dashboard>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>.
+- **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000/dashboard>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>. Back on the dashboard, **Your family** lists everyone you protect, with their past calls: tap a call to see its score, the reasons and the Tavily links. **Pause protection** turns listening off (calls still ring like normal) until you turn it back on.
 - **Backup demo (no phone needed):** with `DEMO_MODE=true`, Scam Shield plays a scripted scam call as if it were live, so you can watch the risk score climb and the family alert go out.
 - **Live demo:** a teammate calls the Scam Shield number and acts out a scam script. Another teammate plays the senior with the calling app open in a browser, so no forwarding or adapter is needed on stage.
 
@@ -189,6 +189,7 @@ scam-shield/
 │   ├── phone_numbers.py   # cleans up phone numbers (+1XXXXXXXXXX)
 │   ├── twilio_security.py # checks webhooks really came from Twilio
 │   ├── auth.py            # family logins: checks Supabase login tokens
+│   ├── family.py          # family dashboard: call history, call details, pause and resume
 │   ├── verify.py          # "Is it really you?" check
 │   ├── languages.py       # each person's language + translations
 │   └── demo_mode.py       # loads the sample calls and plays them like they're live

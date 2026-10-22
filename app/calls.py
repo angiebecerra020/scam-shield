@@ -111,9 +111,11 @@ def find_senior_for_call(forwarded_from: str | None) -> dict | None:
             return enrollments[0]
         return None
 
-    active = storage.find_active_enrollments()
-    if len(active) == 1:
-        return active[0]
+    # Paused seniors count too: their calls still come to us, and we pass
+    # them straight through without listening.
+    signed_up = storage.find_enrollments_with_status(("active", "paused"))
+    if len(signed_up) == 1:
+        return signed_up[0]
     return None
 
 
@@ -153,7 +155,8 @@ def handle_incoming_call(
         return str(response)
 
     if enrollment["status"] != "active":
-        # No YES, no listening: connect the call like any normal phone call.
+        # No YES (or the family paused protection), no listening: connect
+        # the call like any normal phone call.
         dial_device(response, enrollment, caller)
         return str(response)
 

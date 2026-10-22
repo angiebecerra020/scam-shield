@@ -3,12 +3,16 @@
 
   How it fits in: the web server (app/main.py) sends this page when someone
   opens http://localhost:8000/dashboard. It loads styles.css (the look),
-  auth.js (sends people who aren't logged in to /login) and app.js (the
-  behavior). Right now it has the sign-up form: a family member enters the
-  senior's details, we text the senior (cell) or call them (landline), and
-  the page waits for their YES, then shows the steps to finish setup.
-  The live risk meter, reasons, source links and call history are coming in
-  a later step.
+  auth.js (sends people who aren't logged in to /login), family.js (the
+  "Your family" list) and app.js (the rest of the behavior).
+
+  It has two parts:
+    - Your family: everyone you protect, a pause button for each, and their
+      past calls. Tap a call to see its score, reasons and Tavily links.
+    - The sign-up form: a family member enters the senior's details, we text
+      the senior (cell) or call them (landline), and the page waits for their
+      YES, then shows the steps to finish setup.
+  The live risk meter is coming in a later step.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -31,8 +35,17 @@
     <h1>🛡️ Scam Shield</h1>
     <p class="tagline">Catches scam calls while they happen, and tells the family right away.</p>
 
+    <!-- Everyone this family protects, with their past calls (family.js).
+         Hidden until we know there's someone to show. -->
+    <section id="family" class="panel" hidden>
+      <h2>Your family</h2>
+      <div id="family-list"></div>
+      <p id="family-error" class="error" role="alert"></p>
+      <button type="button" id="show-signup" class="button-outline">Protect someone else</button>
+    </section>
+
     <!-- Step 1: the family member fills this in -->
-    <form id="signup-form" class="form">
+    <form id="signup-form" class="form" hidden>
       <h2>Protect someone's calls</h2>
       <p class="hint">We'll ask them for their OK first: a text for a cell phone, a phone call for a landline. Nothing is listened to until they say YES.</p>
 
@@ -96,6 +109,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
   <script src="/static/auth.js"></script>
+  <script src="/static/family.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

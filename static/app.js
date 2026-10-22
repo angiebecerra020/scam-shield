@@ -1,8 +1,9 @@
 /*
   app.js — Makes the dashboard page interactive.
 
-  How it fits in: index.html loads this file after auth.js. It:
+  How it fits in: index.html loads this file after auth.js and family.js. It:
     - checks the family member is logged in (or sends them to /login)
+    - shows "Your family" (loadFamily() in family.js)
     - asks our server "are you running?" (GET /health) and shows the answer
     - sends the sign-up form (POST /api/enrollments), which texts the senior
       (cell phone) or calls them (landline)
@@ -10,7 +11,7 @@
       (GET /api/enrollments/{id})
     - once they do, shows the steps to finish setting up their phone
     - in demo mode, shows buttons that pretend to be the senior's phone
-  Later it will show the live risk meter, reasons, source links and call history.
+  Later it will show the live risk meter.
 */
 
 // How often to check whether the senior answered (milliseconds).
@@ -121,7 +122,11 @@ async function submitSignup(event) {
   document.getElementById("senior-name").textContent = data.senior_name;
   document.getElementById("demo-tools").hidden = !demoMode;
   showConsentStatus(data);
+  // Add them to "Your family" right away, as "Waiting for their YES".
+  loadFamily();
 
+  // If they signed someone else up earlier, stop checking on that one.
+  clearInterval(statusTimer);
   statusTimer = setInterval(() => checkConsent(data.id), CHECK_EVERY_MS);
 }
 
@@ -140,6 +145,8 @@ async function checkConsent(enrollmentId) {
   showConsentStatus(data);
   if (data.status !== "pending") {
     clearInterval(statusTimer);
+    // They answered, so update their badge in "Your family".
+    loadFamily();
   }
 }
 
@@ -297,6 +304,7 @@ async function startDashboard() {
   }
   document.getElementById("dashboard").hidden = false;
   showServerStatus();
+  loadFamily();
 }
 
 document.getElementById("signup-form").addEventListener("submit", submitSignup);
