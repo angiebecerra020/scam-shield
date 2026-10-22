@@ -8,11 +8,9 @@
 
   A senior reads this screen, so when something goes wrong we say it in
   plain words and show the "Turn on calls" button again to retry.
-*/
 
-// What we say when the microphone is blocked. Calls can't be answered without it.
-const MICROPHONE_MESSAGE =
-  "Scam Shield needs the microphone to answer calls. Allow it for this page in your browser, then tap Turn on calls.";
+  The words come from strings.js, in English or Spanish (see i18n.js).
+*/
 
 // The last part of the address, e.g. /phone/Xy7abc -> "Xy7abc"
 const deviceKey = window.location.pathname.split("/").pop();
@@ -21,13 +19,18 @@ const deviceKey = window.location.pathname.split("/").pop();
 let device = null;
 let currentCall = null;
 
+// The last status we showed, as a key and its blanks, so we can show it
+// again in the other language when they flip the switch.
+let lastStatus = { key: "phone.loading", details: {} };
+
 /**
- * Show a status line at the top of the page.
+ * Show a status line at the top of the page, from strings.js.
  *
- * Example: showStatus("Ready for calls.")
+ * Example: showStatus("phone.whosePhone", {name: "Rosa"})  gives you  "Rosa's Scam Shield phone."
  */
-function showStatus(text) {
-  document.getElementById("phone-status").textContent = text;
+function showStatus(key, details = {}) {
+  lastStatus = { key, details };
+  document.getElementById("phone-status").textContent = t(key, details);
 }
 
 /**
@@ -62,14 +65,16 @@ async function loadDetails() {
  *
  * Input:  error — what was thrown while turning on calls
  * Output: the message to show
- * Example: they tapped "Block" on the microphone question  gives you  MICROPHONE_MESSAGE
+ * Example: they tapped "Block" on the microphone question  gives you
+ *          "Scam Shield needs the microphone to answer calls..."
  */
 function friendlyProblem(error) {
   // The browser calls a blocked microphone "NotAllowedError", and a missing one "NotFoundError".
   if (error.name === "NotAllowedError" || error.name === "NotFoundError") {
-    return MICROPHONE_MESSAGE;
+    return t("phone.microphone");
   }
-  return error.message || "Something went wrong. Tap Turn on calls to try again.";
+  // Our own messages (from fetchJson) are already in the reader's language.
+  return error.message || t("phone.somethingWrong");
 }
 
 /**
@@ -77,11 +82,11 @@ function friendlyProblem(error) {
  * "Turn on calls" button so they can try again. During a call we only show
  * the message, so the Hang up button stays put.
  *
- * Input:  text — what to say
+ * Input:  key, details — what to say, like showStatus()
  * Example: the internet drops  gives you  the message and the button
  */
-function callsStopped(text) {
-  showStatus(text);
+function callsStopped(key, details = {}) {
+  showStatus(key, details);
   if (currentCall === null) {
     showOnly("turn-on");
   }
@@ -96,13 +101,13 @@ async function start() {
   try {
     const details = await loadDetails();
     if (details.demo_mode) {
-      showStatus(`${details.senior_name}'s Scam Shield phone. Demo mode: real calls don't ring here.`);
+      showStatus("phone.whosePhoneDemo", { name: details.senior_name });
       return;
     }
-    showStatus(`${details.senior_name}'s Scam Shield phone.`);
+    showStatus("phone.whosePhone", { name: details.senior_name });
     showOnly("turn-on");
   } catch (error) {
-    showStatus(error.message);
+    showStatus("phone.problem", { problem: friendlyProblem(error) });
   }
 }
 
@@ -113,7 +118,7 @@ async function start() {
  */
 async function turnOnCalls() {
   showOnly(null);
-  showStatus("Turning on…");
+  showStatus("phone.turningOn");
 
   try {
     // Ask for the microphone now, so answering a call later is one tap.
@@ -129,9 +134,9 @@ async function turnOnCalls() {
     // closeProtection warns before the page is closed during a call.
     device = new Twilio.Device(details.token, { closeProtection: true });
 
-    device.on("registered", () => showStatus("Ready. Calls will ring here."));
+    device.on("registered", () => showStatus("phone.ready"));
     device.on("error", () => {
-      callsStopped("Calls stopped working here. Check the internet, then tap Turn on calls.");
+      callsStopped("phone.stopped");
     });
     device.on("incoming", showIncomingCall);
     // The login lasts an hour; get a fresh one before it runs out.
@@ -140,14 +145,14 @@ async function turnOnCalls() {
         const fresh = await loadDetails();
         device.updateToken(fresh.token);
       } catch (error) {
-        callsStopped(`Calls will stop ringing here soon. ${friendlyProblem(error)}`);
+        callsStopped("phone.stopSoon", { problem: friendlyProblem(error) });
       }
     });
 
-    showStatus("Connecting…");
+    showStatus("phone.connecting");
     await device.register();
   } catch (error) {
-    showStatus(`Couldn't turn on calls. ${friendlyProblem(error)}`);
+    showStatus("phone.couldntTurnOn", { problem: friendlyProblem(error) });
     showOnly("turn-on");
   }
 }
@@ -160,7 +165,7 @@ async function turnOnCalls() {
  */
 function showIncomingCall(call) {
   currentCall = call;
-  const caller = call.parameters.From || "Unknown number";
+  const caller = call.parameters.From || t("phone.unknownNumber");
   document.getElementById("caller-number").textContent = caller;
   document.getElementById("in-call-number").textContent = caller;
   showOnly("incoming");
@@ -178,7 +183,7 @@ function showIncomingCall(call) {
 function callEnded() {
   currentCall = null;
   showOnly(null);
-  showStatus("Ready. Calls will ring here.");
+  showStatus("phone.ready");
 }
 
 document.getElementById("turn-on").addEventListener("click", turnOnCalls);
@@ -188,4 +193,6 @@ document.getElementById("answer").addEventListener("click", () => {
 });
 document.getElementById("decline").addEventListener("click", () => currentCall.reject());
 document.getElementById("hang-up").addEventListener("click", () => currentCall.disconnect());
+// Show the last status again in the new language.
+document.addEventListener("language-switched", () => showStatus(lastStatus.key, lastStatus.details));
 start();

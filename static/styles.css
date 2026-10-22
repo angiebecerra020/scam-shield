@@ -381,6 +381,34 @@ body.with-header > .card {
   margin: 0;
 }
 
+/* The language switch and the Menu button, side by side */
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* English | Español: small, so it never crowds the page, but easy to tap */
+.language-switch {
+  width: auto;
+  margin: 0;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Pages without the header (Join call, the calling app) put the switch at
+   the top right of their card */
+.language-switch-spot {
+  display: flex;
+  justify-content: flex-end;
+  margin: -16px -8px 8px 0;
+}
+
 .menu-button {
   width: auto;
   margin: 0;
@@ -430,6 +458,16 @@ body.with-header > .card {
 @media (min-width: 768px) {
   .menu-button {
     display: none;
+  }
+
+  /* Logo, then the links, then the language switch at the end */
+  .site-nav {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .header-tools {
+    order: 3;
   }
 
   .site-nav,

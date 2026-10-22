@@ -18,49 +18,41 @@
       or block it (POST /api/calls/{id}/scam-list)
   If the family hasn't signed anyone up yet, we show the sign-up form instead.
 
-  It uses sendRequest() from app.js, which adds the login token for us, and
-  setBusy() / setReady() from busy.js for the pause button.
+  It uses sendRequest() from app.js, which adds the login token for us,
+  setBusy() / setReady() from busy.js for the buttons, and t() from i18n.js
+  for the words, in English or Spanish. When the language changes, we load
+  the list again in the new language.
 */
 
-// What each status means, in plain words, for the badge next to the name.
+// The words for each status, for the badge next to the name (keys in strings.js).
 const FAMILY_STATUS_LABELS = {
-  active: "Protected",
-  paused: "Paused",
-  pending: "Waiting for their YES",
-  declined: "Said no",
-  expired: "Didn't answer",
-  revoked: "Turned off",
+  active: "family.statusActive",
+  paused: "family.statusPaused",
+  pending: "family.statusPending",
+  declined: "family.statusDeclined",
+  expired: "family.statusExpired",
+  revoked: "family.statusRevoked",
 };
 
 // What each verdict means, for the call history.
 const VERDICT_LABELS = {
-  likely_scam: "Likely scam",
-  suspicious: "Suspicious",
-  safe: "Looked safe",
+  likely_scam: "family.verdictLikelyScam",
+  suspicious: "family.verdictSuspicious",
+  safe: "family.verdictSafe",
 };
 
 // How we show the family's own answer, in the call list.
 const FAMILY_ANSWER_LABELS = {
-  scam: "You said: scam",
-  not_scam: "You said: false alarm",
+  scam: "family.youSaidScam",
+  not_scam: "family.youSaidNotScam",
 };
 
-// Where families report scams to the US government (the FTC).
-const FTC_REPORT_URL = "https://reportfraud.ftc.gov/";
-
-// The choices for "If this number calls again", and what each one means.
+// The choices for "If this number calls again": the words on the button,
+// and what that choice means (keys in strings.js).
 const SCAM_LIST_CHOICES = [
-  { choice: "none", label: "Do nothing", means: "If this number calls again, Scam Shield checks the call like any other." },
-  {
-    choice: "warn",
-    label: "Warn us right away",
-    means: "If this number calls again, the call still rings, and we text you the moment it starts.",
-  },
-  {
-    choice: "block",
-    label: "Block it",
-    means: "If this number calls again, it gets a busy signal and never rings. You'll see it in the call history.",
-  },
+  { choice: "none", label: "report.choiceNone", means: "report.meansNone" },
+  { choice: "warn", label: "report.choiceWarn", means: "report.meansWarn" },
+  { choice: "block", label: "report.choiceBlock", means: "report.meansBlock" },
 ];
 
 // Scores from here up are scams (the same line as detector.ALERT_FROM),
@@ -94,20 +86,9 @@ function makeElement(tag, className, text = "") {
 function formatPhone(phone) {
   const match = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(phone || "");
   if (!match) {
-    return phone || "Unknown number";
+    return phone || t("family.unknownNumber");
   }
   return `(${match[1]}) ${match[2]}-${match[3]}`;
-}
-
-/**
- * Write a saved time (in UTC) as a short local date and time.
- *
- * Input:  text — like "2026-10-21T18:04:05+00:00"
- * Output: like "Oct 21, 2026, 2:04 PM" (in the viewer's own time zone)
- * Example: formatWhen("2026-10-21T18:04:05+00:00")  gives you  "Oct 21, 2026, 2:04 PM" in Miami
- */
-function formatWhen(text) {
-  return new Date(text).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 /**
@@ -148,7 +129,7 @@ async function loadFamily() {
   // (Later refreshes keep the old list up until the new one is ready.)
   if (list.childElementCount === 0) {
     section.hidden = false;
-    list.replaceChildren(makeElement("p", "hint", "Loading your family…"));
+    list.replaceChildren(makeElement("p", "hint", t("family.loading")));
   }
 
   const { ok, data } = await sendRequest("/api/family");
@@ -191,12 +172,16 @@ function seniorCard(senior) {
   const top = makeElement("div", "senior-top");
   top.appendChild(makeElement("h3", "", senior.senior_name));
   top.appendChild(
-    makeElement("span", `status-pill status-${senior.status}`, FAMILY_STATUS_LABELS[senior.status] || senior.status)
+    makeElement(
+      "span",
+      `status-pill status-${senior.status}`,
+      FAMILY_STATUS_LABELS[senior.status] ? t(FAMILY_STATUS_LABELS[senior.status]) : senior.status
+    )
   );
   card.appendChild(top);
 
   card.appendChild(
-    makeElement("p", "hint", `Alerts go to ${senior.family_name} (${senior.family_phone}).`)
+    makeElement("p", "hint", t("family.alertsGoTo", { name: senior.family_name, phone: senior.family_phone }))
   );
 
   // Only seniors who said YES can be paused or turned back on.
@@ -204,9 +189,9 @@ function seniorCard(senior) {
     card.appendChild(pauseButton(senior));
   }
 
-  card.appendChild(makeElement("h4", "", "Past calls"));
+  card.appendChild(makeElement("h4", "", t("family.pastCalls")));
   if (senior.calls.length === 0) {
-    card.appendChild(makeElement("p", "hint", "No calls yet."));
+    card.appendChild(makeElement("p", "hint", t("family.noCalls")));
   } else {
     const calls = makeElement("ul", "call-list");
     for (const call of senior.calls) {
@@ -233,7 +218,7 @@ function pauseButton(senior) {
   const button = makeElement(
     "button",
     paused ? "button-small" : "button-small button-outline",
-    paused ? "Turn protection back on" : "Pause protection"
+    paused ? t("family.resume") : t("family.pause")
   );
   button.type = "button";
   button.addEventListener("click", () => togglePause(senior, button));
@@ -244,8 +229,8 @@ function pauseButton(senior) {
       "p",
       "hint",
       paused
-        ? `Protection is paused. ${senior.senior_name}'s calls ring like normal, and we aren't listening.`
-        : "Calls still ring like normal, but we won't listen or send alerts."
+        ? t("family.pausedNote", { name: senior.senior_name })
+        : t("family.pauseNote")
     )
   );
   return wrapper;
@@ -261,7 +246,7 @@ function pauseButton(senior) {
 async function togglePause(senior, button) {
   const action = senior.status === "paused" ? "resume" : "pause";
   // Stops a double tap from sending it twice.
-  setBusy(button, action === "pause" ? "Pausing…" : "Turning it on…");
+  setBusy(button, action === "pause" ? t("family.busyPause") : t("family.busyResume"));
   const { ok, data } = await sendRequest(`/api/enrollments/${senior.id}/${action}`, { method: "POST" });
   if (!ok) {
     document.getElementById("family-error").textContent = data.error;
@@ -316,20 +301,20 @@ function callRow(call) {
 function verdictLine(call) {
   // A blocked call never rang, so there's no score to talk about.
   if (call.scam_list === "block") {
-    return "Blocked: a number you reported as a scam";
+    return t("family.blockedLine");
   }
-  const parts = [VERDICT_LABELS[call.verdict] || "Not checked"];
+  const parts = [t(VERDICT_LABELS[call.verdict] || "family.notChecked")];
   if (call.scam_list === "warn") {
-    parts.push("Number you reported");
+    parts.push(t("family.reportedNumber"));
   }
   if (call.status === "live") {
-    parts.push("On the phone now");
+    parts.push(t("family.onThePhone"));
   }
   if (call.alerted) {
-    parts.push("Family alerted");
+    parts.push(t("family.alerted"));
   }
   if (call.family_answer) {
-    parts.push(FAMILY_ANSWER_LABELS[call.family_answer]);
+    parts.push(t(FAMILY_ANSWER_LABELS[call.family_answer]));
   }
   return parts.join(" · ");
 }
@@ -354,13 +339,13 @@ async function toggleCallDetails(callId, button, details) {
   }
 
   delete details.dataset.failed;
-  details.replaceChildren(makeElement("p", "hint", "Loading…"));
+  details.replaceChildren(makeElement("p", "hint", t("family.loadingCall")));
   const { ok, data } = await sendRequest(`/api/calls/${callId}`);
   if (!ok) {
     details.dataset.failed = "yes";
     details.replaceChildren(
       makeElement("p", "error", data.error),
-      makeElement("p", "hint", "Tap the call to try again.")
+      makeElement("p", "hint", t("family.tapToRetry"))
     );
     return;
   }
@@ -382,30 +367,30 @@ function showCallDetails(call, details) {
 
   if (call.scam_list === "block") {
     details.appendChild(
-      makeElement("p", "", "We blocked this call. It's a number you reported as a scam, so it never rang.")
+      makeElement("p", "", t("family.blockedDetails"))
     );
     details.appendChild(reportAndBlock(call, details));
     return;
   }
 
   if (call.claimed_identity) {
-    details.appendChild(makeElement("p", "", `Said they were: ${call.claimed_identity}`));
+    details.appendChild(makeElement("p", "", t("family.saidTheyWere", { who: call.claimed_identity })));
   }
 
   if (call.reasons.length > 0) {
-    details.appendChild(makeElement("h5", "", "Why we were worried"));
+    details.appendChild(makeElement("h5", "", t("family.whyWorried")));
     const reasons = makeElement("ul", "reasons");
     for (const reason of call.reasons) {
       reasons.appendChild(makeElement("li", "", reason));
     }
     details.appendChild(reasons);
   } else {
-    details.appendChild(makeElement("p", "hint", "Nothing looked wrong on this call."));
+    details.appendChild(makeElement("p", "hint", t("family.nothingWrong")));
   }
 
   const links = call.sources.filter((source) => /^https?:\/\//.test(source.url));
   if (links.length > 0) {
-    details.appendChild(makeElement("h5", "", "What we found online"));
+    details.appendChild(makeElement("h5", "", t("family.foundOnline")));
     const list = makeElement("ul", "sources");
     for (const source of links) {
       const item = document.createElement("li");
@@ -421,7 +406,7 @@ function showCallDetails(call, details) {
   }
 
   if (call.alerted_at) {
-    details.appendChild(makeElement("p", "hint", `We alerted the family at ${formatWhen(call.alerted_at)}.`));
+    details.appendChild(makeElement("p", "hint", t("family.alertedAt", { time: formatWhen(call.alerted_at) })));
   }
 
   // Only calls we scored can be right or wrong.
@@ -450,18 +435,18 @@ function showCallDetails(call, details) {
  */
 function ftcReportText(call) {
   const lines = [
-    "Scam phone call",
-    `When: ${formatWhen(call.started_at)}`,
-    `Number that called: ${formatPhone(call.caller_number)}`,
+    t("report.textTitle"),
+    t("report.textWhen", { time: formatWhen(call.started_at) }),
+    t("report.textNumber", { number: formatPhone(call.caller_number) }),
   ];
   if (call.claimed_identity) {
-    lines.push(`Who they said they were: ${call.claimed_identity}`);
+    lines.push(t("report.textWho", { who: call.claimed_identity }));
   }
   if (call.reasons.length > 0) {
-    lines.push(`What happened: ${call.reasons.join("; ")}`);
+    lines.push(t("report.textWhat", { what: call.reasons.join("; ") }));
   }
   if (call.risk_score !== null) {
-    lines.push(`Scam Shield, our scam call alert service, rated it ${call.risk_score} out of 100 for scam risk.`);
+    lines.push(t("report.textScore", { score: call.risk_score }));
   }
   return lines.join("\n");
 }
@@ -478,39 +463,34 @@ function ftcReportText(call) {
  */
 function reportAndBlock(call, details) {
   const box = makeElement("div", "report-and-block");
-  box.appendChild(makeElement("h5", "", "Report it to the FTC"));
-  box.appendChild(
-    makeElement(
-      "p",
-      "hint",
-      "Reporting helps the government track down scammers. Copy the details below, open the form, and paste them in."
-    )
-  );
+  box.appendChild(makeElement("h5", "", t("report.title")));
+  box.appendChild(makeElement("p", "hint", t("report.hint")));
 
   // The text sits in a box they can read (and copy by hand if Copy doesn't work).
   const text = makeElement("textarea", "report-text");
   text.readOnly = true;
   text.rows = 5;
   text.value = ftcReportText(call);
-  text.setAttribute("aria-label", "Call details for the FTC report");
+  text.setAttribute("aria-label", t("report.textAria"));
   box.appendChild(text);
 
   const actions = makeElement("div", "answer-buttons");
-  const copy = makeElement("button", "button-small", "Copy the details");
+  const copy = makeElement("button", "button-small", t("report.copy"));
   copy.type = "button";
   copy.addEventListener("click", () => copyReport(text, copy));
-  const open = makeElement("a", "button button-small button-outline", "Open the FTC report form");
-  open.href = FTC_REPORT_URL;
+  const open = makeElement("a", "button button-small button-outline", t("report.openForm"));
+  // The FTC's English or Spanish site, to match the report we wrote.
+  open.href = t("report.url");
   open.target = "_blank";
   open.rel = "noopener noreferrer";
   actions.append(copy, open);
   box.appendChild(actions);
 
-  box.appendChild(makeElement("h5", "", "If this number calls again"));
+  box.appendChild(makeElement("h5", "", t("report.ifAgain")));
   const choices = makeElement("div", "answer-buttons");
   const picked = call.number_on_list || "none";
   for (const option of SCAM_LIST_CHOICES) {
-    const button = makeElement("button", "button-small button-outline", option.label);
+    const button = makeElement("button", "button-small button-outline", t(option.label));
     button.type = "button";
     button.setAttribute("aria-pressed", String(picked === option.choice));
     button.addEventListener("click", () => sendScamListChoice(call.id, option.choice, button, details));
@@ -518,7 +498,7 @@ function reportAndBlock(call, details) {
   }
   box.appendChild(choices);
   const means = SCAM_LIST_CHOICES.find((option) => option.choice === picked).means;
-  box.appendChild(makeElement("p", "hint", `${means} This only applies to the people you protect.`));
+  box.appendChild(makeElement("p", "hint", `${t(means)} ${t("report.onlyYours")}`));
   box.appendChild(makeElement("p", "error scam-list-error", ""));
 
   box.appendChild(phoneBlockSteps());
@@ -534,15 +514,15 @@ function reportAndBlock(call, details) {
 async function copyReport(text, button) {
   try {
     await navigator.clipboard.writeText(text.value);
-    button.textContent = "Copied!";
+    button.textContent = t("report.copied");
   } catch (error) {
     // Some browsers don't allow copying from a page. Select it so a long
     // press (or Ctrl+C) copies it.
     text.select();
-    button.textContent = "Select and copy the text above";
+    button.textContent = t("report.selectInstead");
   }
   setTimeout(() => {
-    button.textContent = "Copy the details";
+    button.textContent = t("report.copy");
   }, 2500);
 }
 
@@ -556,7 +536,7 @@ async function copyReport(text, button) {
  * Example: tap "Block it"  gives you  "Block it" picked, and the number blocked
  */
 async function sendScamListChoice(callId, choice, button, details) {
-  setBusy(button, "Saving…");
+  setBusy(button, t("family.saving"));
   const { ok, data } = await sendRequest(`/api/calls/${callId}/scam-list`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -583,18 +563,12 @@ async function sendScamListChoice(callId, choice, button, details) {
  */
 function phoneBlockSteps() {
   const box = makeElement("details", "phone-steps");
-  box.appendChild(makeElement("summary", "", "Block it on the phone too"));
-  box.appendChild(
-    makeElement(
-      "p",
-      "hint",
-      "Calls that come through Scam Shield are blocked by \"Block it\" above. Blocking on the phone also stops scam texts, and calls that don't come through Scam Shield."
-    )
-  );
+  box.appendChild(makeElement("summary", "", t("report.phoneTitle")));
+  box.appendChild(makeElement("p", "hint", t("report.phoneNote")));
 
   const steps = [
-    ["iPhone", "Open Phone, then Recents. Tap the ⓘ next to the number, then Block Caller. For texts: open the message, tap the number at the top, then Block Caller."],
-    ["Android", "Open Phone, then Recents (or Call history). Tap and hold the number, then Block or Block/report spam. On Samsung, tap the number, then Details, then Block."],
+    ["iPhone", t("report.iphone")],
+    ["Android", t("report.android")],
   ];
   const list = makeElement("ul", "reasons");
   for (const [phone, how] of steps) {
@@ -618,11 +592,11 @@ function phoneBlockSteps() {
  */
 function askWasItAScam(call, details) {
   const box = makeElement("div", "was-it-a-scam");
-  box.appendChild(makeElement("h5", "", "Was this a scam?"));
+  box.appendChild(makeElement("h5", "", t("family.wasItAScam")));
 
   const choices = [
-    { answer: "scam", label: "Yes, it was a scam" },
-    { answer: "not_scam", label: "No, false alarm" },
+    { answer: "scam", label: t("family.yesScam") },
+    { answer: "not_scam", label: t("family.noFalseAlarm") },
   ];
   const buttons = makeElement("div", "answer-buttons");
   for (const choice of choices) {
@@ -636,8 +610,8 @@ function askWasItAScam(call, details) {
   box.appendChild(buttons);
 
   const note = call.family_answer
-    ? "Thanks! This helps Scam Shield get smarter. You can change your answer."
-    : "Your answer helps Scam Shield get smarter.";
+    ? t("family.answerThanks")
+    : t("family.answerHelps");
   box.appendChild(makeElement("p", "hint", note));
   box.appendChild(makeElement("p", "error answer-error", ""));
   return box;
@@ -654,7 +628,7 @@ function askWasItAScam(call, details) {
  *          "You said: false alarm" in the call list
  */
 async function sendAnswer(callId, answer, button, details) {
-  setBusy(button, "Saving…");
+  setBusy(button, t("family.saving"));
   const { ok, data } = await sendRequest(`/api/calls/${callId}/answer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -683,3 +657,9 @@ function showSignupForm() {
 }
 
 document.getElementById("show-signup").addEventListener("click", showSignupForm);
+// Build the list again in the new language when they flip the switch.
+document.addEventListener("language-switched", () => {
+  if (!document.getElementById("dashboard").hidden) {
+    loadFamily();
+  }
+});

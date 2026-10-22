@@ -12,40 +12,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scam Shield calls</title>
+  <title data-text="phone.pageTitle">Scam Shield calls</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <main class="card">
+    <!-- English | Español (i18n.js puts the switch here) -->
+    <div class="language-switch-spot"></div>
     <h1>🛡️ Scam Shield</h1>
     <p id="phone-status" aria-live="polite">Loading…</p>
 
     <!-- A tap is needed first: browsers only allow ringing and the
          microphone after the person has touched the page. -->
-    <button type="button" id="turn-on" class="button-big" hidden>Turn on calls</button>
+    <button type="button" id="turn-on" class="button-big" hidden data-text="phone.turnOn">Turn on calls</button>
 
     <!-- Shown while a call is ringing -->
     <section id="incoming" hidden>
-      <p>Call from</p>
+      <p data-text="phone.callFrom">Call from</p>
       <p id="caller-number" class="caller-number"></p>
-      <button type="button" id="answer" class="button-big">Answer</button>
-      <button type="button" id="decline" class="button-big button-decline">Decline</button>
+      <button type="button" id="answer" class="button-big" data-text="phone.answer">Answer</button>
+      <button type="button" id="decline" class="button-big button-decline" data-text="phone.decline">Decline</button>
     </section>
 
     <!-- Shown during a call -->
     <section id="in-call" hidden>
-      <p>On a call with</p>
+      <p data-text="phone.onCallWith">On a call with</p>
       <p id="in-call-number" class="caller-number"></p>
-      <button type="button" id="hang-up" class="button-big button-decline">Hang up</button>
+      <button type="button" id="hang-up" class="button-big button-decline" data-text="phone.hangUp">Hang up</button>
     </section>
 
-    <p class="hint">Keep this page open so calls can ring.</p>
+    <p class="hint" data-text="phone.keepOpen">Keep this page open so calls can ring.</p>
   </main>
   <!-- Twilio's calling library, pinned to one version. "integrity" makes the
        browser refuse the file if it was changed in any way. -->
   <script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.18.5/dist/twilio.min.js"
           integrity="sha384-LUG7DmzDPWNKRYoqyGpV4d/IByMLiya/oUhMSc/4/6hi0wbzO/8PffM4lzeFEYS8"
           crossorigin="anonymous"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
   <script src="/static/busy.js"></script>
   <script src="/static/phone.js"></script>
 </body>

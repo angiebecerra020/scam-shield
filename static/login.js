@@ -6,28 +6,42 @@
     - logs the person in, or makes their account, with Supabase
     - sends them to the dashboard once they're in
   If they're already logged in, it skips straight to the dashboard.
+
+  The words come from strings.js, in English or Spanish (see i18n.js).
 */
 
 // "login" or "signup", whichever tab is picked.
 let formMode = "login";
 
-// The words on the page for each tab.
+// The words on the page for each tab (keys in strings.js).
 const FORM_TEXT = {
   login: {
-    title: "Welcome back",
-    hint: "Log in to see the calls you're protecting.",
-    button: "Log in",
+    title: "login.titleLogIn",
+    hint: "login.hintLogIn",
+    button: "login.buttonLogIn",
     // Lets password managers fill in the saved password
     passwordAutocomplete: "current-password",
   },
   signup: {
-    title: "Make your account",
-    hint: "Free for families. Use at least 6 characters for your password.",
-    button: "Sign up",
+    title: "login.titleSignUp",
+    hint: "login.hintSignUp",
+    button: "login.buttonSignUp",
     // Lets password managers suggest a strong new password
     passwordAutocomplete: "new-password",
   },
 };
+
+/**
+ * Show the words for a key in an element, and remember the key, so the
+ * language switch (i18n.js) can translate it again later.
+ *
+ * Example: showText("login-title", "login.titleSignUp")  gives you  "Make your account"
+ */
+function showText(elementId, key) {
+  const element = document.getElementById(elementId);
+  element.dataset.text = key;
+  element.textContent = t(key);
+}
 
 /**
  * Switch the form to "log in" or "sign up".
@@ -39,9 +53,9 @@ const FORM_TEXT = {
 function setFormMode(mode) {
   formMode = mode;
   const text = FORM_TEXT[mode];
-  document.getElementById("login-title").textContent = text.title;
-  document.getElementById("login-hint").textContent = text.hint;
-  document.getElementById("login-button").textContent = text.button;
+  showText("login-title", text.title);
+  showText("login-hint", text.hint);
+  showText("login-button", text.button);
   document.querySelector("input[name=password]").autocomplete = text.passwordAutocomplete;
   // aria-pressed tells screen readers which tab is picked
   document.getElementById("tab-login").setAttribute("aria-pressed", mode === "login");
@@ -74,7 +88,7 @@ async function submitLogin(event) {
 
   // Say what's happening while Supabase checks, and turn the button off so
   // a double tap doesn't send twice (busy.js).
-  setBusy(button, formMode === "login" ? "Logging in…" : "Making your account…");
+  setBusy(button, formMode === "login" ? t("login.busyLogIn") : t("login.busySignUp"));
   // Leaving for the dashboard: keep the button busy until the page changes.
   let leaving = false;
   try {
@@ -106,10 +120,9 @@ async function submitLogin(event) {
       window.location.href = "/dashboard";
       return;
     }
-    messageElement.textContent =
-      `Almost done! We sent a link to ${email}. Open it to finish making your account.`;
+    messageElement.textContent = t("login.checkEmail", { email });
   } catch (problem) {
-    errorElement.textContent = "We couldn't reach the login service. Check your internet and try again.";
+    errorElement.textContent = t("login.cantReach");
   } finally {
     if (!leaving) {
       setReady(button);
@@ -128,16 +141,16 @@ async function submitLogin(event) {
 function friendlyError(error) {
   const message = error.message || "";
   if (message.includes("Invalid login credentials")) {
-    return "That email or password isn't right.";
+    return t("login.wrongPassword");
   }
   if (message.includes("Email not confirmed")) {
-    return "Please open the link we emailed you first, then log in.";
+    return t("login.confirmFirst");
   }
   if (message.includes("already registered")) {
-    return "There's already an account with that email. Try logging in.";
+    return t("login.alreadyRegistered");
   }
-  // Anything else: Supabase's own message is clear enough.
-  return message || "Something went wrong. Please try again.";
+  // Anything else: Supabase's own message (in English) is clear enough.
+  return message || t("login.somethingWrong");
 }
 
 /**
@@ -161,8 +174,7 @@ async function startLoginPage() {
       window.location.replace("/dashboard");
     }
   } catch (problem) {
-    document.getElementById("login-error").textContent =
-      "We couldn't reach the server. Please refresh the page.";
+    document.getElementById("login-error").textContent = t("error.refresh");
   }
 }
 

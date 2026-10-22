@@ -10,16 +10,20 @@
   On a phone the links fold up behind a "Menu" button, so they don't crowd
   the logo. On bigger screens they're always showing (see styles.css).
 
+  The English | Español switch sits next to the Menu button, so it's always
+  one tap away, even on a phone. The words come from strings.js (via t() in
+  i18n.js), and the header builds itself again when the language changes.
+
   The "Join call" page and the senior's calling app don't get this header on
   purpose. Each does one job in a hurry, and their links hold secrets we don't
   want people wandering away from and losing.
 */
 
-// The links in the header, in order.
+// The links in the header, in order. "text" is the key for its words in strings.js.
 const NAV_LINKS = [
-  { href: "/demo", label: "Demo" },
-  { href: "/dashboard#protect", label: "Protect someone" },
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/demo", text: "nav.demo" },
+  { href: "/dashboard#protect", text: "nav.protect" },
+  { href: "/dashboard", text: "nav.dashboard" },
 ];
 
 /**
@@ -27,13 +31,13 @@ const NAV_LINKS = [
  *
  * Input:  link — one entry from NAV_LINKS
  * Output: the <a> element
- * Example: on /dashboard, navLink({href: "/dashboard", label: "Dashboard"})
+ * Example: on /dashboard, navLink({href: "/dashboard", text: "nav.dashboard"})
  *          gives you a link with aria-current="page", so it shows as the page you're on
  */
 function navLink(link) {
   const element = document.createElement("a");
   element.href = link.href;
-  element.textContent = link.label;
+  element.textContent = t(link.text);
   // Only a link with no "#" part counts as "this page", so "Protect someone"
   // (/dashboard#protect) doesn't light up along with "Dashboard".
   if (link.href === window.location.pathname) {
@@ -74,7 +78,7 @@ async function addAccountLink(links) {
     const logIn = document.createElement("a");
     logIn.href = "/login";
     logIn.className = "button button-small";
-    logIn.textContent = "Log in";
+    logIn.textContent = t("nav.logIn");
     links.appendChild(logIn);
     return;
   }
@@ -82,7 +86,7 @@ async function addAccountLink(links) {
   const logOutButton = document.createElement("button");
   logOutButton.type = "button";
   logOutButton.className = "button-link";
-  logOutButton.textContent = "Log out";
+  logOutButton.textContent = t("nav.logOut");
   logOutButton.addEventListener("click", logOut);
   links.appendChild(logOutButton);
 }
@@ -121,7 +125,7 @@ function buildHeader() {
   const menuButton = document.createElement("button");
   menuButton.type = "button";
   menuButton.className = "menu-button";
-  menuButton.textContent = "Menu";
+  menuButton.textContent = t("nav.menu");
   menuButton.setAttribute("aria-controls", "site-nav");
   menuButton.addEventListener("click", () => {
     setMenuOpen(header, !header.classList.contains("menu-open"));
@@ -130,7 +134,7 @@ function buildHeader() {
   const nav = document.createElement("nav");
   nav.id = "site-nav";
   nav.className = "site-nav";
-  nav.setAttribute("aria-label", "Main");
+  nav.setAttribute("aria-label", t("nav.main"));
   for (const link of NAV_LINKS) {
     nav.appendChild(navLink(link));
   }
@@ -142,7 +146,14 @@ function buildHeader() {
     }
   });
 
-  header.replaceChildren(brand, menuButton, nav);
+  // The language switch, between the logo and the Menu button.
+  const languageButton = languageSwitch();
+  const tools = document.createElement("div");
+  tools.className = "header-tools";
+  tools.append(languageButton, menuButton);
+
+  header.replaceChildren(brand, tools, nav);
+  translatePage();
   setMenuOpen(header, false);
   addAccountLink(nav);
 }
@@ -155,5 +166,8 @@ document.addEventListener("keydown", (event) => {
     header.querySelector(".menu-button").focus();
   }
 });
+
+// Build the header again in the new language when they flip the switch.
+document.addEventListener("language-switched", buildHeader);
 
 buildHeader();

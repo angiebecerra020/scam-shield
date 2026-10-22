@@ -39,7 +39,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
 | 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), a "Was this a scam?" answer for each call, and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
 | 6b | **Report and block.** For a scam call, the dashboard writes up the details ready to paste into the FTC's report form ([reportfraud.ftc.gov](https://reportfraud.ftc.gov/)). The family also picks what happens if that number calls again: **warn us** (the call rings and the family is alerted the moment it starts) or **block it** (a busy signal, and it never rings). Each family has their own list. | Done |
-| 7 | **Languages.** English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. | Done. Haitian Creole is in the sign-up menus and texts. It's text only for now (our phone voices can't speak Creole), so a Creole-speaking senior needs a cell phone. The Creole texts are waiting on a check from a native speaker. |
+| 7 | **Languages.** Text alerts in English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. Every screen has an **English / Español** switch, and the site remembers the choice (it starts in Spanish if the phone is set to Spanish). | Done. Haitian Creole is in the sign-up menus and texts. It's text only for now (our phone voices can't speak Creole), so a Creole-speaking senior needs a cell phone. The Creole texts are waiting on a check from a native speaker. |
 | ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. A demo player will replay a scripted call as a live transcript. | Demo mode done, 20 sample calls ready, player coming soon |
 
 ## How it works
@@ -209,7 +209,7 @@ scam-shield/
 │   ├── verify.py          # "Is it really you?" check (coming soon)
 │   ├── languages.py       # each person's language + translations
 │   └── demo_mode.py       # loads the sample calls for the tests and the demo
-├── static/                # landing page, login, family dashboard, "Join call" page, senior's calling app, and the header on every page (nav.js)
+├── static/                # landing page, login, family dashboard, "Join call" page, senior's calling app, the header on every page (nav.js), and every word in English and Spanish (strings.js)
 ├── data/test_scripts/     # 20 sample scam calls and normal calls (English and Spanish)
 ├── scripts/               # day one checks for Nemotron, Tavily and languages
 ├── tests/                 # automated tests (pytest)

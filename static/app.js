@@ -15,23 +15,23 @@
     - once they do, shows the steps to finish setting up their phone
     - in demo mode, shows buttons that pretend to be the senior's phone
   Later it will show the live risk meter.
+
+  The words come from strings.js, in English or Spanish (see i18n.js). When
+  the language changes, we redraw the words this file put on the page.
 */
 
 // How often to check whether the senior answered (milliseconds).
 const CHECK_EVERY_MS = 3000;
 
-// What to tell the family member for each enrollment status.
-const STATUS_MESSAGES = {
-  pending: "We texted them. Waiting for them to reply YES…",
-  pendingLandline: "We're calling them now. Waiting for them to press 1…",
-  active: "They said YES. Their calls are now protected. ✅",
-  declined: "They said NO, so we won't listen to their calls.",
-  expired: "They didn't answer within 24 hours. You can ask again.",
-  revoked: "They turned Scam Shield off.",
-};
+// The statuses we have words for (as "status.pending" and so on, in strings.js).
+const KNOWN_STATUSES = ["pending", "pendingLandline", "active", "declined", "expired", "revoked"];
 
 // Remembered while the page is open.
 let demoMode = false;
+// "checking", "online" or "offline", for the "Server status" line.
+let serverState = "checking";
+// The last sign-up we showed, so we can redraw it in a new language.
+let lastEnrollment = null;
 let seniorPhone = "";
 let enrollmentId = "";
 let phoneType = "cell";
@@ -45,21 +45,37 @@ let statusTimer = null;
  * Example: server running in demo mode -> "Server status: online (demo mode)"
  */
 async function showServerStatus() {
-  const statusElement = document.getElementById("server-status");
-
+  drawServerStatus();
   try {
     const response = await fetch("/health");
     const data = await response.json();
     demoMode = data.demo_mode;
-    // Always say whether we're in demo mode, so nobody mistakes a
-    // scripted demo call for a real one.
-    const modeLabel = data.demo_mode ? "demo mode" : "live mode";
-    statusElement.textContent = `online (${modeLabel})`;
-    statusElement.classList.add("status-ok");
+    serverState = "online";
   } catch (error) {
     // If the server can't be reached, say so plainly instead of
     // leaving "checking…" on the screen forever.
-    statusElement.textContent = "offline. Is the server running?";
+    serverState = "offline";
+  }
+  drawServerStatus();
+}
+
+/**
+ * Write the "Server status" line, in the current language.
+ *
+ * Example: online in demo mode  gives you  "online (demo mode)"
+ */
+function drawServerStatus() {
+  const statusElement = document.getElementById("server-status");
+  if (serverState === "checking") {
+    statusElement.textContent = t("dash.checking");
+  } else if (serverState === "offline") {
+    statusElement.textContent = t("dash.offline");
+  } else {
+    // Always say whether we're in demo mode, so nobody mistakes a
+    // scripted demo call for a real one.
+    const mode = demoMode ? t("dash.demoMode") : t("dash.liveMode");
+    statusElement.textContent = t("dash.online", { mode });
+    statusElement.classList.add("status-ok");
   }
 }
 
@@ -80,7 +96,7 @@ async function sendRequest(url, options = {}) {
     // Add the login token, so the server knows who's asking (app/auth.py).
     headers = { ...headers, ...(await loginHeaders()) };
   } catch (error) {
-    return { ok: false, data: { error: OFFLINE_MESSAGE } };
+    return { ok: false, data: { error: t("error.offline") } };
   }
   const { ok, status, data } = await fetchJson(url, { ...options, headers });
   if (status === 401) {
@@ -109,7 +125,7 @@ async function submitSignup(event) {
   // Sending the text or placing the call goes through Twilio, which can take
   // a few seconds. Say so, and stop a second tap from asking them twice.
   const button = form.querySelector('button[type="submit"]');
-  setBusy(button, fields.phone_type === "landline" ? "Calling them…" : "Sending the text…");
+  setBusy(button, fields.phone_type === "landline" ? t("dash.busyCall") : t("dash.busyText"));
   const { ok, data } = await sendRequest("/api/enrollments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -166,7 +182,7 @@ async function checkConsent(enrollmentId) {
   const { ok, data } = await sendRequest(`/api/enrollments/${enrollmentId}`);
   if (!ok) {
     // We keep checking, so say that instead of quietly freezing.
-    trouble.textContent = `${data.error} We'll keep checking.`;
+    trouble.textContent = t("dash.keepChecking", { problem: data.error });
     return;
   }
   trouble.textContent = "";
@@ -187,9 +203,12 @@ async function checkConsent(enrollmentId) {
  *          "Pretend a scam call starts" button (in demo mode)
  */
 function showConsentStatus(enrollment) {
+  lastEnrollment = enrollment;
   const status = enrollment.status;
   const messageKey = status === "pending" && phoneType === "landline" ? "pendingLandline" : status;
-  document.getElementById("consent-message").textContent = STATUS_MESSAGES[messageKey] || status;
+  document.getElementById("consent-message").textContent = KNOWN_STATUSES.includes(messageKey)
+    ? t(`status.${messageKey}`)
+    : status;
   document.getElementById("demo-reply-yes").hidden = status !== "pending";
   document.getElementById("demo-scam-call").hidden = status !== "active";
 
@@ -201,24 +220,35 @@ function showConsentStatus(enrollment) {
 }
 
 /**
- * Add one numbered step to the setup list. Parts can be plain text or a link.
+ * Add one numbered step to the setup list. The words come from strings.js,
+ * and each {blank} is filled with plain text or a link.
  *
- * Input:  parts — e.g. ["Open ", {link: "https://..."}, " on their phone."]
- * Example: addStep(["Dial *72 then ", "+15555550150"])
+ * Input:  key — the step's words in strings.js
+ *         blanks — what goes in each {blank}: text, or {link, label} for a link
+ * Example: addStep("setup.cell2", {number: "+15555550150"})
+ *          gives you  "Turn on call forwarding to +15555550150. On most phones..."
  */
-function addStep(parts) {
+function addStep(key, blanks) {
   const item = document.createElement("li");
-  for (const part of parts) {
-    if (typeof part === "string") {
-      item.append(part);
-    } else {
-      const link = document.createElement("a");
-      link.href = part.link;
-      link.target = "_blank";
-      link.textContent = part.label || part.link;
-      item.appendChild(link);
+  // Splitting on the blanks keeps their names: "open {appLink}, tap" gives
+  // you ["open ", "appLink", ", tap"], with the names at the odd spots.
+  const pieces = t(key).split(/\{(\w+)\}/);
+  pieces.forEach((piece, index) => {
+    if (index % 2 === 0) {
+      item.append(piece);
+      return;
     }
-  }
+    const value = blanks[piece];
+    if (typeof value === "object") {
+      const link = document.createElement("a");
+      link.href = value.link;
+      link.target = "_blank";
+      link.textContent = value.label;
+      item.appendChild(link);
+    } else {
+      item.append(value ?? "");
+    }
+  });
   document.getElementById("setup-list").appendChild(item);
 }
 
@@ -234,32 +264,21 @@ function addStep(parts) {
 function showSetupSteps(enrollment) {
   const setup = enrollment.setup;
   const name = enrollment.senior_name;
-  const forwardTo = setup.forward_to || "(your Scam Shield number)";
+  const number = setup.forward_to || t("setup.yourNumber");
   document.getElementById("setup-list").replaceChildren();
 
   if (phoneType === "landline") {
-    addStep([
-      "Connect the phone adapter to their internet router and sign it in with username ",
-      setup.adapter_username, " at ", setup.adapter_domain || "(your SIP domain)", ".",
-    ]);
-    addStep([
-      `While ${name}'s phone is still plugged into the wall, pick it up and dial *72 then `,
-      forwardTo, ". Wait for the tone, then hang up.",
-    ]);
-    addStep([`Unplug ${name}'s phone from the wall and plug it into the adapter.`]);
-    document.getElementById("setup-note").textContent =
-      "To turn Scam Shield off later: plug the phone back into the wall and dial *73.";
+    addStep("setup.landline1", {
+      username: setup.adapter_username,
+      domain: setup.adapter_domain || t("setup.yourDomain"),
+    });
+    addStep("setup.landline2", { name, number });
+    addStep("setup.landline3", { name });
+    document.getElementById("setup-note").textContent = t("setup.landlineOff");
   } else {
-    addStep([
-      `On ${name}'s phone, open `, { link: setup.app_link, label: "this calling app link" },
-      ", tap “Turn on calls”, and add it to the home screen.",
-    ]);
-    addStep([
-      "Turn on call forwarding to ", forwardTo,
-      ". On most phones, dial **21* then the number then #. On Verizon, dial *72 then the number.",
-    ]);
-    document.getElementById("setup-note").textContent =
-      "To turn Scam Shield off later: dial ##21# (Verizon: *73), or text STOP to the Scam Shield number.";
+    addStep("setup.cell1", { name, appLink: { link: setup.app_link, label: t("setup.cellAppLink") } });
+    addStep("setup.cell2", { number });
+    document.getElementById("setup-note").textContent = t("setup.cellOff");
   }
 }
 
@@ -272,7 +291,7 @@ function showSetupSteps(enrollment) {
 async function demoReplyYes() {
   const button = document.getElementById("demo-reply-yes");
   const result = document.getElementById("demo-result");
-  setBusy(button, "Saying YES…");
+  setBusy(button, t("dash.busyYes"));
 
   let answer;
   if (phoneType === "landline") {
@@ -292,7 +311,7 @@ async function demoReplyYes() {
     result.textContent = answer.data.error;
     return;
   }
-  result.textContent = phoneType === "landline" ? "Pressed 1 on the consent call." : "Sent YES from their phone.";
+  result.textContent = phoneType === "landline" ? t("dash.demoPressed1") : t("dash.demoSentYes");
 }
 
 /**
@@ -304,18 +323,18 @@ async function demoReplyYes() {
 async function demoScamCall() {
   const button = document.getElementById("demo-scam-call");
   const result = document.getElementById("demo-result");
-  setBusy(button, "Starting the call…");
+  setBusy(button, t("dash.busyScam"));
   const { ok, data } = await sendRequest("/api/demo/scam-call", { method: "POST" });
   setReady(button);
   if (!ok) {
     result.textContent = data.error;
     return;
   }
-  result.textContent = "Family alert sent. ";
+  result.textContent = `${t("dash.demoAlertSent")} `;
   const link = document.createElement("a");
   link.href = data.join_link;
   link.target = "_blank";
-  link.textContent = "Open the Join call link";
+  link.textContent = t("dash.demoOpenJoin");
   result.appendChild(link);
 }
 
@@ -333,7 +352,7 @@ async function startDashboard() {
   } catch (error) {
     // We couldn't even ask the server about logins. Say so instead of
     // leaving a blank page.
-    document.body.textContent = "We couldn't reach the server. Please refresh the page.";
+    document.body.textContent = t("error.refresh");
     return;
   }
   if (login.loginOn && login.user === null) {
@@ -367,6 +386,15 @@ document.getElementById("signup-form").addEventListener("submit", submitSignup);
 document.getElementById("signup-form").addEventListener("change", checkCreoleLandline);
 document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
 document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);
+// When they flip the language switch, redraw the words this file made.
+// (i18n.js already translated everything marked with data-text.)
+document.addEventListener("language-switched", () => {
+  drawServerStatus();
+  if (lastEnrollment !== null) {
+    showConsentStatus(lastEnrollment);
+  }
+});
+
 // Tapping "Protect someone" while already on the dashboard only changes the
 // #part of the address, which doesn't reload the page. So we watch for it.
 window.addEventListener("hashchange", openSignupIfAsked);
