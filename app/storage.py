@@ -7,6 +7,8 @@ How it fits in: Scam Shield has to remember two things between requests:
   - calls: each call we're watching, the conference "room" it lives in, the
     secret link the family uses to join it (see calls.py), and how risky it
     got, so the family dashboard can show past calls (see family.py)
+  - scam_numbers: numbers a family reported as scams, and whether to warn
+    them or block the call if that number calls again (see calls.py)
 
 SQLite comes with Python, so there's nothing extra to install. The file's
 location comes from DATABASE_PATH in .env (see config.py).
@@ -57,7 +59,17 @@ CREATE TABLE IF NOT EXISTS calls (
     sources         TEXT,            -- the Tavily links we found, as a JSON list
     alerted_at      TEXT,            -- when we sent the family alert (NULL if we didn't)
     family_answer   TEXT,            -- the family's "Was this a scam?" answer: scam / not_scam
-    family_answered_at TEXT          -- when they answered (NULL if they haven't)
+    family_answered_at TEXT,         -- when they answered (NULL if they haven't)
+    scam_list       TEXT             -- "warn" or "block" if the caller was on the family's scam list
+);
+
+CREATE TABLE IF NOT EXISTS scam_numbers (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_id      TEXT,              -- the family who reported it (NULL when login is off)
+    phone         TEXT NOT NULL,     -- the scammer's number, E.164
+    action        TEXT NOT NULL,     -- "warn" or "block" when it calls again
+    from_call_id  TEXT,              -- the call they reported it from
+    created_at    TEXT NOT NULL
 );
 """
 
@@ -75,6 +87,7 @@ NEWER_COLUMNS = {
         "alerted_at": "TEXT",
         "family_answer": "TEXT",
         "family_answered_at": "TEXT",
+        "scam_list": "TEXT",
     },
 }
 
@@ -533,4 +546,85 @@ def save_family_answer(call_id: str, answer: str) -> None:
         db.execute(
             "UPDATE calls SET family_answer = ?, family_answered_at = ? WHERE id = ?",
             (answer, now_text(), call_id),
+        )
+
+
+def mark_call_scam_list(call_id: str, action: str) -> None:
+    """
+    Remember that this call came from a number on the family's scam list, and
+    what we did about it.
+
+    Input:  call_id, which call
+            action, "warn" (we alerted the family) or "block" (we blocked it)
+    Output: nothing
+
+    Example:
+        mark_call_scam_list("c1", "block")
+    """
+    with connect() as db:
+        db.execute("UPDATE calls SET scam_list = ? WHERE id = ?", (action, call_id))
+
+
+# Scam numbers: each family's own list
+
+
+def find_scam_number(owner_id: str | None, phone: str) -> dict | None:
+    """
+    Look up a number on one family's scam list.
+
+    Input:  owner_id, the family's login (None when login is off)
+            phone, the number, E.164
+    Output: {"phone", "action", ...}, or None if it isn't on their list
+
+    Example:
+        find_scam_number("user-ana", "+13055550142") gives you {"action": "block", ...}
+    """
+    with connect() as db:
+        # "IS" instead of "=" so None (login off) matches None.
+        row = db.execute(
+            "SELECT * FROM scam_numbers WHERE owner_id IS ? AND phone = ?",
+            (owner_id, phone),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def save_scam_number(owner_id: str | None, phone: str, action: str, from_call_id: str) -> None:
+    """
+    Put a number on one family's scam list, or change what we do about it.
+
+    Input:  owner_id, the family's login (None when login is off)
+            phone, the number, E.164
+            action, "warn" or "block"
+            from_call_id, the call they reported it from
+    Output: nothing
+
+    Example:
+        save_scam_number("user-ana", "+13055550142", "block", "c1")
+    """
+    with connect() as db:
+        # One row per number per family: replace the old one if it's there.
+        db.execute(
+            "DELETE FROM scam_numbers WHERE owner_id IS ? AND phone = ?",
+            (owner_id, phone),
+        )
+        db.execute(
+            """
+            INSERT INTO scam_numbers (owner_id, phone, action, from_call_id, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (owner_id, phone, action, from_call_id, now_text()),
+        )
+
+
+def remove_scam_number(owner_id: str | None, phone: str) -> None:
+    """
+    Take a number off one family's scam list (they reported it by mistake).
+
+    Example:
+        remove_scam_number("user-ana", "+13055550142")
+    """
+    with connect() as db:
+        db.execute(
+            "DELETE FROM scam_numbers WHERE owner_id IS ? AND phone = ?",
+            (owner_id, phone),
         )

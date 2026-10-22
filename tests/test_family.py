@@ -402,3 +402,126 @@ def test_other_families_cant_answer_for_your_calls(login_on, monkeypatch, fake_t
 
     assert response.status_code == 404
     assert storage.get_call(call["id"])["family_answer"] is None
+
+
+# The scam list: warn or block a number if it calls again
+
+
+def checked_scam_call(monkeypatch, headers: dict | None = None) -> tuple[str, dict]:
+    """Rosa gets the 92 scam call. Gives you (Rosa's ID, the call)."""
+    pretend_nemotron(monkeypatch, SCAM_RESULT)
+    rosa = sign_up_rosa(headers)
+    call = scam_call_for(rosa)
+    call_monitor.check_live_call(call["id"], "Caller: Grandma, buy gift cards.")
+    return rosa, call
+
+
+def test_blocked_numbers_get_a_busy_signal_and_show_in_the_history(monkeypatch, fake_tavily):
+    """After Ana blocks the scammer, their next call is rejected and never rings Rosa."""
+    rosa, call = checked_scam_call(monkeypatch)
+    calls.DEMO_CALL_LOG.clear()
+
+    picked = client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "block"})
+    xml = calls.handle_incoming_call(SCAMMER_PHONE, "CA-again", SENIOR_PHONE)
+    newest = client.get("/api/family").json()["seniors"][0]["calls"][0]
+
+    assert picked.json()["number_on_list"] == "block"
+    assert "<Reject" in xml
+    assert calls.DEMO_CALL_LOG == []
+    assert newest["scam_list"] == "block"
+    assert newest["status"] == "ended"
+
+
+def test_warned_numbers_ring_and_alert_the_family_right_away(monkeypatch, fake_tavily):
+    """With "warn", the call still rings Rosa, and Ana is alerted before Nemotron says anything."""
+    rosa, call = checked_scam_call(monkeypatch)
+    client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "warn"})
+    alerts.DEMO_OUTBOX.clear()
+
+    xml = calls.handle_incoming_call(SCAMMER_PHONE, "CA-again", SENIOR_PHONE)
+
+    family_texts = texts_to_family()
+    assert "<Conference" in xml
+    assert "/join/" in family_texts[0]
+    assert "one you reported as a scam" in family_texts[1]
+
+
+def test_a_warned_call_doesnt_get_a_second_alert_from_nemotron(monkeypatch, fake_tavily):
+    """Once we warned Ana at the start, a high score later doesn't text her again."""
+    rosa, call = checked_scam_call(monkeypatch)
+    client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "warn"})
+    calls.handle_incoming_call(SCAMMER_PHONE, "CA-again", SENIOR_PHONE)
+    newest = client.get("/api/family").json()["seniors"][0]["calls"][0]
+    alerts.DEMO_OUTBOX.clear()
+
+    outcome = call_monitor.check_live_call(newest["id"], "Caller: Grandma, buy gift cards.")
+
+    assert outcome["alert_sent_now"] is False
+    assert texts_to_family() == []
+
+
+def test_do_nothing_takes_the_number_off_the_list(monkeypatch, fake_tavily):
+    """Picking "Do nothing" after "Block it" lets the number ring like any other call."""
+    rosa, call = checked_scam_call(monkeypatch)
+    client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "block"})
+
+    picked = client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "none"})
+    xml = calls.handle_incoming_call(SCAMMER_PHONE, "CA-again", SENIOR_PHONE)
+
+    assert picked.json()["number_on_list"] is None
+    assert "<Reject" not in xml
+
+
+def test_the_list_does_nothing_while_protection_is_paused(monkeypatch, fake_tavily):
+    """Paused means we stay out of Rosa's calls completely, even for blocked numbers."""
+    rosa, call = checked_scam_call(monkeypatch)
+    client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "block"})
+    client.post(f"/api/enrollments/{rosa}/pause")
+
+    xml = calls.handle_incoming_call(SCAMMER_PHONE, "CA-again", SENIOR_PHONE)
+
+    assert "<Reject" not in xml
+
+
+def test_one_familys_list_doesnt_block_calls_for_another(login_on, monkeypatch, fake_tavily):
+    """Ana blocks the number for Rosa. When it calls Bob's grandpa, it still rings."""
+    rosa, call = checked_scam_call(monkeypatch, as_user("ana-token"))
+    client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "block"}, headers=as_user("ana-token"))
+    # Bob protects his grandpa, who said YES too.
+    client.post(
+        "/api/enrollments",
+        json={
+            "senior_name": "Jorge",
+            "senior_phone": "+13055550188",
+            "family_name": "Bob",
+            "family_phone": "+13055550189",
+        },
+        headers=as_user("bob-token"),
+    )
+    client.post("/twilio/sms", data={"From": "+13055550188", "Body": "YES"})
+
+    xml = calls.handle_incoming_call(SCAMMER_PHONE, "CA-bob", "+13055550188")
+
+    assert "<Reject" not in xml
+    assert "<Conference" in xml
+
+
+def test_other_families_cant_change_your_list(login_on, monkeypatch, fake_tavily):
+    """Bob can't put the number from Rosa's call on any list."""
+    rosa, call = checked_scam_call(monkeypatch, as_user("ana-token"))
+
+    response = client.post(
+        f"/api/calls/{call['id']}/scam-list", json={"choice": "block"}, headers=as_user("bob-token")
+    )
+
+    assert response.status_code == 404
+    assert storage.find_scam_number(ANA["id"], SCAMMER_PHONE) is None
+
+
+def test_only_warn_block_or_none_is_a_choice(monkeypatch, fake_tavily):
+    """Any other choice gives you a 400."""
+    rosa, call = checked_scam_call(monkeypatch)
+
+    response = client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "forever"})
+
+    assert response.status_code == 400

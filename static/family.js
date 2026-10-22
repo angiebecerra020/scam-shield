@@ -13,6 +13,9 @@
       links (GET /api/calls/{id})
     - "Was this a scam?" in each call's details, so the family can tell us
       if we got it right (POST /api/calls/{id}/answer)
+    - "Report and block" for scam calls: the details ready to paste into the
+      FTC's report form, and what to do if the number calls again: warn us
+      or block it (POST /api/calls/{id}/scam-list)
   If the family hasn't signed anyone up yet, we show the sign-up form instead.
 
   It uses sendRequest() from app.js, which adds the login token for us, and
@@ -41,6 +44,24 @@ const FAMILY_ANSWER_LABELS = {
   scam: "You said: scam",
   not_scam: "You said: false alarm",
 };
+
+// Where families report scams to the US government (the FTC).
+const FTC_REPORT_URL = "https://reportfraud.ftc.gov/";
+
+// The choices for "If this number calls again", and what each one means.
+const SCAM_LIST_CHOICES = [
+  { choice: "none", label: "Do nothing", means: "If this number calls again, Scam Shield checks the call like any other." },
+  {
+    choice: "warn",
+    label: "Warn us right away",
+    means: "If this number calls again, the call still rings, and we text you the moment it starts.",
+  },
+  {
+    choice: "block",
+    label: "Block it",
+    means: "If this number calls again, it gets a busy signal and never rings. You'll see it in the call history.",
+  },
+];
 
 // Scores from here up are scams (the same line as detector.ALERT_FROM),
 // and from WATCH_FROM up we call them out as worth a look.
@@ -293,7 +314,14 @@ function callRow(call) {
  *          gives you  "Likely scam · Family alerted · You said: scam"
  */
 function verdictLine(call) {
+  // A blocked call never rang, so there's no score to talk about.
+  if (call.scam_list === "block") {
+    return "Blocked: a number you reported as a scam";
+  }
   const parts = [VERDICT_LABELS[call.verdict] || "Not checked"];
+  if (call.scam_list === "warn") {
+    parts.push("Number you reported");
+  }
   if (call.status === "live") {
     parts.push("On the phone now");
   }
@@ -352,6 +380,14 @@ async function toggleCallDetails(callId, button, details) {
 function showCallDetails(call, details) {
   details.replaceChildren();
 
+  if (call.scam_list === "block") {
+    details.appendChild(
+      makeElement("p", "", "We blocked this call. It's a number you reported as a scam, so it never rang.")
+    );
+    details.appendChild(reportAndBlock(call, details));
+    return;
+  }
+
   if (call.claimed_identity) {
     details.appendChild(makeElement("p", "", `Said they were: ${call.claimed_identity}`));
   }
@@ -392,6 +428,183 @@ function showCallDetails(call, details) {
   if (call.risk_score !== null) {
     details.appendChild(askWasItAScam(call, details));
   }
+
+  // Report and block, once it looks like a scam (or the family says so, or
+  // the number is already on their list).
+  const looksLikeAScam =
+    call.verdict === "likely_scam" || call.family_answer === "scam" || call.number_on_list !== null;
+  if (call.caller_number && looksLikeAScam) {
+    details.appendChild(reportAndBlock(call, details));
+  }
+}
+
+/**
+ * Write up a call for the FTC's report form, so the family can paste it
+ * instead of remembering every detail.
+ *
+ * Input:  call — from GET /api/calls/{id}
+ * Output: the text, one fact per line
+ * Example: the grandson call  gives you  "Scam phone call
+ *          When: Oct 21, 2026, 10:47 PM
+ *          Number that called: (305) 555-0142 ..."
+ */
+function ftcReportText(call) {
+  const lines = [
+    "Scam phone call",
+    `When: ${formatWhen(call.started_at)}`,
+    `Number that called: ${formatPhone(call.caller_number)}`,
+  ];
+  if (call.claimed_identity) {
+    lines.push(`Who they said they were: ${call.claimed_identity}`);
+  }
+  if (call.reasons.length > 0) {
+    lines.push(`What happened: ${call.reasons.join("; ")}`);
+  }
+  if (call.risk_score !== null) {
+    lines.push(`Scam Shield, our scam call alert service, rated it ${call.risk_score} out of 100 for scam risk.`);
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Build the "Report and block" section: the FTC report (details ready to
+ * copy, and a link to the form), what to do if the number calls again, and
+ * how to block it on the phone itself.
+ *
+ * Input:  call — from GET /api/calls/{id}; details — the call's details area
+ * Output: the section element
+ * Example: the grandson call  gives you  "Copy the details", "Open the FTC
+ *          report form", and "Do nothing / Warn us right away / Block it"
+ */
+function reportAndBlock(call, details) {
+  const box = makeElement("div", "report-and-block");
+  box.appendChild(makeElement("h5", "", "Report it to the FTC"));
+  box.appendChild(
+    makeElement(
+      "p",
+      "hint",
+      "Reporting helps the government track down scammers. Copy the details below, open the form, and paste them in."
+    )
+  );
+
+  // The text sits in a box they can read (and copy by hand if Copy doesn't work).
+  const text = makeElement("textarea", "report-text");
+  text.readOnly = true;
+  text.rows = 5;
+  text.value = ftcReportText(call);
+  text.setAttribute("aria-label", "Call details for the FTC report");
+  box.appendChild(text);
+
+  const actions = makeElement("div", "answer-buttons");
+  const copy = makeElement("button", "button-small", "Copy the details");
+  copy.type = "button";
+  copy.addEventListener("click", () => copyReport(text, copy));
+  const open = makeElement("a", "button button-small button-outline", "Open the FTC report form");
+  open.href = FTC_REPORT_URL;
+  open.target = "_blank";
+  open.rel = "noopener noreferrer";
+  actions.append(copy, open);
+  box.appendChild(actions);
+
+  box.appendChild(makeElement("h5", "", "If this number calls again"));
+  const choices = makeElement("div", "answer-buttons");
+  const picked = call.number_on_list || "none";
+  for (const option of SCAM_LIST_CHOICES) {
+    const button = makeElement("button", "button-small button-outline", option.label);
+    button.type = "button";
+    button.setAttribute("aria-pressed", String(picked === option.choice));
+    button.addEventListener("click", () => sendScamListChoice(call.id, option.choice, button, details));
+    choices.appendChild(button);
+  }
+  box.appendChild(choices);
+  const means = SCAM_LIST_CHOICES.find((option) => option.choice === picked).means;
+  box.appendChild(makeElement("p", "hint", `${means} This only applies to the people you protect.`));
+  box.appendChild(makeElement("p", "error scam-list-error", ""));
+
+  box.appendChild(phoneBlockSteps());
+  return box;
+}
+
+/**
+ * Copy the FTC report text, and say it worked (or how to copy it by hand).
+ *
+ * Input:  text — the report's text box; button — the Copy button
+ * Example: tap "Copy the details"  gives you  "Copied!" for a moment
+ */
+async function copyReport(text, button) {
+  try {
+    await navigator.clipboard.writeText(text.value);
+    button.textContent = "Copied!";
+  } catch (error) {
+    // Some browsers don't allow copying from a page. Select it so a long
+    // press (or Ctrl+C) copies it.
+    text.select();
+    button.textContent = "Select and copy the text above";
+  }
+  setTimeout(() => {
+    button.textContent = "Copy the details";
+  }, 2500);
+}
+
+/**
+ * Save what to do if a number calls again, then show the call again with
+ * that choice picked.
+ *
+ * Input:  callId — the call the number came from; choice — "warn", "block" or "none";
+ *         button — the one they tapped; details — the call's details area
+ * Output: nothing; it updates the page.
+ * Example: tap "Block it"  gives you  "Block it" picked, and the number blocked
+ */
+async function sendScamListChoice(callId, choice, button, details) {
+  setBusy(button, "Saving…");
+  const { ok, data } = await sendRequest(`/api/calls/${callId}/scam-list`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ choice }),
+  });
+  if (!ok) {
+    setReady(button);
+    details.querySelector(".scam-list-error").textContent = data.error;
+    return;
+  }
+  showCallDetails(data, details);
+}
+
+/**
+ * The steps to block a number on the phone itself, folded up until tapped.
+ *
+ * Calls that forward to Scam Shield come to us first, so the phone's own
+ * block list never sees them: "Block it" above is what stops those. Blocking
+ * on the phone still helps with scam TEXTS, and with calls that don't come
+ * through Scam Shield.
+ *
+ * Output: a <details> element ("Block it on the phone too")
+ * Example: tap it  gives you  the iPhone and Android steps
+ */
+function phoneBlockSteps() {
+  const box = makeElement("details", "phone-steps");
+  box.appendChild(makeElement("summary", "", "Block it on the phone too"));
+  box.appendChild(
+    makeElement(
+      "p",
+      "hint",
+      "Calls that come through Scam Shield are blocked by \"Block it\" above. Blocking on the phone also stops scam texts, and calls that don't come through Scam Shield."
+    )
+  );
+
+  const steps = [
+    ["iPhone", "Open Phone, then Recents. Tap the ⓘ next to the number, then Block Caller. For texts: open the message, tap the number at the top, then Block Caller."],
+    ["Android", "Open Phone, then Recents (or Call history). Tap and hold the number, then Block or Block/report spam. On Samsung, tap the number, then Details, then Block."],
+  ];
+  const list = makeElement("ul", "reasons");
+  for (const [phone, how] of steps) {
+    const item = document.createElement("li");
+    item.appendChild(makeElement("strong", "", `${phone}: `));
+    item.appendChild(document.createTextNode(how));
+    list.appendChild(item);
+  }
+  box.appendChild(list);
+  return box;
 }
 
 /**

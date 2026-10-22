@@ -38,6 +38,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 | 5 | **Family alert.** A text message in the family member's own language, with a "Join call" link and the top red flags. It goes out the first time the AI score hits 70. | Done (runs on live calls once the live transcript is ready) |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
 | 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), a "Was this a scam?" answer for each call, and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
+| 6b | **Report and block.** For a scam call, the dashboard writes up the details ready to paste into the FTC's report form ([reportfraud.ftc.gov](https://reportfraud.ftc.gov/)). The family also picks what happens if that number calls again: **warn us** (the call rings and the family is alerted the moment it starts) or **block it** (a busy signal, and it never rings). Each family has their own list. | Done |
 | 7 | **Languages.** English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. | Done (Haitian Creole in the sign-up menus coming soon) |
 | ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. A demo player will replay a scripted call as a live transcript. | Demo mode done, 20 sample calls ready, player coming soon |
 
@@ -274,6 +275,7 @@ With `DEMO_MODE=false`, every webhook must carry Twilio's signature, so nobody c
 - More languages: Vietnamese and Chinese
 - A spoken warning to the senior during the call
 - Trusted contact setup the family can do in two minutes from their phone
+- A phone app (App Store and Google Play), so a blocked number is blocked on the phone itself too, including texts. Today our block works on calls that come through Scam Shield, and the dashboard shows the steps to block a number in the phone's settings.
 
 ## Team
 

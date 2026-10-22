@@ -14,6 +14,9 @@ dashboard's questions:
   4. "Was this a scam?": the family tells us if we got a call right. We save
      the answer with the call, so we can see where the detector is wrong and
      make it smarter (see "Learning from the family's answers" in the README)
+  5. the scam list: if a number calls again, warn us or block it (calls.py
+     checks the list when each call comes in). Each family has their own list,
+     so one family's report never blocks a number for anyone else.
 
 Every answer only covers the seniors YOU signed up. We know who you are from
 your login (auth.py), and each senior remembers whose login signed them up
@@ -30,6 +33,10 @@ CALLS_TO_SHOW = 50
 
 # The answers the family can give to "Was this a scam?"
 FAMILY_ANSWERS = ("scam", "not_scam")
+
+# What the family can pick for a number if it calls again. "none" takes it
+# off their scam list.
+SCAM_LIST_CHOICES = ("warn", "block", "none")
 
 
 class FamilyError(Exception):
@@ -141,6 +148,9 @@ def call_summary(call: dict) -> dict:
         "status": call["status"],
         # "scam", "not_scam", or None if the family hasn't said
         "family_answer": call["family_answer"],
+        # "warn" or "block" if the caller was on the family's scam list
+        # when this call came in, or None
+        "scam_list": call["scam_list"],
     }
 
 
@@ -197,7 +207,9 @@ def get_call(call_id: str, user: dict | None) -> dict:
 
     Input:  call_id, which call
             user, the same as owns()
-    Output: call_details() for that call, plus "senior_name"
+    Output: call_details() for that call, plus "senior_name" and
+            "number_on_list" (what the family's scam list says to do if this
+            number calls again: "warn", "block", or None)
     Raises: FamilyError (404) if there's no such call, or it isn't theirs
 
     Example:
@@ -212,6 +224,11 @@ def get_call(call_id: str, user: dict | None) -> dict:
 
     details = call_details(call)
     details["senior_name"] = enrollment["senior_name"]
+    details["number_on_list"] = None
+    if call["caller_number"]:
+        listed = storage.find_scam_number(enrollment["owner_id"], call["caller_number"])
+        if listed is not None:
+            details["number_on_list"] = listed["action"]
     return details
 
 
@@ -284,4 +301,41 @@ def answer_was_it_a_scam(call_id: str, answer: str, user: dict | None) -> dict:
     # get_call() checks it's their call, so nobody can answer for someone else.
     get_call(call_id, user)
     storage.save_family_answer(call_id, answer)
+    return get_call(call_id, user)
+
+
+def set_scam_list(call_id: str, choice: str, user: dict | None) -> dict:
+    """
+    Decides what happens if the number from one of your calls calls again:
+    "warn" (alert the family the moment it calls), "block" (it never rings),
+    or "none" (take it off the list).
+
+    The list belongs to the family who signed the senior up, and it covers
+    every senior they protect.
+
+    Input:  call_id, the call the number came from
+            choice, "warn", "block" or "none"
+            user, the same as owns()
+    Output: get_call() for that call, with "number_on_list" updated
+    Raises: FamilyError (400) for any other choice, or if we don't know the
+            caller's number; (404) if it isn't their call
+
+    Example:
+        set_scam_list("c1", "block", {"id": "user-ana"}) gives you
+        the call with {"number_on_list": "block", ...}, and next time
+        that number calls Rosa, it gets a busy signal
+    """
+    if choice not in SCAM_LIST_CHOICES:
+        raise FamilyError('The choice has to be "warn", "block" or "none".', 400)
+    # get_call() checks it's their call, so nobody can change someone else's list.
+    get_call(call_id, user)
+    call = storage.get_call(call_id)
+    if not call["caller_number"]:
+        raise FamilyError("We don't know this caller's number, so we can't add it to your list.", 400)
+
+    owner_id = storage.get_enrollment(call["enrollment_id"])["owner_id"]
+    if choice == "none":
+        storage.remove_scam_number(owner_id, call["caller_number"])
+    else:
+        storage.save_scam_number(owner_id, call["caller_number"], choice, call_id)
     return get_call(call_id, user)

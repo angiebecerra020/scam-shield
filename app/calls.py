@@ -31,6 +31,10 @@ number, not ours, so they can still tell their daughter from a stranger.
 We also pass along the incoming call's CallToken, which is what Twilio asks
 for when a forwarded call keeps the original caller ID (see caller_id_for).
 
+Each family can also keep a list of scam numbers (see family.py). When a
+number on the list calls a protected senior, we either alert the family the
+moment the call starts ("warn"), or don't let it ring at all ("block").
+
 In demo mode we never place real calls; we record what we would have done in
 DEMO_CALL_LOG instead.
 """
@@ -138,6 +142,9 @@ def handle_incoming_call(
     What happens:
       - senior said YES  -> caller goes into a conference room, and we ring
                             the senior's device into the same room
+                            (a number on the family's scam list is either
+                            blocked with a busy signal, or rings while we
+                            alert the family right away)
       - senior hasn't said YES -> we pass the call straight to their device,
                             without a room and without listening
       - nobody signed up -> a short message, then hang up
@@ -160,7 +167,18 @@ def handle_incoming_call(
         dial_device(response, enrollment, caller)
         return str(response)
 
+    # Is this a number the family reported as a scam?
+    reported = reported_number_action(enrollment, caller)
+    if reported == "block":
+        record_blocked_call(enrollment, caller, call_sid)
+        # Reject gives the caller a busy signal without answering, so a
+        # scammer doesn't even learn the number works.
+        response.reject()
+        return str(response)
+
     call = start_protected_call(enrollment, caller, call_sid, call_token)
+    if reported == "warn":
+        warn_about_reported_number(call, enrollment)
 
     # Coming soon: <Start><Transcription> goes here, so detector.py can read
     # the call as it happens. Only calls from seniors who said YES get it.
@@ -409,6 +427,91 @@ def send_family_alert(call: dict) -> None:
             join_link=join_link(call),
         ),
     )
+
+
+def reported_number_action(enrollment: dict, caller: str) -> str | None:
+    """
+    Check if the caller is on the scam list of the family who protects this senior.
+
+    Input:  enrollment, the senior's active enrollment
+            caller, who's calling (Twilio's "From")
+    Output: "warn", "block", or None if the number isn't on their list
+
+    Example:
+        reported_number_action(rosa, "+13055550142") gives you "block"
+        if Ana said to block that number
+    """
+    phone = normalize_phone(caller or "")
+    if phone is None:
+        return None
+    found = storage.find_scam_number(enrollment.get("owner_id"), phone)
+    if found is None:
+        return None
+    return found["action"]
+
+
+def record_blocked_call(enrollment: dict, caller: str, call_sid: str) -> dict:
+    """
+    Save a call we blocked, so the family sees it in the call history. Nobody
+    joins it and it never rings, so it's over as soon as it's saved.
+
+    Input:  enrollment, the senior's enrollment
+            caller, the blocked number
+            call_sid, Twilio's ID for the call
+    Output: the saved call
+
+    Example:
+        record_blocked_call(rosa, "+13055550142", "CA123") gives you
+        {"status": "ended", "scam_list": "block", ...} in the history
+    """
+    call_id = secrets.token_urlsafe(9)
+    call = {
+        "id": call_id,
+        "call_sid": call_sid,
+        "enrollment_id": enrollment["id"],
+        "caller_number": caller,
+        # The table needs a room name and a join token, but this call never
+        # gets a room. The token is still random so it can't be guessed.
+        "conference_name": f"blocked-{call_id}",
+        "join_token": secrets.token_urlsafe(24),
+        "status": "ended",
+        "started_at": storage.now_text(),
+    }
+    storage.save_call(call)
+    storage.mark_call_ended(call_id)
+    storage.mark_call_scam_list(call_id, "block")
+    return call
+
+
+def warn_about_reported_number(call: dict, enrollment: dict) -> None:
+    """
+    Alert the family the moment a number they reported calls, without waiting
+    for Nemotron: the family alert with the "Join call" link, then a text
+    saying it's a number they reported.
+
+    We save that we alerted them, so call_monitor.py doesn't send the alert
+    again once Nemotron scores the call.
+
+    Input:  call, the new protected call
+            enrollment, the senior's enrollment
+    Output: nothing
+
+    Example:
+        Ana gets "Scam Shield ALERT: Rosa may be on a scam call right now..."
+        and "Scam Shield: the number calling Rosa (+13055550142) is one you reported as a scam."
+    """
+    send_family_alert(call)
+    send_sms(
+        enrollment["family_phone"],
+        message(
+            "reported_number_calling",
+            enrollment["family_language"],
+            senior_name=enrollment["senior_name"],
+            caller=call["caller_number"],
+        ),
+    )
+    storage.mark_call_alerted(call["id"])
+    storage.mark_call_scam_list(call["id"], "warn")
 
 
 def find_live_call(join_token: str) -> tuple[dict, dict]:

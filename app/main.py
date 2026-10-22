@@ -28,6 +28,7 @@ Routes:
     GET  /api/family              -> [login] the seniors you protect and their recent calls
     GET  /api/calls/{id}          -> [login] one past call: score, reasons and Tavily links
     POST /api/calls/{id}/answer   -> [login] the family's "Was this a scam?" answer
+    POST /api/calls/{id}/scam-list -> [login] if this number calls again: warn, block, or none
     POST /api/enrollments/{id}/pause  -> [login] stop listening for now
     POST /api/enrollments/{id}/resume -> [login] turn protection back on
 
@@ -305,6 +306,32 @@ def answer_was_it_a_scam(call_id: str, body: ScamAnswer, user: dict | None = Dep
     """
     try:
         return family.answer_was_it_a_scam(call_id, body.answer, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+class ScamListChoice(BaseModel):
+    """
+    What to do if a number calls again.
+
+    Example:
+        {"choice": "block"}  (or "warn", or "none" to take it off the list)
+    """
+
+    choice: str
+
+
+@app.post("/api/calls/{call_id}/scam-list")
+def set_scam_list(call_id: str, body: ScamListChoice, user: dict | None = Depends(require_login)):
+    """
+    Put the number from one of your calls on your scam list (or take it off).
+
+    Example:
+        POST /api/calls/c1/scam-list {"choice": "block"}
+        gives you the call with {"number_on_list": "block", ...}
+    """
+    try:
+        return family.set_scam_list(call_id, body.choice, user)
     except family.FamilyError as problem:
         return error(problem.text, problem.status_code)
 

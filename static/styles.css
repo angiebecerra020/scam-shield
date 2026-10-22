@@ -792,6 +792,41 @@ h3 {
   color: var(--color-black);
 }
 
+/* "Report and block" under a scam call's details */
+.report-and-block {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #333;
+}
+
+/* The FTC report text: easy to read, and easy to copy by hand */
+.report-text {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.answer-buttons .button {
+  margin: 0;
+}
+
+.phone-steps {
+  margin-top: 12px;
+}
+
+.phone-steps summary {
+  color: var(--color-gold);
+  cursor: pointer;
+}
+
 /* Make sure the "hidden" attribute always wins over display rules above */
 [hidden] {
   display: none !important;

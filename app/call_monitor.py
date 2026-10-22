@@ -99,7 +99,8 @@ def should_alert(call: dict, enrollment: dict | None, detector_result: dict) -> 
     We alert only when ALL of these are true:
       - the senior said YES to Scam Shield
       - the call is still going
-      - we haven't already alerted the family about this call
+      - we haven't already alerted the family about this call (not even
+        when the call started, for a number on their scam list in calls.py)
       - the score is 70 or more
 
     Input:  call, the call from storage
@@ -115,7 +116,7 @@ def should_alert(call: dict, enrollment: dict | None, detector_result: dict) -> 
         return False
     if call["status"] != "live":
         return False
-    if call["id"] in ALERTED_CALL_IDS:
+    if call["id"] in ALERTED_CALL_IDS or call["alerted_at"] is not None:
         return False
     if score is None:
         return False

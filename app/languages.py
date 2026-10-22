@@ -44,6 +44,10 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} said YES. Their calls are now protected.",
         "family_told_no": "Scam Shield: {senior_name} said NO, so we will not watch their calls.",
         "family_told_off": "Scam Shield: {senior_name} turned Scam Shield off. We stopped watching their calls.",
+        # Sent right after the family alert, when the caller is on the family's scam list.
+        "reported_number_calling": (
+            "Scam Shield: the number calling {senior_name} ({caller}) is one you reported as a scam."
+        ),
         # Sent to the family member during a risky call.
         "family_alert": (
             "Scam Shield ALERT: {senior_name} may be on a scam call right now. "
@@ -78,6 +82,9 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} dijo SÍ. Sus llamadas ahora están protegidas.",
         "family_told_no": "Scam Shield: {senior_name} dijo NO, así que no vigilaremos sus llamadas.",
         "family_told_off": "Scam Shield: {senior_name} apagó Scam Shield. Ya no vigilamos sus llamadas.",
+        "reported_number_calling": (
+            "Scam Shield: el número que está llamando a {senior_name} ({caller}) es uno que usted reportó como estafa."
+        ),
         "family_alert": (
             "ALERTA de Scam Shield: {senior_name} puede estar en una llamada de "
             "estafa ahora mismo. Toque para unirse a la llamada: {join_link}"
