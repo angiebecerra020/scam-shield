@@ -11,6 +11,8 @@
 
 Scam Shield follows a senior's phone call through a live transcript, checks the caller against the web, and uses **NVIDIA Nemotron** on **Nebius Token Factory** to spot the warning signs of a scam: gift cards, secrecy, urgency, a "grandchild" in trouble. When the risk is high, the family gets an alert right away, in their own language, with a link to join the call.
 
+**🌐 Try it: <https://scam-shield-silk.vercel.app>**: the landing page, family sign up and log in, and the family dashboard. The site runs in demo mode, so no real calls or texts ever go out.
+
 > 🚧 **Work in progress** for the Nebius x NVIDIA Global AI Hackathon. Parts marked *Coming soon* are being built now.
 
 ## The problem
@@ -33,11 +35,11 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 | 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds scam warnings that match the call. It looks at trusted sites first: the FTC, FBI, Social Security, Medicare, AARP and the BBB. | Done |
 | 3 | **AI scam score.** NVIDIA Nemotron scores the risk from 0 to 100 and explains why: gift cards, secrecy, urgency, a fake grandchild, "your Social Security number is suspended". | Done |
 | 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Coming soon |
-| 5 | **Family alert.** A live text message in the family member's own language, with a "Join call" link. | Text + link done; triggered by the AI score soon |
+| 5 | **Family alert.** A text message in the family member's own language, with a "Join call" link and the top red flags. It goes out the first time the AI score hits 70. | Done (runs on live calls once the live transcript is ready) |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
 | 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
-| 7 | **Languages.** English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. | Done |
-| ★ | **Demo mode.** Replays a scripted call as a live transcript, with no real phone call needed. | Sample calls ready, player coming soon |
+| 7 | **Languages.** English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. | Done (Haitian Creole in the sign-up menus coming soon) |
+| ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. A demo player will replay a scripted call as a live transcript. | Demo mode done, 20 sample calls ready, player coming soon |
 
 ## How it works
 
@@ -64,7 +66,8 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
   Family
        - text alert in THEIR language + "Join call" link
          (tap it -> we ring the family's phone into the call: a 3-way call)
-       - live dashboard: risk meter, reasons, source links, call history
+       - dashboard: call history with the score, reasons and source links
+         (a live risk meter is coming soon)
 ```
 
 ## How we use NVIDIA Nemotron and Nebius Token Factory
@@ -95,7 +98,7 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 - **Other languages:** the same grandson scam gets caught in Spanish and in Haitian Creole (score 85 each).
 - **Caller research:** for the real Social Security, IRS and Medicare numbers (scammers love to fake these on caller ID), Tavily warned about scam calls every time. Scam warnings now come from places like the FBI and AARP instead of random posts.
 - **From score to alert:** playing the fake grandson call line by line, the score went from 30 to 85 and the family alert fired the moment "Danny" said he was arrested and needed bail. It fired only once, and Tavily pulled warnings from AARP, the FCC and the BBB.
-- **Tests:** 90 automated tests run on GitHub for every change (that's the green badge at the top).
+- **Tests:** more than 120 automated tests run on GitHub for every change (that's the green badge at the top).
 
 ## Built with
 
@@ -104,8 +107,10 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 | **NVIDIA Nemotron** | The brain. Nemotron 3.5 Lightning reads the transcript, scores the scam risk, explains why, and writes the family alert in their language. |
 | **Nebius Token Factory** | Runs Nemotron for us through a fast, OpenAI compatible API with structured JSON output. |
 | **Tavily** | Real-time web search: reports about the caller's number, and scam warnings from trusted sites. |
-| **Twilio** | Phone number, live call transcription, text alerts, and the family "Is it really you?" texts. |
+| **Twilio** | Phone number, forwarded calls and 3-way "Join call" calls, the senior's consent text or call, and the family alerts. Live call transcription and the "Is it really you?" texts are coming soon. |
 | **FastAPI** (Python) | Our backend server, which also hosts the dashboard. |
+| **Supabase** | Family accounts: sign up and log in with an email and password. |
+| **Vercel** | Hosts the live site. |
 
 ## Getting started
 
@@ -163,10 +168,10 @@ pytest
 
 ## Demo
 
-*Coming soon.*
+**On the live site:** open <https://scam-shield-silk.vercel.app>, tap **Log in** in the header (on a phone it's under **Menu**), and make an account. Then follow the steps below from "sign someone up". Heads up: the live site's database can reset now and then, so a senior you signed up might disappear. Your login stays.
 
 - **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000/dashboard>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>. Back on the dashboard, **Your family** lists everyone you protect, with their past calls: tap a call to see its score, the reasons and the Tavily links. **Pause protection** turns listening off (calls still ring like normal) until you turn it back on.
-- **Backup demo (no phone needed):** with `DEMO_MODE=true`, Scam Shield plays a scripted scam call as if it were live, so you can watch the risk score climb and the family alert go out.
+- **Demo player (coming soon):** pick one of our sample calls and watch it play line by line as if it were live: the risk score climbs and the family alert goes out.
 - **Live demo:** a teammate calls the Scam Shield number and acts out a scam script. Another teammate plays the senior with the calling app open in a browser, so no forwarding or adapter is needed on stage.
 
 **Privacy and consent:** our demos use **simulated calls only**, with scripts and teammates. Florida, where we're based, requires everyone on a call to agree before it's recorded, so we never record or transcribe real people without their consent.
@@ -190,11 +195,11 @@ scam-shield/
 │   ├── twilio_security.py # checks webhooks really came from Twilio
 │   ├── auth.py            # family logins: checks Supabase login tokens
 │   ├── family.py          # family dashboard: call history, call details, pause and resume
-│   ├── verify.py          # "Is it really you?" check
+│   ├── verify.py          # "Is it really you?" check (coming soon)
 │   ├── languages.py       # each person's language + translations
-│   └── demo_mode.py       # loads the sample calls and plays them like they're live
+│   └── demo_mode.py       # loads the sample calls for the tests and the demo
 ├── static/                # landing page, login, family dashboard, "Join call" page, senior's calling app, and the header on every page (nav.js)
-├── data/test_scripts/     # sample scam calls and normal calls (English and Spanish)
+├── data/test_scripts/     # 20 sample scam calls and normal calls (English and Spanish)
 ├── scripts/               # day one checks for Nemotron, Tavily and languages
 ├── tests/                 # automated tests (pytest)
 ├── .github/workflows/     # runs the tests on GitHub for every change
