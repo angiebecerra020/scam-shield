@@ -1,7 +1,8 @@
 """
 test_navigation.py
 
-Tests for the header at the top of the pages (static/nav.js).
+Tests for the header at the top of the pages (static/nav.js), and the
+loading and error helpers (static/busy.js).
 
 How it fits in: nav.js builds the header in the browser, so here we just
 check that the right pages have the spot for it and load nav.js, and that
@@ -41,3 +42,20 @@ def test_nav_script_has_the_links():
     assert '"/demo"' in script
     assert '"/dashboard#protect"' in script
     assert '"/dashboard"' in script
+
+
+@pytest.mark.parametrize(
+    "path, page_script",
+    [
+        ("/dashboard", "/static/app.js"),
+        ("/login", "/static/login.js"),
+        ("/join/some-token", "/static/join.js"),
+        ("/phone/some-key", "/static/phone.js"),
+    ],
+)
+def test_pages_load_the_loading_and_error_helpers_first(path, page_script):
+    """Every page that waits on the server loads busy.js before its own script."""
+    page = client.get(path).text
+
+    assert "/static/busy.js" in page
+    assert page.index("/static/busy.js") < page.index(page_script)

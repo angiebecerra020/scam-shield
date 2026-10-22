@@ -71,17 +71,21 @@ async function submitLogin(event) {
 
   const email = form.email.value.trim();
   const password = form.password.value;
-  const client = await getAuthClient();
 
-  // Turn the button off while we wait, so a double tap doesn't send twice.
-  button.disabled = true;
+  // Say what's happening while Supabase checks, and turn the button off so
+  // a double tap doesn't send twice (busy.js).
+  setBusy(button, formMode === "login" ? "Logging in…" : "Making your account…");
+  // Leaving for the dashboard: keep the button busy until the page changes.
+  let leaving = false;
   try {
+    const client = await getAuthClient();
     if (formMode === "login") {
       const { error } = await client.auth.signInWithPassword({ email, password });
       if (error) {
         errorElement.textContent = friendlyError(error);
         return;
       }
+      leaving = true;
       window.location.href = "/dashboard";
       return;
     }
@@ -98,15 +102,18 @@ async function submitLogin(event) {
     }
     if (data.session) {
       // Email confirmation is off in Supabase, so they're already logged in.
+      leaving = true;
       window.location.href = "/dashboard";
       return;
     }
     messageElement.textContent =
       `Almost done! We sent a link to ${email}. Open it to finish making your account.`;
   } catch (problem) {
-    errorElement.textContent = "We couldn't reach the login service. Please try again.";
+    errorElement.textContent = "We couldn't reach the login service. Check your internet and try again.";
   } finally {
-    button.disabled = false;
+    if (!leaving) {
+      setReady(button);
+    }
   }
 }
 

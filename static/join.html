@@ -20,8 +20,11 @@
     <h1>🛡️ Join the call</h1>
     <p id="join-message" aria-live="polite">Checking the call…</p>
     <button type="button" id="join-button" class="button-big" hidden>Call me into the call</button>
+    <!-- Only shows when the internet or our server had trouble -->
+    <button type="button" id="join-retry" class="button-outline" hidden>Try again</button>
     <p id="join-hint" class="hint" hidden>We'll ring your phone. When you answer, you'll be on the call. Everyone hears a short tone when you join.</p>
   </main>
+  <script src="/static/busy.js"></script>
   <script src="/static/join.js"></script>
 </body>
 </html>

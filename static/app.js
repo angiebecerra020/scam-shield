@@ -1,7 +1,8 @@
 /*
   app.js — Makes the dashboard page interactive.
 
-  How it fits in: index.html loads this file after auth.js and family.js. It:
+  How it fits in: index.html loads this file after auth.js, busy.js and
+  family.js. It:
     - checks the family member is logged in (or sends them to /login)
     - shows "Your family" (loadFamily() in family.js)
     - opens the sign-up form when the address ends in #protect (the
@@ -63,29 +64,30 @@ async function showServerStatus() {
 }
 
 /**
- * Send a request with a JSON or form body and read the JSON answer.
+ * Send a request with the login token, and read the JSON answer.
+ * It never throws: if something goes wrong, data.error says what in plain
+ * words (see fetchJson() in busy.js).
  *
  * Input:  url, options — the same as fetch()
  * Output: {ok, data}: ok is true for a successful answer; data is the JSON
- *         (or {} if the answer had no JSON)
+ *         (or {} if the answer had no JSON, like Twilio-style XML)
  * Example: await sendRequest("/api/demo/scam-call", {method: "POST"})
  *          -> {ok: true, data: {call_id: "...", join_link: "..."}}
  */
 async function sendRequest(url, options = {}) {
-  // Add the login token, so the server knows who's asking (app/auth.py).
-  const headers = { ...options.headers, ...(await loginHeaders()) };
-  const response = await fetch(url, { ...options, headers });
-  if (response.status === 401) {
+  let headers = { ...options.headers };
+  try {
+    // Add the login token, so the server knows who's asking (app/auth.py).
+    headers = { ...headers, ...(await loginHeaders()) };
+  } catch (error) {
+    return { ok: false, data: { error: OFFLINE_MESSAGE } };
+  }
+  const { ok, status, data } = await fetchJson(url, { ...options, headers });
+  if (status === 401) {
     // The login ran out (or they logged out in another tab). Back to /login.
     window.location.replace("/login");
   }
-  let data = {};
-  try {
-    data = await response.json();
-  } catch (error) {
-    // Some answers (like Twilio-style XML) aren't JSON. That's fine.
-  }
-  return { ok: response.ok, data };
+  return { ok, data };
 }
 
 /**
@@ -104,14 +106,19 @@ async function submitSignup(event) {
   errorElement.textContent = "";
 
   const fields = Object.fromEntries(new FormData(form));
+  // Sending the text or placing the call goes through Twilio, which can take
+  // a few seconds. Say so, and stop a second tap from asking them twice.
+  const button = form.querySelector('button[type="submit"]');
+  setBusy(button, fields.phone_type === "landline" ? "Calling them…" : "Sending the text…");
   const { ok, data } = await sendRequest("/api/enrollments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fields),
   });
+  setReady(button);
 
   if (!ok) {
-    errorElement.textContent = data.error || "Something went wrong. Please try again.";
+    errorElement.textContent = data.error;
     return;
   }
 
@@ -140,10 +147,14 @@ async function submitSignup(event) {
  * Example: Rosa texts YES -> the page says "They said YES…"
  */
 async function checkConsent(enrollmentId) {
+  const trouble = document.getElementById("consent-trouble");
   const { ok, data } = await sendRequest(`/api/enrollments/${enrollmentId}`);
   if (!ok) {
+    // We keep checking, so say that instead of quietly freezing.
+    trouble.textContent = `${data.error} We'll keep checking.`;
     return;
   }
+  trouble.textContent = "";
   showConsentStatus(data);
   if (data.status !== "pending") {
     clearInterval(statusTimer);
@@ -244,19 +255,29 @@ function showSetupSteps(enrollment) {
  * Example: tap the button -> a few seconds later the page says "They said YES…"
  */
 async function demoReplyYes() {
+  const button = document.getElementById("demo-reply-yes");
+  const result = document.getElementById("demo-result");
+  setBusy(button, "Saying YES…");
+
+  let answer;
   if (phoneType === "landline") {
-    await sendRequest(`/twilio/consent-answer?enrollment_id=${enrollmentId}`, {
+    answer = await sendRequest(`/twilio/consent-answer?enrollment_id=${enrollmentId}`, {
       method: "POST",
       body: new URLSearchParams({ To: seniorPhone, Digits: "1" }),
     });
-    document.getElementById("demo-result").textContent = "Pressed 1 on the consent call.";
+  } else {
+    answer = await sendRequest("/twilio/sms", {
+      method: "POST",
+      body: new URLSearchParams({ From: seniorPhone, Body: "YES" }),
+    });
+  }
+  setReady(button);
+
+  if (!answer.ok) {
+    result.textContent = answer.data.error;
     return;
   }
-  await sendRequest("/twilio/sms", {
-    method: "POST",
-    body: new URLSearchParams({ From: seniorPhone, Body: "YES" }),
-  });
-  document.getElementById("demo-result").textContent = "Sent YES from their phone.";
+  result.textContent = phoneType === "landline" ? "Pressed 1 on the consent call." : "Sent YES from their phone.";
 }
 
 /**
@@ -266,10 +287,13 @@ async function demoReplyYes() {
  * Example: tap the button -> "Family alert sent. Open the Join call link"
  */
 async function demoScamCall() {
+  const button = document.getElementById("demo-scam-call");
   const result = document.getElementById("demo-result");
+  setBusy(button, "Starting the call…");
   const { ok, data } = await sendRequest("/api/demo/scam-call", { method: "POST" });
+  setReady(button);
   if (!ok) {
-    result.textContent = data.error || "Couldn't start the demo call.";
+    result.textContent = data.error;
     return;
   }
   result.textContent = "Family alert sent. ";

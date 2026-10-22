@@ -5,7 +5,14 @@
   It reads the secret key from the page address (/phone/<key>), gets a login
   from our server (GET /api/phone/<key>), and signs in to Twilio, so calls
   Scam Shield sends to this senior ring here. The login can only RECEIVE calls.
+
+  A senior reads this screen, so when something goes wrong we say it in
+  plain words and show the "Turn on calls" button again to retry.
 */
+
+// What we say when the microphone is blocked. Calls can't be answered without it.
+const MICROPHONE_MESSAGE =
+  "Scam Shield needs the microphone to answer calls. Allow it for this page in your browser, then tap Turn on calls.";
 
 // The last part of the address, e.g. /phone/Xy7abc -> "Xy7abc"
 const deviceKey = window.location.pathname.split("/").pop();
@@ -41,12 +48,43 @@ function showOnly(sectionId) {
  * Example: await loadDetails() -> {senior_name: "Rosa", demo_mode: false, token: "eyJ..."}
  */
 async function loadDetails() {
-  const response = await fetch(`/api/phone/${deviceKey}`);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "This link doesn't work.");
+  // fetchJson (busy.js) never throws, and gives a plain message when the
+  // internet or our server has trouble.
+  const { ok, data } = await fetchJson(`/api/phone/${deviceKey}`);
+  if (!ok) {
+    throw new Error(data.error);
   }
   return data;
+}
+
+/**
+ * Turn whatever went wrong into words a senior understands.
+ *
+ * Input:  error — what was thrown while turning on calls
+ * Output: the message to show
+ * Example: they tapped "Block" on the microphone question  gives you  MICROPHONE_MESSAGE
+ */
+function friendlyProblem(error) {
+  // The browser calls a blocked microphone "NotAllowedError", and a missing one "NotFoundError".
+  if (error.name === "NotAllowedError" || error.name === "NotFoundError") {
+    return MICROPHONE_MESSAGE;
+  }
+  return error.message || "Something went wrong. Tap Turn on calls to try again.";
+}
+
+/**
+ * Something stopped calls from ringing here. Say so, and bring back the
+ * "Turn on calls" button so they can try again. During a call we only show
+ * the message, so the Hang up button stays put.
+ *
+ * Input:  text — what to say
+ * Example: the internet drops  gives you  the message and the button
+ */
+function callsStopped(text) {
+  showStatus(text);
+  if (currentCall === null) {
+    showOnly("turn-on");
+  }
 }
 
 /**
@@ -83,21 +121,33 @@ async function turnOnCalls() {
     stream.getTracks().forEach((track) => track.stop());
 
     const details = await loadDetails();
+    // If they're trying again, shut the old connection first, so calls
+    // don't ring twice.
+    if (device !== null) {
+      device.destroy();
+    }
     // closeProtection warns before the page is closed during a call.
     device = new Twilio.Device(details.token, { closeProtection: true });
 
     device.on("registered", () => showStatus("Ready. Calls will ring here."));
-    device.on("error", (error) => showStatus(`Problem: ${error.message}`));
+    device.on("error", () => {
+      callsStopped("Calls stopped working here. Check the internet, then tap Turn on calls.");
+    });
     device.on("incoming", showIncomingCall);
     // The login lasts an hour; get a fresh one before it runs out.
     device.on("tokenWillExpire", async () => {
-      const fresh = await loadDetails();
-      device.updateToken(fresh.token);
+      try {
+        const fresh = await loadDetails();
+        device.updateToken(fresh.token);
+      } catch (error) {
+        callsStopped(`Calls will stop ringing here soon. ${friendlyProblem(error)}`);
+      }
     });
 
+    showStatus("Connecting…");
     await device.register();
   } catch (error) {
-    showStatus(`Couldn't turn on calls: ${error.message}`);
+    showStatus(`Couldn't turn on calls. ${friendlyProblem(error)}`);
     showOnly("turn-on");
   }
 }

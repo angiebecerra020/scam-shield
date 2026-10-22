@@ -13,7 +13,8 @@
       links (GET /api/calls/{id})
   If the family hasn't signed anyone up yet, we show the sign-up form instead.
 
-  It uses sendRequest() from app.js, which adds the login token for us.
+  It uses sendRequest() from app.js, which adds the login token for us, and
+  setBusy() / setReady() from busy.js for the pause button.
 */
 
 // What each status means, in plain words, for the badge next to the name.
@@ -110,14 +111,25 @@ function scoreClass(score) {
  */
 async function loadFamily() {
   const section = document.getElementById("family");
+  const list = document.getElementById("family-list");
   const errorElement = document.getElementById("family-error");
   errorElement.textContent = "";
+
+  // The first time, say we're loading, so the page doesn't look empty.
+  // (Later refreshes keep the old list up until the new one is ready.)
+  if (list.childElementCount === 0) {
+    section.hidden = false;
+    list.replaceChildren(makeElement("p", "hint", "Loading your family…"));
+  }
 
   const { ok, data } = await sendRequest("/api/family");
   if (!ok) {
     // We can still let them sign someone up, even if the list didn't load.
-    errorElement.textContent = data.error || "We couldn't load your family. Please refresh the page.";
+    list.replaceChildren();
+    errorElement.textContent = data.error;
     section.hidden = false;
+    // We can still let them sign someone up, even if the list didn't load.
+    document.getElementById("signup-form").hidden = false;
     return;
   }
 
@@ -130,7 +142,6 @@ async function loadFamily() {
     document.getElementById("signup-form").hidden = false;
   }
 
-  const list = document.getElementById("family-list");
   list.replaceChildren();
   for (const senior of seniors) {
     list.appendChild(seniorCard(senior));
@@ -221,11 +232,11 @@ function pauseButton(senior) {
 async function togglePause(senior, button) {
   const action = senior.status === "paused" ? "resume" : "pause";
   // Stops a double tap from sending it twice.
-  button.disabled = true;
+  setBusy(button, action === "pause" ? "Pausing…" : "Turning it on…");
   const { ok, data } = await sendRequest(`/api/enrollments/${senior.id}/${action}`, { method: "POST" });
   if (!ok) {
-    document.getElementById("family-error").textContent = data.error || "That didn't work. Please try again.";
-    button.disabled = false;
+    document.getElementById("family-error").textContent = data.error;
+    setReady(button);
     return;
   }
   await loadFamily();
@@ -270,24 +281,32 @@ function callRow(call) {
 
 /**
  * Open or close one call's details. The first time it opens, we ask the
- * server for them (GET /api/calls/{id}).
+ * server for them (GET /api/calls/{id}). If that didn't work, the next tap
+ * tries again.
  *
  * Input:  callId — which call; button — the row they tapped; details — where to show them
  * Output: nothing; it updates the page.
  * Example: tap the 92 call  gives you  its reasons and the FTC link
  */
 async function toggleCallDetails(callId, button, details) {
-  const opening = details.hidden;
+  // If it didn't load last time, a tap tries again instead of closing it.
+  const retrying = details.dataset.failed === "yes";
+  const opening = details.hidden || retrying;
   details.hidden = !opening;
   button.setAttribute("aria-expanded", String(opening));
   if (!opening || details.dataset.loaded) {
     return;
   }
 
+  delete details.dataset.failed;
   details.replaceChildren(makeElement("p", "hint", "Loading…"));
   const { ok, data } = await sendRequest(`/api/calls/${callId}`);
   if (!ok) {
-    details.replaceChildren(makeElement("p", "error", data.error || "We couldn't load this call."));
+    details.dataset.failed = "yes";
+    details.replaceChildren(
+      makeElement("p", "error", data.error),
+      makeElement("p", "hint", "Tap the call to try again.")
+    );
     return;
   }
   details.dataset.loaded = "yes";
