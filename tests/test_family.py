@@ -338,3 +338,67 @@ def test_an_older_database_gets_the_new_columns(tmp_path, monkeypatch):
     assert "risk_score" in columns
     assert "alerted_at" in columns
     assert old_call["risk_score"] is None
+
+
+# "Was this a scam?"
+
+
+def test_the_family_can_say_a_call_was_a_false_alarm(monkeypatch, fake_tavily):
+    """Ana says the 92 call was a false alarm. It's saved with the call and shows in the list."""
+    pretend_nemotron(monkeypatch, SCAM_RESULT)
+    call = scam_call_for(sign_up_rosa())
+    call_monitor.check_live_call(call["id"], "Caller: Grandma, buy gift cards.")
+
+    answered = client.post(f"/api/calls/{call['id']}/answer", json={"answer": "not_scam"})
+    past_call = client.get("/api/family").json()["seniors"][0]["calls"][0]
+
+    assert answered.json()["family_answer"] == "not_scam"
+    assert past_call["family_answer"] == "not_scam"
+    assert storage.get_call(call["id"])["family_answered_at"] is not None
+
+
+def test_the_family_can_change_their_answer(monkeypatch, fake_tavily):
+    """Saying "scam" after "false alarm" keeps the newest answer."""
+    pretend_nemotron(monkeypatch, SCAM_RESULT)
+    call = scam_call_for(sign_up_rosa())
+    call_monitor.check_live_call(call["id"], "Caller: Buy gift cards.")
+
+    client.post(f"/api/calls/{call['id']}/answer", json={"answer": "not_scam"})
+    client.post(f"/api/calls/{call['id']}/answer", json={"answer": "scam"})
+
+    assert client.get(f"/api/calls/{call['id']}").json()["family_answer"] == "scam"
+
+
+def test_a_call_starts_with_no_answer(monkeypatch, fake_tavily):
+    """Until the family says something, the answer is empty (not a guess)."""
+    pretend_nemotron(monkeypatch, SCAM_RESULT)
+    call = scam_call_for(sign_up_rosa())
+    call_monitor.check_live_call(call["id"], "Caller: Buy gift cards.")
+
+    assert client.get(f"/api/calls/{call['id']}").json()["family_answer"] is None
+
+
+def test_only_scam_or_not_scam_is_an_answer(monkeypatch, fake_tavily):
+    """Any other answer gives you a 400 and saves nothing."""
+    pretend_nemotron(monkeypatch, SCAM_RESULT)
+    call = scam_call_for(sign_up_rosa())
+    call_monitor.check_live_call(call["id"], "Caller: Buy gift cards.")
+
+    response = client.post(f"/api/calls/{call['id']}/answer", json={"answer": "maybe"})
+
+    assert response.status_code == 400
+    assert storage.get_call(call["id"])["family_answer"] is None
+
+
+def test_other_families_cant_answer_for_your_calls(login_on, monkeypatch, fake_tavily):
+    """Bob can't answer "Was this a scam?" on Rosa's call."""
+    pretend_nemotron(monkeypatch, SCAM_RESULT)
+    call = scam_call_for(sign_up_rosa(as_user("ana-token")))
+    call_monitor.check_live_call(call["id"], "Caller: Buy gift cards.")
+
+    response = client.post(
+        f"/api/calls/{call['id']}/answer", json={"answer": "not_scam"}, headers=as_user("bob-token")
+    )
+
+    assert response.status_code == 404
+    assert storage.get_call(call["id"])["family_answer"] is None

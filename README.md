@@ -37,7 +37,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 | 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Coming soon |
 | 5 | **Family alert.** A text message in the family member's own language, with a "Join call" link and the top red flags. It goes out the first time the AI score hits 70. | Done (runs on live calls once the live transcript is ready) |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
-| 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
+| 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), a "Was this a scam?" answer for each call, and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
 | 7 | **Languages.** English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. | Done (Haitian Creole in the sign-up menus coming soon) |
 | ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. A demo player will replay a scripted call as a live transcript. | Demo mode done, 20 sample calls ready, player coming soon |
 
@@ -99,6 +99,16 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 - **Caller research:** for the real Social Security, IRS and Medicare numbers (scammers love to fake these on caller ID), Tavily warned about scam calls every time. Scam warnings now come from places like the FBI and AARP instead of random posts.
 - **From score to alert:** playing the fake grandson call line by line, the score went from 30 to 85 and the family alert fired the moment "Danny" said he was arrested and needed bail. It fired only once, and Tavily pulled warnings from AARP, the FCC and the BBB.
 - **Tests:** more than 120 automated tests run on GitHub for every change (that's the green badge at the top).
+
+## Learning from the family's answers
+
+Every call on the dashboard asks the family **"Was this a scam?"**: *Yes, it was a scam* or *No, false alarm*. We save the answer with the call, next to the score and the reasons Nemotron gave. That's the first step toward a Scam Shield that gets smarter on its own:
+
+- **Find where we're wrong.** Calls the family calls a false alarm, but we scored 70 or more, show what scares the detector for no reason. Calls they call a scam, but we scored low, show what it missed. Both are listed by the reasons Nemotron gave, so we can see which red flags work and which don't.
+- **Tune the alert line.** If families keep saying "false alarm" for calls in the 70s, the line where we alert (70 today) can move.
+- **Teach Nemotron.** The best examples become new test calls in [data/test_scripts](data/test_scripts/README.md), and short examples in Nemotron's instructions, so each fix is checked by our accuracy test before it ships.
+
+Today we save the answer, the score and the reasons, but **not what was said on the call**. Turning real calls into examples would need the family's clear OK first, and we'd remove names and numbers before keeping anything.
 
 ## Built with
 

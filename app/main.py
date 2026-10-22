@@ -27,6 +27,7 @@ Routes:
   Family dashboard (family.py): each family only sees the seniors they signed up
     GET  /api/family              -> [login] the seniors you protect and their recent calls
     GET  /api/calls/{id}          -> [login] one past call: score, reasons and Tavily links
+    POST /api/calls/{id}/answer   -> [login] the family's "Was this a scam?" answer
     POST /api/enrollments/{id}/pause  -> [login] stop listening for now
     POST /api/enrollments/{id}/resume -> [login] turn protection back on
 
@@ -278,6 +279,32 @@ def show_call(call_id: str, user: dict | None = Depends(require_login)):
     """
     try:
         return family.get_call(call_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+class ScamAnswer(BaseModel):
+    """
+    The family's answer to "Was this a scam?"
+
+    Example:
+        {"answer": "scam"} or {"answer": "not_scam"}
+    """
+
+    answer: str
+
+
+@app.post("/api/calls/{call_id}/answer")
+def answer_was_it_a_scam(call_id: str, body: ScamAnswer, user: dict | None = Depends(require_login)):
+    """
+    Save the family's answer to "Was this a scam?" for one of their calls.
+
+    Example:
+        POST /api/calls/c1/answer {"answer": "not_scam"}
+        gives you the call with {"family_answer": "not_scam", ...}
+    """
+    try:
+        return family.answer_was_it_a_scam(call_id, body.answer, user)
     except family.FamilyError as problem:
         return error(problem.text, problem.status_code)
 

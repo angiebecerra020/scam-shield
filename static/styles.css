@@ -747,7 +747,14 @@ h3 {
 }
 
 .call-details {
-  padding: 0 0 12px 64px;
+  padding: 0 0 12px;
+}
+
+/* Wider screens: line the details up with the words, next to the score circle */
+@media (min-width: 480px) {
+  .call-details {
+    padding-left: 64px;
+  }
 }
 
 .call-details p {
@@ -759,6 +766,30 @@ h3 {
   padding-left: 1.2em;
   /* Long page titles and links wrap instead of making the page scroll sideways */
   overflow-wrap: anywhere;
+}
+
+/* "Was this a scam?" under a call's details */
+.was-it-a-scam {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #333;
+}
+
+.answer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.answer-buttons button {
+  width: auto;
+  margin: 0;
+}
+
+/* The answer they picked is filled in gold, so it's clear what they said */
+.answer-buttons button[aria-pressed="true"] {
+  background: var(--color-gold);
+  color: var(--color-black);
 }
 
 /* Make sure the "hidden" attribute always wins over display rules above */

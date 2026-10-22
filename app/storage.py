@@ -55,7 +55,9 @@ CREATE TABLE IF NOT EXISTS calls (
     reasons         TEXT,            -- the detector's reasons at that moment, as a JSON list
     claimed_identity TEXT,           -- who the caller said they were, like "grandson Danny"
     sources         TEXT,            -- the Tavily links we found, as a JSON list
-    alerted_at      TEXT             -- when we sent the family alert (NULL if we didn't)
+    alerted_at      TEXT,            -- when we sent the family alert (NULL if we didn't)
+    family_answer   TEXT,            -- the family's "Was this a scam?" answer: scam / not_scam
+    family_answered_at TEXT          -- when they answered (NULL if they haven't)
 );
 """
 
@@ -71,6 +73,8 @@ NEWER_COLUMNS = {
         "claimed_identity": "TEXT",
         "sources": "TEXT",
         "alerted_at": "TEXT",
+        "family_answer": "TEXT",
+        "family_answered_at": "TEXT",
     },
 }
 
@@ -510,4 +514,23 @@ def mark_call_alerted(call_id: str) -> None:
         db.execute(
             "UPDATE calls SET alerted_at = ? WHERE id = ? AND alerted_at IS NULL",
             (now_text(), call_id),
+        )
+
+
+def save_family_answer(call_id: str, answer: str) -> None:
+    """
+    Save the family's answer to "Was this a scam?" for a call. A new answer
+    replaces the old one, so the family can change their mind.
+
+    Input:  call_id, which call
+            answer, "scam" or "not_scam" (family.py checks it first)
+    Output: nothing
+
+    Example:
+        save_family_answer("c1", "not_scam")
+    """
+    with connect() as db:
+        db.execute(
+            "UPDATE calls SET family_answer = ?, family_answered_at = ? WHERE id = ?",
+            (answer, now_text(), call_id),
         )

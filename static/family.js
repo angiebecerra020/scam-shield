@@ -11,6 +11,8 @@
     - their past calls, newest first, with the score. Tapping a call opens
       its details: the reasons, who the caller said they were, and the Tavily
       links (GET /api/calls/{id})
+    - "Was this a scam?" in each call's details, so the family can tell us
+      if we got it right (POST /api/calls/{id}/answer)
   If the family hasn't signed anyone up yet, we show the sign-up form instead.
 
   It uses sendRequest() from app.js, which adds the login token for us, and
@@ -32,6 +34,12 @@ const VERDICT_LABELS = {
   likely_scam: "Likely scam",
   suspicious: "Suspicious",
   safe: "Looked safe",
+};
+
+// How we show the family's own answer, in the call list.
+const FAMILY_ANSWER_LABELS = {
+  scam: "You said: scam",
+  not_scam: "You said: false alarm",
 };
 
 // Scores from here up are scams (the same line as detector.ALERT_FROM),
@@ -264,10 +272,7 @@ function callRow(call) {
   const words = makeElement("span", "call-words");
   words.appendChild(makeElement("span", "call-when", formatWhen(call.started_at)));
   words.appendChild(makeElement("span", "call-from", formatPhone(call.caller_number)));
-  const verdict = VERDICT_LABELS[call.verdict] || "Not checked";
-  const live = call.status === "live" ? " · On the phone now" : "";
-  const alerted = call.alerted ? " · Family alerted" : "";
-  words.appendChild(makeElement("span", "call-verdict", verdict + live + alerted));
+  words.appendChild(makeElement("span", "call-verdict", verdictLine(call)));
   button.appendChild(words);
   item.appendChild(button);
 
@@ -277,6 +282,28 @@ function callRow(call) {
 
   button.addEventListener("click", () => toggleCallDetails(call.id, button, details));
   return item;
+}
+
+/**
+ * The short line under each call: what we thought, and what the family said.
+ *
+ * Input:  call — one call from GET /api/family or GET /api/calls/{id}
+ * Output: the line of text
+ * Example: verdictLine({verdict: "likely_scam", alerted: true, family_answer: "scam", ...})
+ *          gives you  "Likely scam · Family alerted · You said: scam"
+ */
+function verdictLine(call) {
+  const parts = [VERDICT_LABELS[call.verdict] || "Not checked"];
+  if (call.status === "live") {
+    parts.push("On the phone now");
+  }
+  if (call.alerted) {
+    parts.push("Family alerted");
+  }
+  if (call.family_answer) {
+    parts.push(FAMILY_ANSWER_LABELS[call.family_answer]);
+  }
+  return parts.join(" · ");
 }
 
 /**
@@ -360,6 +387,73 @@ function showCallDetails(call, details) {
   if (call.alerted_at) {
     details.appendChild(makeElement("p", "hint", `We alerted the family at ${formatWhen(call.alerted_at)}.`));
   }
+
+  // Only calls we scored can be right or wrong.
+  if (call.risk_score !== null) {
+    details.appendChild(askWasItAScam(call, details));
+  }
+}
+
+/**
+ * Build the "Was this a scam?" question with its two buttons. The button
+ * matching the family's answer shows as picked, and they can change it.
+ *
+ * Input:  call — from GET /api/calls/{id}; details — the details area it goes in
+ * Output: the element with the question and buttons
+ * Example: a call they haven't answered  gives you  "Was this a scam?"
+ *          with "Yes, it was a scam" and "No, false alarm"
+ */
+function askWasItAScam(call, details) {
+  const box = makeElement("div", "was-it-a-scam");
+  box.appendChild(makeElement("h5", "", "Was this a scam?"));
+
+  const choices = [
+    { answer: "scam", label: "Yes, it was a scam" },
+    { answer: "not_scam", label: "No, false alarm" },
+  ];
+  const buttons = makeElement("div", "answer-buttons");
+  for (const choice of choices) {
+    const button = makeElement("button", "button-small button-outline", choice.label);
+    button.type = "button";
+    // aria-pressed tells screen readers (and styles.css) which one they picked.
+    button.setAttribute("aria-pressed", String(call.family_answer === choice.answer));
+    button.addEventListener("click", () => sendAnswer(call.id, choice.answer, button, details));
+    buttons.appendChild(button);
+  }
+  box.appendChild(buttons);
+
+  const note = call.family_answer
+    ? "Thanks! This helps Scam Shield get smarter. You can change your answer."
+    : "Your answer helps Scam Shield get smarter.";
+  box.appendChild(makeElement("p", "hint", note));
+  box.appendChild(makeElement("p", "error answer-error", ""));
+  return box;
+}
+
+/**
+ * Send the family's "Was this a scam?" answer, then show the call again with
+ * it picked, and update the line in the call list.
+ *
+ * Input:  callId — which call; answer — "scam" or "not_scam";
+ *         button — the one they tapped; details — the call's details area
+ * Output: nothing; it updates the page.
+ * Example: tap "No, false alarm"  gives you  that button picked, and
+ *          "You said: false alarm" in the call list
+ */
+async function sendAnswer(callId, answer, button, details) {
+  setBusy(button, "Saving…");
+  const { ok, data } = await sendRequest(`/api/calls/${callId}/answer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ answer }),
+  });
+  if (!ok) {
+    setReady(button);
+    details.querySelector(".answer-error").textContent = data.error;
+    return;
+  }
+  showCallDetails(data, details);
+  details.closest(".call").querySelector(".call-verdict").textContent = verdictLine(data);
 }
 
 /**

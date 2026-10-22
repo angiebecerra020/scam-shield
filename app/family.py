@@ -11,6 +11,9 @@ dashboard's questions:
   2. what calls did they get, and how risky was each one? (call_monitor.py
      saves the score, reasons and Tavily links as each call happens)
   3. pause protection, and turn it back on
+  4. "Was this a scam?": the family tells us if we got a call right. We save
+     the answer with the call, so we can see where the detector is wrong and
+     make it smarter (see "Learning from the family's answers" in the README)
 
 Every answer only covers the seniors YOU signed up. We know who you are from
 your login (auth.py), and each senior remembers whose login signed them up
@@ -24,6 +27,9 @@ from app import consent, storage
 
 # How many past calls we show for each senior.
 CALLS_TO_SHOW = 50
+
+# The answers the family can give to "Was this a scam?"
+FAMILY_ANSWERS = ("scam", "not_scam")
 
 
 class FamilyError(Exception):
@@ -117,7 +123,7 @@ def call_summary(call: dict) -> dict:
 
     Input:  call, a call from storage
     Output: {"id", "started_at", "caller_number", "risk_score", "verdict",
-             "alerted", "status"}
+             "alerted", "status", "family_answer"}
 
     Example:
         call_summary(grandson_call) gives you {"id": "c1", "risk_score": 92,
@@ -133,6 +139,8 @@ def call_summary(call: dict) -> dict:
         "verdict": call["verdict"],
         "alerted": call["alerted_at"] is not None,
         "status": call["status"],
+        # "scam", "not_scam", or None if the family hasn't said
+        "family_answer": call["family_answer"],
     }
 
 
@@ -251,3 +259,29 @@ def resume_protection(enrollment_id: str, user: dict | None) -> dict:
     storage.set_enrollment_status(enrollment_id, "active", answered=False)
     enrollment["status"] = "active"
     return consent.public_view(enrollment)
+
+
+def answer_was_it_a_scam(call_id: str, answer: str, user: dict | None) -> dict:
+    """
+    Saves the family's answer to "Was this a scam?" for one of their calls.
+
+    They can answer any call we checked, not just the ones we alerted about:
+    a scam we missed teaches us as much as a false alarm. And they can change
+    their answer later.
+
+    Input:  call_id, which call
+            answer, "scam" or "not_scam"
+            user, the same as owns()
+    Output: get_call() for that call, with the new answer in it
+    Raises: FamilyError (400) for any other answer, (404) if it isn't their call
+
+    Example:
+        answer_was_it_a_scam("c1", "not_scam", {"id": "user-ana"}) gives you
+        the call with {"family_answer": "not_scam", ...}
+    """
+    if answer not in FAMILY_ANSWERS:
+        raise FamilyError('The answer has to be "scam" or "not_scam".', 400)
+    # get_call() checks it's their call, so nobody can answer for someone else.
+    get_call(call_id, user)
+    storage.save_family_answer(call_id, answer)
+    return get_call(call_id, user)
