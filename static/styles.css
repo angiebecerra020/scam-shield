@@ -342,10 +342,12 @@ a:focus-visible {
   overflow-wrap: anywhere;
 }
 
-/* ----- Landing page (landing.html) ----- */
+/* ----- The header on every page (nav.js) ----- */
 
-/* The landing page scrolls like a normal web page, instead of one centered card */
-body.landing {
+/* Pages with the header scroll like a normal web page, with the header on
+   top, instead of one card in the middle of the screen. */
+body.landing,
+body.with-header {
   display: block;
   /* Undo the centering from body above. New browsers center block pages
      with it too, which would squeeze the header and footer. */
@@ -353,12 +355,24 @@ body.landing {
   padding: 0;
 }
 
+/* The card sits under the header, with the same 16px edges on a phone */
+body.with-header > .card {
+  width: calc(100% - 32px);
+  margin: 8px auto 32px;
+}
+
+/* Phones: the logo and the Menu button on one row, and the links
+   underneath when the menu is open */
 .site-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   max-width: 1100px;
+  /* Keeps the header's height while nav.js is filling it in, so the page
+     doesn't jump */
+  min-height: 72px;
   margin: 0 auto;
   padding: 16px;
 }
@@ -367,16 +381,79 @@ body.landing {
   margin: 0;
 }
 
-.site-nav {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.menu-button {
+  width: auto;
+  margin: 0;
+  padding: 8px 16px;
+  border: 2px solid var(--color-gold);
+  background: transparent;
+  color: var(--color-gold);
+  font-size: 16px;
 }
 
-.site-nav a:not(.button) {
+.site-nav {
+  display: none;
+  flex-basis: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 8px 0 0;
+  border-top: 1px solid #444;
+}
+
+.menu-open .site-nav {
+  display: flex;
+}
+
+.site-nav a:not(.button),
+.site-nav .button-link {
+  /* Big enough to tap easily on a phone */
+  padding: 10px 0;
   color: var(--color-text);
+  text-align: left;
   text-decoration: none;
 }
+
+/* The page you're on is gold and underlined, so you know where you are */
+.site-nav a[aria-current="page"] {
+  color: var(--color-gold);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.site-nav .button {
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* Tablets and computers: no Menu button, the links sit in one row */
+@media (min-width: 768px) {
+  .menu-button {
+    display: none;
+  }
+
+  .site-nav,
+  .menu-open .site-nav {
+    display: flex;
+    flex-basis: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+    padding: 0;
+    border-top: none;
+  }
+
+  .site-nav a:not(.button),
+  .site-nav .button-link {
+    padding: 0;
+  }
+
+  .site-nav .button {
+    margin-top: 0;
+  }
+}
+
+/* ----- Landing page (landing.html) ----- */
 
 .hero {
   display: grid;

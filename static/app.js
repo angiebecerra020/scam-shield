@@ -4,6 +4,8 @@
   How it fits in: index.html loads this file after auth.js and family.js. It:
     - checks the family member is logged in (or sends them to /login)
     - shows "Your family" (loadFamily() in family.js)
+    - opens the sign-up form when the address ends in #protect (the
+      header's "Protect someone" link, see nav.js)
     - asks our server "are you running?" (GET /health) and shows the answer
     - sends the sign-up form (POST /api/enrollments), which texts the senior
       (cell phone) or calls them (landline)
@@ -305,10 +307,27 @@ async function startDashboard() {
   document.getElementById("dashboard").hidden = false;
   showServerStatus();
   loadFamily();
+  openSignupIfAsked();
+}
+
+/**
+ * Open the sign-up form if the address ends in #protect. That's where the
+ * header's "Protect someone" link goes (see nav.js).
+ *
+ * Input:  nothing (it reads the address)
+ * Output: nothing; it opens the form, or does nothing.
+ * Example: open /dashboard#protect  gives you  the dashboard with the empty sign-up form
+ */
+function openSignupIfAsked() {
+  if (window.location.hash === "#protect") {
+    showSignupForm();
+  }
 }
 
 document.getElementById("signup-form").addEventListener("submit", submitSignup);
 document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
 document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);
-document.getElementById("log-out").addEventListener("click", logOut);
+// Tapping "Protect someone" while already on the dashboard only changes the
+// #part of the address, which doesn't reload the page. So we watch for it.
+window.addEventListener("hashchange", openSignupIfAsked);
 startDashboard();

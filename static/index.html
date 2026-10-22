@@ -22,18 +22,21 @@
   <title>Scam Shield</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body>
+<body class="with-header">
+  <!-- The header with the logo and links (Log out lives here too). nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
   <!-- Hidden until app.js checks the login, so nobody sees a flash of the
        dashboard before being sent to /login -->
   <main class="card" id="dashboard" hidden>
-    <!-- Who's logged in, with a way out. Hidden when login is off. -->
+    <!-- Who's logged in. Hidden when login is off. (Log out is in the header.) -->
     <div id="account-bar" class="account-bar" hidden>
       <span>Logged in as <strong id="account-email"></strong></span>
-      <button type="button" id="log-out" class="button-link">Log out</button>
     </div>
 
-    <h1>🛡️ Scam Shield</h1>
-    <p class="tagline">Catches scam calls while they happen, and tells the family right away.</p>
+    <!-- The logo is in the header, so the card says which page this is -->
+    <h1>Family dashboard</h1>
+    <p class="tagline">The people you protect, and the calls they got.</p>
 
     <!-- Everyone this family protects, with their past calls (family.js).
          Hidden until we know there's someone to show. -->
@@ -109,6 +112,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
   <script src="/static/auth.js"></script>
+  <script src="/static/nav.js"></script>
   <script src="/static/family.js"></script>
   <script src="/static/app.js"></script>
 </body>

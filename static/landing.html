@@ -16,13 +16,8 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body class="landing">
-  <header class="site-header">
-    <a class="brand" href="/">🛡️ Scam Shield</a>
-    <nav class="site-nav" aria-label="Account">
-      <a href="/login">Log in</a>
-      <a class="button button-small" href="/login?mode=signup">Sign up</a>
-    </nav>
-  </header>
+  <!-- The header with the logo and links. nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
 
   <main>
     <!-- The big first impression: what it is, and one clear next step -->
@@ -100,5 +95,9 @@
     <p>Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
     <p>We only listen with permission. Our demos use acted, simulated calls.</p>
   </footer>
+  <!-- Supabase and auth.js let the header say Log in or Log out -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/nav.js"></script>
 </body>
 </html>

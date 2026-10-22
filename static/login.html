@@ -13,9 +13,11 @@
   <title>Log in · Scam Shield</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body>
+<body class="with-header">
+  <!-- The header with the logo and links. nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
   <main class="card">
-    <a class="brand" href="/">🛡️ Scam Shield</a>
 
     <!-- The two buttons switch the form between "log in" and "sign up" -->
     <div class="tabs" role="group" aria-label="Log in or make an account">
@@ -48,6 +50,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
   <script src="/static/auth.js"></script>
+  <script src="/static/nav.js"></script>
   <script src="/static/login.js"></script>
 </body>
 </html>
