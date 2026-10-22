@@ -13,7 +13,7 @@ Routes:
 
   Family logins (auth.py): routes marked [login] need a logged in family member
     GET  /login                   -> the log in and sign up page
-    GET  /dashboard               -> the family dashboard (sign-up form for now)
+    GET  /dashboard               -> the family dashboard
     GET  /api/auth-config         -> what the browser needs to talk to Supabase
 
   Consent (consent.py): the senior must say YES before we listen
@@ -23,6 +23,12 @@ Routes:
     POST /twilio/sms              -> Twilio: the senior texted us back
     POST /twilio/consent-call     -> Twilio: what to say on the landline consent call
     POST /twilio/consent-answer   -> Twilio: the key the senior pressed
+
+  Family dashboard (family.py): each family only sees the seniors they signed up
+    GET  /api/family              -> [login] the seniors you protect and their recent calls
+    GET  /api/calls/{id}          -> [login] one past call: score, reasons and Tavily links
+    POST /api/enrollments/{id}/pause  -> [login] stop listening for now
+    POST /api/enrollments/{id}/resume -> [login] turn protection back on
 
   The senior's device (devices.py): how we ring them without a loop
     GET  /phone/{key}             -> the calling app for a cell phone
@@ -50,7 +56,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from twilio.twiml.messaging_response import MessagingResponse
 
-from app import calls, consent, devices
+from app import calls, consent, devices, family
 from app.alerts import DEMO_OUTBOX
 from app.auth import login_is_on, require_login
 from app.config import get_settings
@@ -212,12 +218,15 @@ class EnrollmentForm(BaseModel):
     phone_type: str = "cell"
 
 
-@app.post("/api/enrollments", status_code=201, dependencies=[Depends(require_login)])
-def create_enrollment(form: EnrollmentForm):
+@app.post("/api/enrollments", status_code=201)
+def create_enrollment(form: EnrollmentForm, user: dict | None = Depends(require_login)):
     """
     Sign a senior up and text them to ask for their YES.
 
-    Input:  the sign-up form (JSON)
+    We save whose login signed them up, so only that family sees them on the
+    dashboard (family.py).
+
+    Input:  the sign-up form (JSON), and the logged in user (None when login is off)
     Output: the new enrollment with status "pending", or {"error": "..."}
 
     Example:
@@ -225,23 +234,80 @@ def create_enrollment(form: EnrollmentForm):
         -> 201 {"id": "abc", "status": "pending", ...}
     """
     try:
-        return consent.start_enrollment(**form.model_dump())
+        owner_id = user["id"] if user else None
+        return consent.start_enrollment(**form.model_dump(), owner_id=owner_id)
     except consent.EnrollmentError as problem:
         return error(problem.text, problem.status_code)
 
 
-@app.get("/api/enrollments/{enrollment_id}", dependencies=[Depends(require_login)])
-def show_enrollment(enrollment_id: str):
+@app.get("/api/enrollments/{enrollment_id}")
+def show_enrollment(enrollment_id: str, user: dict | None = Depends(require_login)):
     """
     Show whether the senior has answered yet. The dashboard asks every few seconds.
+    Only the family who signed them up can see it.
 
     Example:
         GET /api/enrollments/abc  ->  {"id": "abc", "status": "active", ...}
     """
-    enrollment = consent.get_enrollment_status(enrollment_id)
-    if enrollment is None:
-        return error("We couldn't find that sign-up.", 404)
-    return enrollment
+    try:
+        family.find_my_enrollment(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+    return consent.get_enrollment_status(enrollment_id)
+
+
+@app.get("/api/family")
+def show_family(user: dict | None = Depends(require_login)):
+    """
+    Show the seniors this family protects, and each one's recent calls.
+
+    Example:
+        GET /api/family gives you
+        {"seniors": [{"senior_name": "Rosa", "status": "active", "calls": [...]}]}
+    """
+    return family.family_overview(user)
+
+
+@app.get("/api/calls/{call_id}")
+def show_call(call_id: str, user: dict | None = Depends(require_login)):
+    """
+    Show one past call: its score, the reasons, and the Tavily links.
+
+    Example:
+        GET /api/calls/c1 gives you {"risk_score": 92, "reasons": [...], "sources": [...]}
+    """
+    try:
+        return family.get_call(call_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+@app.post("/api/enrollments/{enrollment_id}/pause")
+def pause_protection(enrollment_id: str, user: dict | None = Depends(require_login)):
+    """
+    Pause Scam Shield for one senior. Their calls ring like normal, unwatched.
+
+    Example:
+        POST /api/enrollments/abc/pause gives you {"status": "paused", ...}
+    """
+    try:
+        return family.pause_protection(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+@app.post("/api/enrollments/{enrollment_id}/resume")
+def resume_protection(enrollment_id: str, user: dict | None = Depends(require_login)):
+    """
+    Turn Scam Shield back on for a senior the family paused.
+
+    Example:
+        POST /api/enrollments/abc/resume gives you {"status": "active", ...}
+    """
+    try:
+        return family.resume_protection(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
 
 
 @app.post("/twilio/sms")

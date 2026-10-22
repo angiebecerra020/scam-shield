@@ -4,13 +4,15 @@ storage.py — Saves sign-ups and phone calls in a small database file (SQLite).
 How it fits in: Scam Shield has to remember two things between requests:
   - enrollments: who signed up to protect whom, and whether the senior said
     YES to having their calls watched (see consent.py)
-  - calls: each call we're watching, the conference "room" it lives in, and
-    the secret link the family uses to join it (see calls.py)
+  - calls: each call we're watching, the conference "room" it lives in, the
+    secret link the family uses to join it (see calls.py), and how risky it
+    got, so the family dashboard can show past calls (see family.py)
 
 SQLite comes with Python, so there's nothing extra to install. The file's
 location comes from DATABASE_PATH in .env (see config.py).
 """
 
+import json
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -31,9 +33,10 @@ CREATE TABLE IF NOT EXISTS enrollments (
     device_key    TEXT NOT NULL,     -- secret part of the calling-app link
     senior_language TEXT NOT NULL,   -- "en" or "es"
     family_language TEXT NOT NULL,
-    status        TEXT NOT NULL,     -- pending / active / declined / expired / revoked
+    status        TEXT NOT NULL,     -- pending / active / paused / declined / expired / revoked
     created_at    TEXT NOT NULL,
-    answered_at   TEXT               -- when the senior replied YES or NO
+    answered_at   TEXT,              -- when the senior replied YES or NO
+    owner_id      TEXT               -- the family's login (Supabase user ID), NULL when login is off
 );
 
 CREATE TABLE IF NOT EXISTS calls (
@@ -46,9 +49,30 @@ CREATE TABLE IF NOT EXISTS calls (
     status          TEXT NOT NULL,   -- live / ended
     family_called_at TEXT,           -- last time we rang the family into it
     started_at      TEXT NOT NULL,
-    ended_at        TEXT
+    ended_at        TEXT,
+    risk_score      INTEGER,         -- the highest score the call got, 0 to 100
+    verdict         TEXT,            -- safe / suspicious / likely_scam, at that highest score
+    reasons         TEXT,            -- the detector's reasons at that moment, as a JSON list
+    claimed_identity TEXT,           -- who the caller said they were, like "grandson Danny"
+    sources         TEXT,            -- the Tavily links we found, as a JSON list
+    alerted_at      TEXT             -- when we sent the family alert (NULL if we didn't)
 );
 """
+
+# Columns we added after the first version of the tables. CREATE TABLE IF NOT
+# EXISTS skips tables that are already there, so a database made before these
+# columns existed wouldn't get them. add_missing_columns() adds them.
+NEWER_COLUMNS = {
+    "enrollments": {"owner_id": "TEXT"},
+    "calls": {
+        "risk_score": "INTEGER",
+        "verdict": "TEXT",
+        "reasons": "TEXT",
+        "claimed_identity": "TEXT",
+        "sources": "TEXT",
+        "alerted_at": "TEXT",
+    },
+}
 
 
 def now_text() -> str:
@@ -69,6 +93,28 @@ def parse_time(text: str) -> datetime:
         parse_time("2026-10-13T18:04:05+00:00")  ->  datetime(2026, 10, 13, 18, 4, 5, ...)
     """
     return datetime.fromisoformat(text)
+
+
+def add_missing_columns(db) -> None:
+    """
+    Add the columns in NEWER_COLUMNS to an older database that doesn't have them yet.
+
+    New columns start out empty (NULL) on the rows that are already there,
+    which is what we want: an old call just has no score saved.
+
+    Input:  db, an open connection
+    Output: nothing
+
+    Example:
+        A database from last week has no risk_score column. After this, it does.
+    """
+    for table, columns in NEWER_COLUMNS.items():
+        have = set()
+        for row in db.execute(f"PRAGMA table_info({table})").fetchall():
+            have.add(row["name"])
+        for name, kind in columns.items():
+            if name not in have:
+                db.execute(f"ALTER TABLE {table} ADD COLUMN {name} {kind}")
 
 
 @contextmanager
@@ -94,6 +140,7 @@ def connect():
     db.row_factory = sqlite3.Row
     try:
         db.executescript(SCHEMA)
+        add_missing_columns(db)
         yield db
         db.commit()
     except Exception:
@@ -113,22 +160,28 @@ def save_enrollment(enrollment: dict) -> None:
     Save a new enrollment.
 
     Input:  enrollment — a dict with every column of the enrollments table
+                         (owner_id can be left out, it means nobody's login owns it)
     Output: nothing
 
     Example:
         save_enrollment({"id": "abc", "senior_name": "Rosa", ..., "status": "pending"})
     """
+    # Code written before logins (like the demo) doesn't set owner_id, so we
+    # fill in "no owner" for it.
+    row = {"owner_id": None, **enrollment}
     with connect() as db:
         db.execute(
             """
             INSERT INTO enrollments (id, senior_name, senior_phone, family_name,
                 family_phone, phone_type, device_id, device_key,
-                senior_language, family_language, status, created_at, answered_at)
+                senior_language, family_language, status, created_at, answered_at,
+                owner_id)
             VALUES (:id, :senior_name, :senior_phone, :family_name,
                 :family_phone, :phone_type, :device_id, :device_key,
-                :senior_language, :family_language, :status, :created_at, :answered_at)
+                :senior_language, :family_language, :status, :created_at, :answered_at,
+                :owner_id)
             """,
-            enrollment,
+            row,
         )
 
 
@@ -196,10 +249,58 @@ def find_active_enrollments() -> list[dict]:
     Example:
         find_active_enrollments()  ->  [{"senior_name": "Rosa", "status": "active", ...}]
     """
+    return find_enrollments_with_status(("active",))
+
+
+def find_enrollments_with_status(statuses: tuple[str, ...]) -> list[dict]:
+    """
+    List every enrollment with one of these statuses, newest first.
+
+    Input:  statuses, like ("active", "paused")
+    Output: a list of enrollment dicts
+
+    Example:
+        find_enrollments_with_status(("active", "paused")) gives you every
+        senior who said YES, even if their family paused protection
+    """
+    # One "?" for each status, like "?, ?" for two of them.
+    marks = ", ".join("?" for _ in statuses)
     with connect() as db:
         rows = db.execute(
-            "SELECT * FROM enrollments WHERE status = 'active' ORDER BY created_at DESC"
+            f"SELECT * FROM enrollments WHERE status IN ({marks}) ORDER BY created_at DESC",
+            statuses,
         ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def find_enrollments_for_owner(owner_id: str) -> list[dict]:
+    """
+    List every senior one family login signed up, newest first.
+
+    Input:  owner_id, the family's Supabase user ID
+    Output: a list of enrollment dicts (empty if they haven't signed anyone up)
+
+    Example:
+        find_enrollments_for_owner("user-ana") gives you [{"senior_name": "Rosa", ...}]
+    """
+    with connect() as db:
+        rows = db.execute(
+            "SELECT * FROM enrollments WHERE owner_id = ? ORDER BY created_at DESC",
+            (owner_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def find_all_enrollments() -> list[dict]:
+    """
+    List every enrollment, newest first. Only used when login is off, since
+    then the dashboard is open to anyone anyway.
+
+    Example:
+        find_all_enrollments() gives you [{"senior_name": "Rosa", ...}, ...]
+    """
+    with connect() as db:
+        rows = db.execute("SELECT * FROM enrollments ORDER BY created_at DESC").fetchall()
     return [dict(row) for row in rows]
 
 
@@ -321,5 +422,92 @@ def mark_family_called(call_id: str) -> None:
     with connect() as db:
         db.execute(
             "UPDATE calls SET family_called_at = ? WHERE id = ?",
+            (now_text(), call_id),
+        )
+
+
+def find_calls_for_enrollment(enrollment_id: str, limit: int = 50) -> list[dict]:
+    """
+    List one senior's calls, newest first, for the family dashboard.
+
+    Input:  enrollment_id, which senior
+            limit, the most calls to give back
+    Output: a list of call dicts
+
+    Example:
+        find_calls_for_enrollment("abc") gives you [{"id": "c2", "risk_score": 92, ...}, ...]
+    """
+    with connect() as db:
+        rows = db.execute(
+            "SELECT * FROM calls WHERE enrollment_id = ? ORDER BY started_at DESC, rowid DESC LIMIT ?",
+            (enrollment_id, limit),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def save_call_score(call_id: str, detector_result: dict) -> None:
+    """
+    Save how risky a call looks, but only if it's the riskiest it's been.
+
+    The detector checks the call over and over as it goes. The family wants to
+    know how bad it GOT, so a later, calmer moment doesn't replace a high score.
+
+    Input:  call_id, which call
+            detector_result, what detector.score_call() gave back
+    Output: nothing. If the detector couldn't score the call, we save nothing.
+
+    Example:
+        save_call_score("c1", {"risk_score": 92, ...}) and then
+        save_call_score("c1", {"risk_score": 60, ...}) keeps 92
+    """
+    score = detector_result.get("risk_score")
+    if score is None:
+        return
+    with connect() as db:
+        db.execute(
+            """
+            UPDATE calls SET risk_score = ?, verdict = ?, reasons = ?, claimed_identity = ?
+            WHERE id = ? AND (risk_score IS NULL OR risk_score <= ?)
+            """,
+            (
+                score,
+                detector_result.get("verdict"),
+                json.dumps(detector_result.get("reasons") or []),
+                detector_result.get("claimed_identity"),
+                call_id,
+                score,
+            ),
+        )
+
+
+def save_call_sources(call_id: str, sources: list[dict]) -> None:
+    """
+    Save the Tavily links we found for a call.
+
+    Input:  call_id, which call
+            sources, like [{"title": "FTC: grandparent scams", "url": "https://..."}]
+    Output: nothing
+
+    Example:
+        save_call_sources("c1", [{"title": "FTC warning", "url": "https://consumer.ftc.gov/..."}])
+    """
+    with connect() as db:
+        db.execute(
+            "UPDATE calls SET sources = ? WHERE id = ?",
+            (json.dumps(sources), call_id),
+        )
+
+
+def mark_call_alerted(call_id: str) -> None:
+    """
+    Remember when we sent the family alert for this call, so the dashboard
+    can show which calls the family was told about.
+
+    Example:
+        mark_call_alerted("c1")
+    """
+    with connect() as db:
+        db.execute(
+            "UPDATE calls SET alerted_at = ? WHERE id = ? AND alerted_at IS NULL",
             (now_text(), call_id),
         )

@@ -544,6 +544,146 @@ h3 {
   }
 }
 
+/* ----- Your family: each senior and their past calls (family.js) ----- */
+
+.senior {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid #444;
+  border-radius: 12px;
+  background: var(--color-black);
+}
+
+.senior-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.senior-top h3 {
+  margin: 0;
+}
+
+.senior h4 {
+  margin: 16px 0 8px;
+  color: var(--color-muted);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.senior h5 {
+  margin: 12px 0 4px;
+  color: var(--color-gold);
+  font-size: 16px;
+}
+
+/* The status next to the senior's name. Only "Protected" gets the gold,
+   so it's easy to spot when someone ISN'T protected. */
+.status-pill {
+  padding: 2px 10px;
+  border: 1px solid var(--color-muted);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.status-active {
+  border-color: var(--color-gold);
+  background: var(--color-gold);
+  color: var(--color-black);
+}
+
+.pause .hint {
+  margin: 4px 0 0;
+}
+
+.call-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.call {
+  border-top: 1px solid #333;
+}
+
+/* Each call is a big tap target that looks like a row, not a gold button */
+.call-button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 0;
+  padding: 12px 0;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text);
+  font-weight: 400;
+  text-align: left;
+}
+
+.call-words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.call-when {
+  font-weight: 700;
+}
+
+.call-from,
+.call-verdict {
+  color: var(--color-muted);
+  font-size: 16px;
+}
+
+/* The score in a circle. Red only for scams, gold for "take a look". */
+.score {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 2px solid #555;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.score-high {
+  border-color: var(--color-red);
+  background: var(--color-red);
+  color: var(--color-text);
+}
+
+.score-mid {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.score-low {
+  color: var(--color-muted);
+}
+
+.call-details {
+  padding: 0 0 12px 64px;
+}
+
+.call-details p {
+  margin: 4px 0;
+}
+
+.sources {
+  margin: 0;
+  padding-left: 1.2em;
+  /* Long page titles and links wrap instead of making the page scroll sideways */
+  overflow-wrap: anywhere;
+}
+
 /* Make sure the "hidden" attribute always wins over display rules above */
 [hidden] {
   display: none !important;
