@@ -1,0 +1,51 @@
+<!--
+  404.html
+
+  The "page not found" page. Instead of a line of code, people see where
+  they are and three ways to keep going.
+
+  How it fits in: app/site_pages.py sends this page whenever a browser asks
+  for a page we don't have. Same look as the rest of the site.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page not found · Scam Shield</title>
+  <meta name="description" content="We couldn't find that page on Scam Shield.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+</head>
+<body class="landing">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="page">
+    <p class="eyebrow">Page not found</p>
+    <h1>We couldn't find that page.</h1>
+    <p class="lead">The link might be old or have a typo. Here's where you can go instead.</p>
+    <div class="actions">
+      <a class="button" href="/demo">Watch a scam get caught</a>
+      <a class="button button-outline" href="/try">Call it yourself</a>
+      <a class="button button-outline" href="/">Go to the home page</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+  </footer>
+
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/nav.js"></script>
+</body>
+</html>

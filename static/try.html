@@ -14,6 +14,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scam Shield">
+  <meta property="og:title" content="Call it yourself · Scam Shield">
+  <meta property="og:description" content="AI that listens with permission, warns Grandma on the call, and alerts the family in their language. Built with NVIDIA Nemotron, Tavily and Twilio.">
+  <meta property="og:url" content="https://scam-shield-ity3.onrender.com/try">
+  <meta property="og:image" content="https://scam-shield-ity3.onrender.com/static/icons/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scam Shield showing a 92 out of 100 scam risk for a fake grandson call">
+  <meta name="twitter:card" content="summary_large_image">
   <title>Call it yourself · Scam Shield</title>
   <meta name="description" content="Call Scam Shield from your own phone, play a scammer, and watch NVIDIA Nemotron catch you live.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,9 +39,10 @@
   <header class="topbar">
     <a class="wordmark" href="/"><i data-lucide="shield-check" aria-hidden="true"></i> Scam Shield</a>
     <nav class="nav" aria-label="Main">
-      <a href="/">Protect someone</a>
       <a href="/demo">Live demo</a>
       <a href="/try" aria-current="page">Call it yourself</a>
+      <a href="/dashboard#protect">Protect someone</a>
+      <a href="/dashboard">Dashboard</a>
     </nav>
   </header>
 
@@ -175,6 +190,7 @@
   <footer class="footer">
     <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, <strong>Tavily</strong> and <strong>Twilio</strong>.</p>
     <p>Calls last up to 5 minutes. We turn your words into text, and never save the audio or your phone number.</p>
+    <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
   </footer>
 
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>

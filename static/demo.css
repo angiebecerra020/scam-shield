@@ -940,11 +940,26 @@ input:focus-visible {
   }
 }
 
-/* Hide the nav on really small phones so the logo has room */
-@media (max-width: 380px) {
-  .nav a:first-child {
-    display: none;
+/* Phones: the logo on top and the four links on their own row underneath,
+   wrapping if they need to, so nothing ever runs off the screen */
+@media (max-width: 759px) {
+  .topbar {
+    flex-wrap: wrap;
   }
+
+  .nav {
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    width: 100%;
+  }
+}
+
+.footer a {
+  color: var(--muted);
+}
+
+.footer a:hover {
+  color: var(--gold);
 }
 
 /* Make sure the "hidden" attribute always wins over the display rules above */

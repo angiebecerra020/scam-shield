@@ -1,0 +1,322 @@
+/*
+  theme.css
+
+  Our elegant look, laid on top of Cass's styles.css. It loads right after
+  styles.css on the home page, login, dashboard, "Join call", the calling
+  app, and the privacy, terms and 404 pages, so the whole site feels like
+  one product with the demo player (demo.css).
+
+  How it fits in: it only changes fonts, lines and spacing. The colors stay
+  Cass's red, black and gold (her variables in styles.css), and every class
+  still comes from her HTML and JavaScript, so how her pages work stays
+  exactly the same.
+*/
+
+:root {
+  /* Two helpers for thin lines and soft gold backgrounds. Everything else
+     uses Cass's colors from styles.css. */
+  --line: #3A3A3A;
+  --gold-soft: rgba(201, 162, 39, 0.14);
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --sans: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+/* Headlines in the serif, like a nice magazine */
+h1,
+h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-weight: 600;
+}
+
+/* The header: logo on the left, links on the right, one thin line under it */
+
+body.landing .site-header,
+body.with-header .site-header {
+  max-width: none;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.brand img {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+.site-nav a:not(.button),
+.site-nav .button-link {
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--color-gold);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-gold);
+}
+
+.language-switch {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+/* Buttons: gold and calm, with thin outlines */
+
+button,
+.button {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.button-outline,
+.menu-button {
+  border: 1px solid var(--color-gold);
+}
+
+.button-outline:hover {
+  background: var(--gold-soft);
+  color: var(--color-gold);
+}
+
+/* Small capital labels, like the demo player's */
+.badge {
+  padding: 4px 12px;
+  border: 1px solid var(--color-gold);
+  background: var(--gold-soft);
+  color: var(--color-gold);
+  font-weight: 600;
+  text-transform: none;
+  font-variant: all-small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.95rem;
+}
+
+.badge-alert {
+  border-color: var(--color-alert);
+  background: rgba(255, 90, 95, 0.12);
+  color: var(--color-alert);
+}
+
+/* Cards: dark panel, thin lines, and the red stripe made thin */
+
+.card {
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--color-red);
+  border-radius: 14px;
+}
+
+fieldset,
+.senior,
+.tabs {
+  border-color: var(--line);
+}
+
+input,
+select,
+.report-text {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+input::placeholder {
+  color: var(--color-muted);
+}
+
+/* The home page */
+
+.hero h1 {
+  font-size: clamp(2.3rem, 7vw, 3.6rem);
+  line-height: 1.08;
+}
+
+.hero .lead {
+  max-width: 34ch;
+}
+
+/* The small "want to protect someone?" line under the big buttons */
+.hero-more {
+  margin: 18px 0 0;
+  color: var(--color-muted);
+  font-size: 1rem;
+}
+
+.alert-preview {
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--color-red);
+  box-shadow: 0 0 40px rgba(200, 16, 46, 0.18);
+}
+
+.alert-preview-label {
+  font-variant: all-small-caps;
+  letter-spacing: 0.08em;
+  font-size: 1.05rem;
+}
+
+/* Only the big number gets the serif. "/100 risk" next to it stays small. */
+.risk-score span:first-child {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 3.6rem;
+}
+
+.risk-score span + span {
+  color: var(--color-muted);
+  font-size: 1rem;
+}
+
+.section {
+  border-top: 1px solid var(--line);
+}
+
+.section h2 {
+  font-size: clamp(1.7rem, 4vw, 2.2rem);
+}
+
+/* "How it works": red circles with serif numbers */
+.step-cards li,
+.feature {
+  border: 1px solid var(--line);
+}
+
+.step-cards li::before {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.15rem;
+}
+
+.feature {
+  border-left: 2px solid var(--color-gold);
+}
+
+/* A thin gold icon before each "Built for families" title */
+.feature h3::before {
+  content: "";
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  margin-right: 10px;
+  vertical-align: -0.15em;
+  background: var(--color-gold);
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+
+/* Lucide icons: user-check, search, languages, house */
+.feature:nth-child(1) {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m16 11 2 2 4-4'/%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3C/svg%3E");
+}
+
+.feature:nth-child(2) {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+}
+
+.feature:nth-child(3) {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 8 6 6'/%3E%3Cpath d='m4 14 6-6 2-3'/%3E%3Cpath d='M2 5h12'/%3E%3Cpath d='M7 2h1'/%3E%3Cpath d='m22 22-5-10-5 10'/%3E%3Cpath d='M14 18h6'/%3E%3C/svg%3E");
+}
+
+.feature:nth-child(4) {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8'/%3E%3Cpath d='M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3C/svg%3E");
+}
+
+.cta .button {
+  margin: 6px;
+}
+
+/* Footer: quiet, with the privacy and terms links */
+
+.site-footer {
+  border-top: 1px solid var(--line);
+}
+
+.site-footer a {
+  color: var(--color-muted);
+}
+
+.site-footer a:hover {
+  color: var(--color-gold);
+}
+
+/* The dashboard's call list and score circles */
+
+.call {
+  border-top-color: var(--line);
+}
+
+.score {
+  font-family: var(--serif);
+  font-weight: 400;
+}
+
+.was-it-a-scam,
+.report-and-block,
+.account-bar {
+  border-color: var(--line);
+}
+
+/* The privacy, terms and 404 pages: easy to read, one column */
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 20px 64px;
+}
+
+.page .eyebrow {
+  margin: 0 0 8px;
+  color: var(--color-gold);
+  font-variant: all-small-caps;
+  letter-spacing: 0.08em;
+}
+
+.page h1 {
+  margin: 0 0 12px;
+  color: var(--color-text);
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.page h2 {
+  margin: 36px 0 8px;
+  color: var(--color-gold);
+  font-size: 1.45rem;
+}
+
+.page .lead,
+.page .updated {
+  color: var(--color-muted);
+}
+
+.page ul {
+  padding-left: 1.2em;
+}
+
+.page li {
+  margin: 6px 0;
+}
+
+.page .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}

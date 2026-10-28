@@ -22,6 +22,7 @@
 // The links in the header, in order. "text" is the key for its words in strings.js.
 const NAV_LINKS = [
   { href: "/demo", text: "nav.demo" },
+  { href: "/try", text: "nav.try" },
   { href: "/dashboard#protect", text: "nav.protect" },
   { href: "/dashboard", text: "nav.dashboard" },
 ];
@@ -109,7 +110,7 @@ function setMenuOpen(header, open) {
  *
  * Input:  nothing (it fills in <header id="site-header">)
  * Output: nothing; it updates the page.
- * Example: open any page  gives you  "🛡️ Scam Shield   Demo  Protect someone  Dashboard  Log out"
+ * Example: open any page  gives you  "Scam Shield   Live demo  Call it yourself  Protect someone  Dashboard  Log out"
  */
 function buildHeader() {
   const header = document.getElementById("site-header");
@@ -120,7 +121,12 @@ function buildHeader() {
   const brand = document.createElement("a");
   brand.className = "brand";
   brand.href = "/";
-  brand.textContent = "🛡️ Scam Shield";
+  // Our gold shield icon instead of an emoji, so the logo looks the same on
+  // every phone. alt is empty because the words right next to it say the name.
+  const shield = document.createElement("img");
+  shield.src = "/static/icons/favicon.svg";
+  shield.alt = "";
+  brand.append(shield, "Scam Shield");
 
   const menuButton = document.createElement("button");
   menuButton.type = "button";
