@@ -1,0 +1,64 @@
+# render.yaml
+#
+# Tells Render how to run Scam Shield online, so judges can use it.
+# Render reads this file when you pick "New, then Blueprint" and choose our repo.
+#
+# Settings with "sync: false" are secrets. Render asks you to paste them in
+# once, and they never go in this file or on GitHub.
+
+services:
+  - type: web
+    name: scam-shield
+    runtime: python
+    # 0.5 CPU and 512 MB, the $7 a month plan. The free plan falls asleep
+    # when nobody visits, and then Twilio's calls to us would time out.
+    plan: 0.5c-512mb
+    # Virginia is the closest Render region to Florida.
+    region: virginia
+    buildCommand: pip install -r requirements.txt
+    # One copy of the app on purpose: the demo calls, phone line codes and
+    # limits live in its memory, so they all have to be in the same place.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /demo
+    # Every time main on GitHub changes, Render puts the new version online.
+    branch: main
+    envVars:
+      # The same Python we test with
+      - key: PYTHON_VERSION
+        value: 3.13.2
+      # Judges always get the demo: a made up family, no real texts or calls
+      - key: DEMO_MODE
+        value: "true"
+      # The database goes on the disk below, so it survives restarts
+      - key: DATABASE_PATH
+        value: /var/data/scam_shield.db
+      - key: NEBIUS_BASE_URL
+        value: https://api.tokenfactory.nebius.com/v1/
+      - key: NEMOTRON_MODEL
+        value: nvidia/Nemotron-3_5-Lightning
+      - key: NEMOTRON_SMART_MODEL
+        value: nvidia/Nemotron-3-Ultra-550b-a55b
+      # Secrets: Render asks for these once, when you create the Blueprint
+      - key: NEBIUS_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: GMAIL_ADDRESS
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      # Family logins (Cass's Supabase project). Leave blank to turn login off.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+    disk:
+      name: scam-shield-data
+      mountPath: /var/data
+      sizeGB: 1

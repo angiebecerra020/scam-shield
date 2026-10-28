@@ -63,7 +63,7 @@ from app.alerts import DEMO_OUTBOX
 from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
-from app import demo_api
+from app import demo_api, phone_line
 
 # static/ sits next to app/ in the project folder.
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -78,6 +78,9 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # The demo player's page and its routes live in demo_api.py.
 app.include_router(demo_api.router)
+
+# The "Call it yourself" phone line and its page live in phone_line.py.
+app.include_router(phone_line.router)
 
 
 @app.get("/")

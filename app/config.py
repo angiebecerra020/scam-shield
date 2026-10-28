@@ -54,6 +54,10 @@ class Settings:
     # they're blank, login is off and the dashboard is open to anyone.
     supabase_url: str = ""
     supabase_publishable_key: str = ""
+    # The Gmail account that sends family alerts by email (email_alerts.py).
+    # Both are optional: when they're blank, we skip the email.
+    gmail_address: str = ""
+    gmail_app_password: str = ""
 
 
 def read_text_setting(name: str, default: str = "") -> str:
@@ -123,7 +127,14 @@ def get_settings() -> Settings:
         # Demo mode is ON unless someone turns it off. That's the safe choice:
         # it means we never place real phone calls by accident.
         demo_mode=read_true_false_setting("DEMO_MODE", default=True),
-        public_base_url=read_text_setting("PUBLIC_BASE_URL", "http://localhost:8000"),
+        # On Render we don't have to type our web address: Render tells every
+        # app its own address in RENDER_EXTERNAL_URL, so we use that when
+        # PUBLIC_BASE_URL is blank.
+        public_base_url=(
+            read_text_setting("PUBLIC_BASE_URL")
+            or read_text_setting("RENDER_EXTERNAL_URL")
+            or "http://localhost:8000"
+        ),
         # Where we save sign-ups and calls. A file next to the code, so a
         # restart doesn't forget who said YES.
         database_path=read_text_setting(
@@ -134,6 +145,10 @@ def get_settings() -> Settings:
         # both work when we add "/auth/v1/user" to the end.
         supabase_url=read_text_setting("SUPABASE_URL").rstrip("/"),
         supabase_publishable_key=read_text_setting("SUPABASE_PUBLISHABLE_KEY"),
+        gmail_address=read_text_setting("GMAIL_ADDRESS"),
+        # Google shows the app password in groups like "abcd efgh ijkl mnop".
+        # We take the spaces out so it works however you paste it.
+        gmail_app_password=read_text_setting("GMAIL_APP_PASSWORD").replace(" ", ""),
     )
 
 
