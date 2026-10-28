@@ -102,14 +102,16 @@ def visitor_id(request: Request) -> str:
     Works out who's visiting, so we can count their demo calls.
 
     Once the site is online, it sits behind the host's proxy, so the real
-    visitor's address is in the X-Forwarded-For header.
+    visitor's address is in the X-Forwarded-For header. The host adds it at
+    the END of the list. Anything before it came from the visitor, who could
+    make it up to dodge the limits, so we take the last one.
 
     Example:
-        A request with X-Forwarded-For "203.0.113.7, 10.0.0.1" gives you "203.0.113.7"
+        A request with X-Forwarded-For "1.2.3.4, 203.0.113.7" gives you "203.0.113.7"
     """
     forwarded = request.headers.get("x-forwarded-for", "")
     if forwarded:
-        return forwarded.split(",")[0].strip()
+        return forwarded.split(",")[-1].strip()
     if request.client:
         return request.client.host
     return "unknown"
@@ -202,8 +204,10 @@ def demo_family(script: dict, family_language: str) -> tuple[dict, list[dict]]:
         "device_key": secrets.token_urlsafe(16),
         "senior_language": pick_language(script["language"]),
         "family_language": pick_language(family_language),
-        # Rosa already said YES to Scam Shield, so her call is protected from the start.
-        "status": "active",
+        # Rosa gets her own "demo" status instead of "active". That way she never
+        # shows up as a real protected senior (calls.py and the family dashboard
+        # only look at "active" ones), but call_monitor.py still protects her call.
+        "status": "demo",
         "created_at": now,
         "answered_at": now,
     }

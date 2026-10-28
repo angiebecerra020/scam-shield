@@ -25,6 +25,10 @@ that's fine for now.
 
 from app import alerts, calls, detector, research, storage
 
+# The sign-ups we protect. "active" means the senior said YES to Scam Shield.
+# "demo" is the pretend Rosa from the demo player (demo_api.py).
+PROTECTED_STATUSES = ("active", "demo")
+
 # Calls that already got a family alert, so we never send it twice.
 ALERTED_CALL_IDS: set[str] = set()
 
@@ -98,7 +102,7 @@ def should_alert(call: dict, enrollment: dict | None, detector_result: dict) -> 
     Decides if this check should send the family alert.
 
     We alert only when ALL of these are true:
-      - the senior said YES to Scam Shield
+      - the senior said YES to Scam Shield (or it's the demo player's pretend Rosa)
       - the call is still going
       - we haven't already alerted the family about this call (not even
         when the call started, for a number on their scam list in calls.py)
@@ -113,7 +117,7 @@ def should_alert(call: dict, enrollment: dict | None, detector_result: dict) -> 
         A live call that just scored 92, for a senior who said YES, gives you True
     """
     score = detector_result.get("risk_score")
-    if enrollment is None or enrollment["status"] != "active":
+    if enrollment is None or enrollment["status"] not in PROTECTED_STATUSES:
         return False
     if call["status"] != "live":
         return False

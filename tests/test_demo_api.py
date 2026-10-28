@@ -12,7 +12,7 @@ in conftest.py turns demo mode on and gives every test its own empty database.
 import pytest
 from fastapi.testclient import TestClient
 
-from app import call_monitor, demo_api, detector, research, senior_warnings, verify
+from app import call_monitor, demo_api, detector, research, senior_warnings, storage, verify
 from app.main import app
 
 client = TestClient(app)
@@ -244,6 +244,34 @@ def test_visitors_hit_the_hourly_limit(monkeypatch):
     response = client.post("/api/demo/calls/scam_grandparent_en/start", json={})
 
     assert response.status_code == 429
+
+
+def test_demo_rosa_is_never_a_real_protected_senior(pretend_ai):
+    """The pretend Rosa is saved as "demo", so real calls and the dashboard skip her, but she still gets protected."""
+    pretend_ai["result"] = GRANDSON_SCAM
+    call = start()
+
+    assert storage.find_active_enrollments() == []
+    assert check(call["call_id"], 3)["alert_sent_now"] is True
+
+
+def test_visitors_cant_fake_their_address_to_skip_the_limit(monkeypatch):
+    """Making up the start of X-Forwarded-For doesn't give a visitor a fresh limit."""
+    monkeypatch.setattr(demo_api, "MAX_CALLS_PER_HOUR", 1)
+
+    first = client.post(
+        "/api/demo/calls/scam_grandparent_en/start",
+        json={},
+        headers={"X-Forwarded-For": "1.1.1.1, 203.0.113.7"},
+    )
+    faked = client.post(
+        "/api/demo/calls/scam_grandparent_en/start",
+        json={},
+        headers={"X-Forwarded-For": "2.2.2.2, 203.0.113.7"},
+    )
+
+    assert first.status_code == 200
+    assert faked.status_code == 429
 
 
 def test_contact_names_match_whole_words_only():
