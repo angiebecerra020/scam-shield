@@ -11,17 +11,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Join call · Scam Shield</title>
+  <title data-text="join.pageTitle">Join call · Scam Shield</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <main class="card">
-    <p class="badge badge-alert">Scam alert</p>
-    <h1>🛡️ Join the call</h1>
+    <!-- English | Español (i18n.js puts the switch here) -->
+    <div class="language-switch-spot"></div>
+    <p class="badge badge-alert" data-text="join.badge">Scam alert</p>
+    <h1>🛡️ <span data-text="join.title">Join the call</span></h1>
     <p id="join-message" aria-live="polite">Checking the call…</p>
-    <button type="button" id="join-button" class="button-big" hidden>Call me into the call</button>
-    <p id="join-hint" class="hint" hidden>We'll ring your phone. When you answer, you'll be on the call. Everyone hears a short tone when you join.</p>
+    <button type="button" id="join-button" class="button-big" hidden data-text="join.button">Call me into the call</button>
+    <!-- Only shows when the internet or our server had trouble -->
+    <button type="button" id="join-retry" class="button-outline" hidden data-text="join.retry">Try again</button>
+    <p id="join-hint" class="hint" hidden data-text="join.hint">We'll ring your phone. When you answer, you'll be on the call. Everyone hears a short tone when you join.</p>
   </main>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/busy.js"></script>
   <script src="/static/join.js"></script>
 </body>
 </html>

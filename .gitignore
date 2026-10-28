@@ -27,3 +27,4 @@ recordings/
 
 # Our local database: it holds real names and phone numbers
 *.db
+.vercel

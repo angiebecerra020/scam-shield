@@ -1,0 +1,105 @@
+<!--
+  landing.html — The home page: what Scam Shield does and how it works.
+
+  How it fits in: the web server (app/main.py) sends this page at /. It's the
+  first thing judges and families see. The buttons go to /login, where people
+  make an account or log in, and then on to the dashboard (/dashboard).
+  No JavaScript needed here, it's all plain HTML and styles.css.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scam Shield</title>
+  <meta name="description" content="Scam Shield catches scam phone calls while they happen and tells the family right away.">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="landing">
+  <!-- The header with the logo and links. nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <!-- The big first impression: what it is, and one clear next step -->
+    <section class="hero">
+      <div class="hero-text">
+        <p class="badge badge-alert" data-text="landing.badge">Live scam call protection</p>
+        <h1><span data-text="landing.title1">Stop scam calls</span> <span class="text-red" data-text="landing.title2">while they happen.</span></h1>
+        <p class="lead" data-text="landing.lead">Scam Shield listens for scam tricks on your loved one's calls, with their OK, and tells you right away, in your language.</p>
+        <div class="hero-actions">
+          <a class="button" href="/login?mode=signup" data-text="landing.protect">Protect a loved one</a>
+          <a class="button button-outline" href="/login" data-text="landing.logIn">Log in</a>
+        </div>
+      </div>
+
+      <!-- A sample family alert, so people see what they'd get -->
+      <aside class="alert-preview" aria-label="Example of a family alert" data-text-aria-label="landing.exampleAria">
+        <p class="alert-preview-label" data-text="landing.exampleTitle">⚠️ Scam alert for Grandma Rosa</p>
+        <p class="risk-score"><span>92</span><span data-text="landing.risk">/100 risk</span></p>
+        <ul class="reasons">
+          <li data-text="landing.reason1">Caller asked for gift cards</li>
+          <li data-text="landing.reason2">Said "don't tell anyone"</li>
+          <li data-text="landing.reason3">Claims to be her grandson</li>
+        </ul>
+        <span class="button button-danger" aria-hidden="true" data-text="landing.joinCall">Join call</span>
+      </aside>
+    </section>
+
+    <section class="section" aria-labelledby="how-title">
+      <h2 id="how-title" data-text="landing.howTitle">How it works</h2>
+      <ol class="step-cards">
+        <li>
+          <h3 data-text="landing.step1Title">They say YES</h3>
+          <p data-text="landing.step1">We text or call your loved one first. Nothing is listened to until they agree.</p>
+        </li>
+        <li>
+          <h3 data-text="landing.step2Title">We watch for scams</h3>
+          <p data-text="landing.step2">NVIDIA Nemotron scores each call from 0 to 100 and spots tricks like gift cards, secrecy and rush.</p>
+        </li>
+        <li>
+          <h3 data-text="landing.step3Title">You get the alert</h3>
+          <p data-text="landing.step3">A text tells you why the call looks risky, with a link to join the call yourself.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section" aria-labelledby="features-title">
+      <h2 id="features-title" data-text="landing.featuresTitle">Built for families</h2>
+      <div class="feature-grid">
+        <article class="feature">
+          <h3 data-text="landing.feature1Title">📞 "Is it really you?"</h3>
+          <p data-text="landing.feature1">If a caller says they're family, we text the real person to check.</p>
+        </article>
+        <article class="feature">
+          <h3 data-text="landing.feature2Title">🔎 Caller check</h3>
+          <p data-text="landing.feature2">We look up the number and the latest scam news while the call is going.</p>
+        </article>
+        <article class="feature">
+          <h3 data-text="landing.feature3Title">🌎 Your language</h3>
+          <p data-text="landing.feature3">Alerts in English, Spanish and Haitian Creole, so everyone in the family understands.</p>
+        </article>
+        <article class="feature">
+          <h3 data-text="landing.feature4Title">🏠 Cell or landline</h3>
+          <p data-text="landing.feature4">Works with a cell phone app or a home phone adapter.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section cta">
+      <h2 data-text="landing.ctaTitle">Give your family peace of mind.</h2>
+      <a class="button" href="/login?mode=signup" data-text="landing.cta">Get started free</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p data-text="landing.footer1">Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p data-text="landing.footer2">We only listen with permission. Our demos use acted, simulated calls.</p>
+  </footer>
+  <!-- Supabase and auth.js let the header say Log in or Log out -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/nav.js"></script>
+</body>
+</html>

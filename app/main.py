@@ -8,16 +8,29 @@ will hold all of our web routes: Twilio call webhooks, demo mode, and live
 dashboard updates.
 
 Routes:
-    GET  /                        -> the dashboard page (sign-up form for now)
+    GET  /                        -> the landing page (what Scam Shield is)
     GET  /health                  -> a quick "is the server alive?" check
 
+  Family logins (auth.py): routes marked [login] need a logged in family member
+    GET  /login                   -> the log in and sign up page
+    GET  /dashboard               -> the family dashboard
+    GET  /api/auth-config         -> what the browser needs to talk to Supabase
+
   Consent (consent.py): the senior must say YES before we listen
-    POST /api/enrollments         -> family signs a senior up; we text the
-                                     senior (cell) or call them (landline)
-    GET  /api/enrollments/{id}    -> has the senior said YES yet?
+    POST /api/enrollments         -> [login] family signs a senior up; we text
+                                     the senior (cell) or call them (landline)
+    GET  /api/enrollments/{id}    -> [login] has the senior said YES yet?
     POST /twilio/sms              -> Twilio: the senior texted us back
     POST /twilio/consent-call     -> Twilio: what to say on the landline consent call
     POST /twilio/consent-answer   -> Twilio: the key the senior pressed
+
+  Family dashboard (family.py): each family only sees the seniors they signed up
+    GET  /api/family              -> [login] the seniors you protect and their recent calls
+    GET  /api/calls/{id}          -> [login] one past call: score, reasons and Tavily links
+    POST /api/calls/{id}/answer   -> [login] the family's "Was this a scam?" answer
+    POST /api/calls/{id}/scam-list -> [login] if this number calls again: warn, block, or none
+    POST /api/enrollments/{id}/pause  -> [login] stop listening for now
+    POST /api/enrollments/{id}/resume -> [login] turn protection back on
 
   The senior's device (devices.py): how we ring them without a loop
     GET  /phone/{key}             -> the calling app for a cell phone
@@ -33,20 +46,21 @@ Routes:
     POST /api/join/{token}        -> ring the family member into the call
 
   Demo mode only
-    POST /api/demo/scam-call      -> pretend a scam call came in; send the alert
-    GET  /api/demo/outbox         -> the texts and calls we would have sent
+    POST /api/demo/scam-call      -> [login] pretend a scam call came in; send the alert
+    GET  /api/demo/outbox         -> [login] the texts and calls we would have sent
 """
 
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from twilio.twiml.messaging_response import MessagingResponse
 
-from app import calls, consent, devices
+from app import calls, consent, devices, family
 from app.alerts import DEMO_OUTBOX
+from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
 from app import demo_api
@@ -67,17 +81,61 @@ app.include_router(demo_api.router)
 
 
 @app.get("/")
-def show_dashboard() -> FileResponse:
+def show_landing_page() -> FileResponse:
     """
-    Send the family dashboard page to the browser.
+    Send the landing page: what Scam Shield does, with buttons to sign up or log in.
 
     Input:  nothing (someone opens http://localhost:8000/ in a browser)
-    Output: the static/index.html page.
+    Output: the static/landing.html page.
 
     Example:
-        Open http://localhost:8000 -> you see the Scam Shield page.
+        Open http://localhost:8000 -> you see "Stop scam calls while they happen".
+    """
+    return FileResponse(STATIC_DIR / "landing.html")
+
+
+@app.get("/login")
+def show_login_page() -> FileResponse:
+    """
+    Send the page where families log in or make an account.
+
+    Example:
+        Open http://localhost:8000/login -> you see the email and password form.
+    """
+    return FileResponse(STATIC_DIR / "login.html")
+
+
+@app.get("/dashboard")
+def show_dashboard() -> FileResponse:
+    """
+    Send the family dashboard page. The page itself sends people who aren't
+    logged in to /login (see static/auth.js), and the API routes it uses
+    check the login again on the server, so nobody can skip it.
+
+    Example:
+        Open http://localhost:8000/dashboard -> you see the sign-up form.
     """
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/auth-config")
+def show_auth_config() -> dict:
+    """
+    Tell the browser how to reach Supabase, so the login page can work.
+
+    The publishable key is made to be public (Supabase's own rules decide what
+    it can do), so it's safe to send. We never send secret keys here.
+
+    Example:
+        GET /api/auth-config
+        -> {"login_on": true, "supabase_url": "https://abc.supabase.co", "supabase_publishable_key": "sb_publishable_..."}
+    """
+    settings = get_settings()
+    return {
+        "login_on": login_is_on(settings),
+        "supabase_url": settings.supabase_url,
+        "supabase_publishable_key": settings.supabase_publishable_key,
+    }
 
 
 @app.get("/health")
@@ -167,11 +225,14 @@ class EnrollmentForm(BaseModel):
 
 
 @app.post("/api/enrollments", status_code=201)
-def create_enrollment(form: EnrollmentForm):
+def create_enrollment(form: EnrollmentForm, user: dict | None = Depends(require_login)):
     """
     Sign a senior up and text them to ask for their YES.
 
-    Input:  the sign-up form (JSON)
+    We save whose login signed them up, so only that family sees them on the
+    dashboard (family.py).
+
+    Input:  the sign-up form (JSON), and the logged in user (None when login is off)
     Output: the new enrollment with status "pending", or {"error": "..."}
 
     Example:
@@ -179,23 +240,132 @@ def create_enrollment(form: EnrollmentForm):
         -> 201 {"id": "abc", "status": "pending", ...}
     """
     try:
-        return consent.start_enrollment(**form.model_dump())
+        owner_id = user["id"] if user else None
+        return consent.start_enrollment(**form.model_dump(), owner_id=owner_id)
     except consent.EnrollmentError as problem:
         return error(problem.text, problem.status_code)
 
 
 @app.get("/api/enrollments/{enrollment_id}")
-def show_enrollment(enrollment_id: str):
+def show_enrollment(enrollment_id: str, user: dict | None = Depends(require_login)):
     """
     Show whether the senior has answered yet. The dashboard asks every few seconds.
+    Only the family who signed them up can see it.
 
     Example:
         GET /api/enrollments/abc  ->  {"id": "abc", "status": "active", ...}
     """
-    enrollment = consent.get_enrollment_status(enrollment_id)
-    if enrollment is None:
-        return error("We couldn't find that sign-up.", 404)
-    return enrollment
+    try:
+        family.find_my_enrollment(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+    return consent.get_enrollment_status(enrollment_id)
+
+
+@app.get("/api/family")
+def show_family(user: dict | None = Depends(require_login)):
+    """
+    Show the seniors this family protects, and each one's recent calls.
+
+    Example:
+        GET /api/family gives you
+        {"seniors": [{"senior_name": "Rosa", "status": "active", "calls": [...]}]}
+    """
+    return family.family_overview(user)
+
+
+@app.get("/api/calls/{call_id}")
+def show_call(call_id: str, user: dict | None = Depends(require_login)):
+    """
+    Show one past call: its score, the reasons, and the Tavily links.
+
+    Example:
+        GET /api/calls/c1 gives you {"risk_score": 92, "reasons": [...], "sources": [...]}
+    """
+    try:
+        return family.get_call(call_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+class ScamAnswer(BaseModel):
+    """
+    The family's answer to "Was this a scam?"
+
+    Example:
+        {"answer": "scam"} or {"answer": "not_scam"}
+    """
+
+    answer: str
+
+
+@app.post("/api/calls/{call_id}/answer")
+def answer_was_it_a_scam(call_id: str, body: ScamAnswer, user: dict | None = Depends(require_login)):
+    """
+    Save the family's answer to "Was this a scam?" for one of their calls.
+
+    Example:
+        POST /api/calls/c1/answer {"answer": "not_scam"}
+        gives you the call with {"family_answer": "not_scam", ...}
+    """
+    try:
+        return family.answer_was_it_a_scam(call_id, body.answer, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+class ScamListChoice(BaseModel):
+    """
+    What to do if a number calls again.
+
+    Example:
+        {"choice": "block"}  (or "warn", or "none" to take it off the list)
+    """
+
+    choice: str
+
+
+@app.post("/api/calls/{call_id}/scam-list")
+def set_scam_list(call_id: str, body: ScamListChoice, user: dict | None = Depends(require_login)):
+    """
+    Put the number from one of your calls on your scam list (or take it off).
+
+    Example:
+        POST /api/calls/c1/scam-list {"choice": "block"}
+        gives you the call with {"number_on_list": "block", ...}
+    """
+    try:
+        return family.set_scam_list(call_id, body.choice, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+@app.post("/api/enrollments/{enrollment_id}/pause")
+def pause_protection(enrollment_id: str, user: dict | None = Depends(require_login)):
+    """
+    Pause Scam Shield for one senior. Their calls ring like normal, unwatched.
+
+    Example:
+        POST /api/enrollments/abc/pause gives you {"status": "paused", ...}
+    """
+    try:
+        return family.pause_protection(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+@app.post("/api/enrollments/{enrollment_id}/resume")
+def resume_protection(enrollment_id: str, user: dict | None = Depends(require_login)):
+    """
+    Turn Scam Shield back on for a senior the family paused.
+
+    Example:
+        POST /api/enrollments/abc/resume gives you {"status": "active", ...}
+    """
+    try:
+        return family.resume_protection(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
 
 
 @app.post("/twilio/sms")
@@ -416,7 +586,7 @@ def join_call(join_token: str):
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/demo/scam-call")
+@app.post("/api/demo/scam-call", dependencies=[Depends(require_login)])
 def start_demo_scam_call():
     """
     Pretend a scam call came in for the senior who said YES, and send the
@@ -433,7 +603,7 @@ def start_demo_scam_call():
         return error(problem.text, problem.status_code)
 
 
-@app.get("/api/demo/outbox")
+@app.get("/api/demo/outbox", dependencies=[Depends(require_login)])
 def show_demo_outbox():
     """
     Show the texts and calls we would have sent, newest first. Demo mode only,

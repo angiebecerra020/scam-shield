@@ -16,8 +16,14 @@ The steps:
      handle_consent_digits() — landline: the senior presses a key on our call
        YES / 1 -> "active"   (calls.py will now protect their calls)
        NO / 2  -> "declined"
-       STOP    -> "revoked"  (texts only; works any time, even months later)
+       STOP    -> "revoked"  (texts only; works any time, even months later,
+                              and even while the family has protection paused)
   3. No answer within 24 hours -> "expired"; the family can ask again.
+
+After a YES, the family can pause protection from the dashboard ("paused")
+and turn it back on later (family.py). Pausing doesn't need the senior's OK,
+since it means we listen LESS. Turning it back on only works if they already
+said YES.
 
 Ask BEFORE turning on call forwarding: once the senior's number forwards to
 us, our consent call would come straight back to us instead of ringing them.
@@ -38,7 +44,7 @@ from app import storage
 from app.alerts import send_sms, twilio_client
 from app.calls import DEMO_CALL_LOG, public_url
 from app.config import get_settings
-from app.languages import message, pick_language, spoken_language
+from app.languages import SPOKEN_LANGUAGES, message, pick_language, spoken_language
 from app.phone_numbers import mask_phone, normalize_phone
 
 PHONE_TYPES = ("cell", "landline")
@@ -50,8 +56,9 @@ ASK_AGAIN_AFTER_NO = timedelta(days=30)
 
 # Words we accept as an answer. Replies are cleaned up first (see clean_reply),
 # so "Yes!", "  yes " and "Sí" all match.
-YES_WORDS = {"yes", "y", "yeah", "yep", "ok", "okay", "si", "s"}
-NO_WORDS = {"no", "n", "nope"}
+# "wi" and "non" are YES and NO in Haitian Creole.
+YES_WORDS = {"yes", "y", "yeah", "yep", "ok", "okay", "si", "s", "wi"}
+NO_WORDS = {"no", "n", "nope", "non"}
 # STOP and friends are the standard US words for "stop texting me". Twilio
 # also handles them itself, but we use them to turn protection off.
 STOP_WORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "parar", "alto"}
@@ -168,6 +175,12 @@ def check_allowed_to_ask(senior_phone: str) -> None:
     for enrollment in enrollments:
         if enrollment["status"] == "active":
             raise EnrollmentError("This person is already protected by Scam Shield.", 409)
+        if enrollment["status"] == "paused":
+            raise EnrollmentError(
+                "This person is already signed up, but protection is paused. "
+                "You can turn it back on from the dashboard.",
+                409,
+            )
         if enrollment["status"] == "pending":
             raise EnrollmentError(
                 "We already texted this person. They have 24 hours to answer.", 409
@@ -188,6 +201,7 @@ def start_enrollment(
     senior_language: str = "en",
     family_language: str = "en",
     phone_type: str = "cell",
+    owner_id: str | None = None,
 ) -> dict:
     """
     Sign a senior up for Scam Shield and ask them for their YES: by text for
@@ -199,6 +213,8 @@ def start_enrollment(
             family_name, family_phone — the person signing up, who gets alerts
             senior_language, family_language — "en" or "es"
             phone_type — "cell" or "landline": the kind of phone senior_phone is
+            owner_id — the logged in family member's Supabase user ID, so only
+                       they see this senior on their dashboard (None when login is off)
     Output: the new enrollment (as public_view() shows it)
     Raises: EnrollmentError if something in the form is wrong, or if we
             aren't allowed to ask this senior right now
@@ -227,10 +243,20 @@ def start_enrollment(
         "status": "pending",
         "created_at": storage.now_text(),
         "answered_at": None,
+        "owner_id": owner_id,
     }
 
     if enrollment["senior_phone"] == enrollment["family_phone"]:
         raise EnrollmentError("The senior's phone and your phone must be different.", 400)
+
+    # A landline senior gets a SPOKEN consent call, and Twilio can't speak
+    # Haitian Creole yet. So Creole works for cell phones only, for now.
+    if enrollment["phone_type"] == "landline" and enrollment["senior_language"] not in SPOKEN_LANGUAGES:
+        raise EnrollmentError(
+            "Haitian Creole works with cell phones for now, since we text them. "
+            "For a landline, pick English or Spanish.",
+            400,
+        )
 
     check_allowed_to_ask(enrollment["senior_phone"])
     storage.save_enrollment(enrollment)
@@ -464,12 +490,12 @@ def handle_senior_reply(from_phone: str, body: str) -> str | None:
 
     # STOP turns off everything for this senior, whatever state it's in.
     if answer == "stop":
-        turned_off = [e for e in enrollments if e["status"] in ("pending", "active")]
+        turned_off = [e for e in enrollments if e["status"] in ("pending", "active", "paused")]
         if not turned_off:
             return None
         for enrollment in turned_off:
             storage.set_enrollment_status(enrollment["id"], "revoked", answered=True)
-            if enrollment["status"] == "active":
+            if enrollment["status"] in ("active", "paused"):
                 tell_family(enrollment, "family_told_off")
         return message("consent_revoked", turned_off[0]["senior_language"])
 

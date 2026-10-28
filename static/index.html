@@ -2,89 +2,128 @@
   index.html — The family dashboard page.
 
   How it fits in: the web server (app/main.py) sends this page when someone
-  opens http://localhost:8000. It loads styles.css (the look) and app.js (the
-  behavior). Right now it has the sign-up form: a family member enters the
-  senior's details, we text the senior (cell) or call them (landline), and
-  the page waits for their YES, then shows the steps to finish setup.
-  The live risk meter, reasons, source links and call history are coming in
-  a later step.
+  opens http://localhost:8000/dashboard. It loads styles.css (the look),
+  strings.js and i18n.js (every word, in English or Spanish), auth.js (sends
+  people who aren't logged in to /login), family.js (the "Your family" list)
+  and app.js (the rest of the behavior).
+
+  It has two parts:
+    - Your family: everyone you protect, a pause button for each, and their
+      past calls. Tap a call to see its score, reasons and Tavily links.
+    - The sign-up form: a family member enters the senior's details, we text
+      the senior (cell) or call them (landline), and the page waits for their
+      YES, then shows the steps to finish setup.
+  The live risk meter is coming in a later step.
 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scam Shield</title>
+  <title data-text="dash.pageTitle">Scam Shield</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body>
-  <main class="card">
-    <h1>🛡️ Scam Shield</h1>
-    <p class="tagline">Catches scam calls while they happen, and tells the family right away.</p>
+<body class="with-header">
+  <!-- The header with the logo and links (Log out lives here too). nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
+  <!-- Hidden until app.js checks the login, so nobody sees a flash of the
+       dashboard before being sent to /login -->
+  <main class="card" id="dashboard" hidden>
+    <!-- Who's logged in. Hidden when login is off. (Log out is in the header.) -->
+    <div id="account-bar" class="account-bar" hidden>
+      <span><span data-text="dash.loggedInAs">Logged in as</span> <strong id="account-email"></strong></span>
+    </div>
+
+    <!-- The logo is in the header, so the card says which page this is -->
+    <h1 data-text="dash.title">Family dashboard</h1>
+    <p class="tagline" data-text="dash.tagline">The people you protect, and the calls they got.</p>
+
+    <!-- Everyone this family protects, with their past calls (family.js).
+         Hidden until we know there's someone to show. -->
+    <section id="family" class="panel" hidden>
+      <h2 data-text="family.title">Your family</h2>
+      <div id="family-list"></div>
+      <p id="family-error" class="error" role="alert"></p>
+      <button type="button" id="show-signup" class="button-outline" data-text="family.protectSomeoneElse">Protect someone else</button>
+    </section>
 
     <!-- Step 1: the family member fills this in -->
-    <form id="signup-form" class="form">
-      <h2>Protect someone's calls</h2>
-      <p class="hint">We'll ask them for their OK first: a text for a cell phone, a phone call for a landline. Nothing is listened to until they say YES.</p>
+    <form id="signup-form" class="form" hidden>
+      <h2 data-text="dash.signupTitle">Protect someone's calls</h2>
+      <p class="hint" data-text="dash.signupHint">We'll ask them for their OK first: a text for a cell phone, a phone call for a landline. Nothing is listened to until they say YES.</p>
 
       <fieldset>
-        <legend>Who are we protecting?</legend>
-        <label>Their name <input name="senior_name" required maxlength="40" autocomplete="off"></label>
-        <label>Their phone <input name="senior_phone" type="tel" required autocomplete="off"></label>
-        <label>What kind of phone is it?
+        <legend data-text="dash.whoProtecting">Who are we protecting?</legend>
+        <label><span data-text="dash.theirName">Their name</span> <input name="senior_name" required maxlength="40" autocomplete="off"></label>
+        <label><span data-text="dash.theirPhone">Their phone</span> <input name="senior_phone" type="tel" required autocomplete="off"></label>
+        <label><span data-text="dash.phoneKind">What kind of phone is it?</span>
           <select name="phone_type">
-            <option value="cell">Cell phone</option>
-            <option value="landline">Landline (home phone)</option>
+            <option value="cell" data-text="dash.cell">Cell phone</option>
+            <option value="landline" data-text="dash.landline">Landline (home phone)</option>
           </select>
         </label>
-        <label>Their language
+        <label><span data-text="dash.theirLanguage">Their language</span>
           <select name="senior_language">
             <option value="en">English</option>
             <option value="es">Español</option>
+            <option value="ht">Kreyòl ayisyen</option>
           </select>
         </label>
       </fieldset>
 
       <fieldset>
-        <legend>Who gets the alerts?</legend>
-        <label>Your name <input name="family_name" required maxlength="40" autocomplete="name"></label>
-        <label>Your phone <input name="family_phone" type="tel" required autocomplete="tel"></label>
-        <label>Your language
+        <legend data-text="dash.whoGetsAlerts">Who gets the alerts?</legend>
+        <label><span data-text="dash.yourName">Your name</span> <input name="family_name" required maxlength="40" autocomplete="name"></label>
+        <label><span data-text="dash.yourPhone">Your phone</span> <input name="family_phone" type="tel" required autocomplete="tel"></label>
+        <label><span data-text="dash.yourLanguage">Your language</span>
           <select name="family_language">
             <option value="en">English</option>
             <option value="es">Español</option>
+            <option value="ht">Kreyòl ayisyen</option>
           </select>
         </label>
       </fieldset>
 
-      <button type="submit">Ask them for their OK</button>
+      <!-- Shown when they pick Haitian Creole for a landline (app.js) -->
+      <p id="creole-landline-note" class="hint" hidden data-text="dash.creoleLandline">Haitian Creole works with cell phones for now, since we text them. For a landline, pick English or Spanish.</p>
+      <button type="submit" data-text="dash.askButton">Ask them for their OK</button>
       <p id="signup-error" class="error" role="alert"></p>
     </form>
 
     <!-- Step 2: waiting for the senior's answer (hidden until they sign up) -->
     <section id="consent-status" class="panel" hidden>
-      <h2>Setting up Scam Shield for <span id="senior-name"></span></h2>
+      <h2><span data-text="dash.settingUp">Setting up Scam Shield for</span> <span id="senior-name"></span></h2>
       <!-- aria-live makes screen readers announce the status when it changes -->
       <p id="consent-message" aria-live="polite"></p>
+      <!-- Shows up if we can't reach the server while waiting for their answer -->
+      <p id="consent-trouble" class="error" role="alert"></p>
 
       <!-- Step 3: once they say YES, how to finish setting up their phone -->
       <div id="setup-steps" hidden>
-        <h2>Finish setting up their phone</h2>
+        <h2 data-text="dash.finishTitle">Finish setting up their phone</h2>
         <ol id="setup-list" class="steps"></ol>
         <p id="setup-note" class="hint"></p>
       </div>
 
       <!-- Demo-only buttons, shown when the server is in demo mode -->
       <div id="demo-tools" class="demo-tools" hidden>
-        <p class="badge">Demo mode</p>
-        <button type="button" id="demo-reply-yes">Pretend they said YES</button>
-        <button type="button" id="demo-scam-call" hidden>Pretend a scam call starts</button>
+        <p class="badge" data-text="dash.demoBadge">Demo mode</p>
+        <button type="button" id="demo-reply-yes" data-text="dash.demoYes">Pretend they said YES</button>
+        <button type="button" id="demo-scam-call" hidden data-text="dash.demoScam">Pretend a scam call starts</button>
         <p id="demo-result" class="hint"></p>
       </div>
     </section>
 
-    <p class="status">Server status: <span id="server-status" aria-live="polite">checking…</span></p>
+    <p class="status"><span data-text="dash.serverStatus">Server status:</span> <span id="server-status" aria-live="polite">checking…</span></p>
   </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/busy.js"></script>
+  <script src="/static/nav.js"></script>
+  <script src="/static/family.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>
