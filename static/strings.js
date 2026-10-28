@@ -20,6 +20,7 @@ const STRINGS = {
     "switch.aria": "Cambiar a español",
 
     // The header (nav.js)
+    "nav.home": "Home",
     "nav.demo": "Live demo",
     "nav.try": "Call it yourself",
     "nav.protect": "Protect someone",
@@ -288,6 +289,7 @@ const STRINGS = {
     "switch.label": "English",
     "switch.aria": "Switch to English",
 
+    "nav.home": "Inicio",
     "nav.demo": "Demo en vivo",
     "nav.try": "Llame usted mismo",
     "nav.protect": "Proteger a alguien",
