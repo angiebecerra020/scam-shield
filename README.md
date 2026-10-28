@@ -31,16 +31,17 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 |---|---|---|
 | 0 | **Senior's OK first.** When a family member signs someone up, we ask the senior on their own phone: a text for a cell phone (*"Reply YES or NO"*), or a phone call for a landline (*"Press 1 to allow, 2 to say no"*). Nothing is listened to until they say YES. | Done |
 | 0b | **Works on cell phones and landlines.** The senior keeps their number. Calls forward to Scam Shield, which rings a calling app on their cell phone or an adapter on their home phone. See [Cell phone or landline?](#cell-phone-or-landline) | Done (needs a real-phone test) |
-| 1 | **Live transcript.** The senior's calls forward to a Scam Shield number, which turns the call into text as it happens. | Coming soon |
+| 1 | **Live transcript.** The senior's calls forward to a Scam Shield number, which turns the call into text as it happens. | Working on our "Call it yourself" test line (Twilio live transcription). Forwarded calls coming soon |
 | 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds scam warnings that match the call. It looks at trusted sites first: the FTC, FBI, Social Security, Medicare, AARP and the BBB. | Done |
 | 3 | **AI scam score.** NVIDIA Nemotron scores the risk from 0 to 100 and explains why: gift cards, secrecy, urgency, a fake grandchild, "your Social Security number is suspended". | Done |
-| 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Coming soon |
+| 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Done in the demo player and the test line (on screen; real texts need US carrier sign-up) |
 | 5 | **Family alert.** A text message in the family member's own language, with a "Join call" link and the top red flags. It goes out the first time the AI score hits 70. | Done (runs on live calls once the live transcript is ready) |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
 | 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), a "Was this a scam?" answer for each call, and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
 | 6b | **Report and block.** For a scam call, the dashboard writes up the details ready to paste into the FTC's report form ([reportfraud.ftc.gov](https://reportfraud.ftc.gov/)). The family also picks what happens if that number calls again: **warn us** (the call rings and the family is alerted the moment it starts) or **block it** (a busy signal, and it never rings). Each family has their own list. | Done |
 | 7 | **Languages.** Text alerts in English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. Every screen has an **English / Español** switch, and the site remembers the choice (it starts in Spanish if the phone is set to Spanish). | Done. Haitian Creole is in the sign-up menus and texts. It's text only for now (our phone voices can't speak Creole), so a Creole-speaking senior needs a cell phone. The Creole texts are waiting on a check from a native speaker. |
-| ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. A demo player will replay a scripted call as a live transcript. | Demo mode done, 20 sample calls ready, player coming soon |
+| ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. The demo player replays a scripted call as a live transcript. | Done, with 20 sample calls |
+| ★ | **Call it yourself.** Get a code at `/try`, call our Scam Shield number from your own phone, and play the scammer. Twilio turns your words into text, Nemotron scores every sentence, Scam Shield says Grandma's warning out loud on the call, and Ana's alert can be emailed to you. The same number works as "Add Scam Shield to a call": add it as a 3-way call and type the code. | Done |
 
 ## How it works
 
@@ -182,7 +183,8 @@ pytest
 **On the live site:** open <https://scam-shield-silk.vercel.app>, tap **Log in** in the header (on a phone it's under **Menu**), and make an account. Then follow the steps below from "sign someone up". Heads up: the live site's database can reset now and then, so a senior you signed up might disappear. Your login stays.
 
 - **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000/dashboard>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>. Back on the dashboard, **Your family** lists everyone you protect, with their past calls: tap a call to see its score, the reasons and the Tavily links. **Pause protection** turns listening off (calls still ring like normal) until you turn it back on.
-- **Demo player (coming soon):** pick one of our sample calls and watch it play line by line as if it were live: the risk score climbs and the family alert goes out.
+- **Demo player** (`/demo`): pick one of our sample calls and watch it play line by line as if it were live: the risk score climbs, the family alert goes out, Danny gets "Is it really you?", and Grandma hears a spoken warning.
+- **Call it yourself** (`/try`): get a code, call the number on the page, type the code, and play a scammer calling Grandma Rosa. You watch the transcript and the score on the page while you talk, Scam Shield says the warning out loud on the call, and if you type your email you get Ana's alert. Calls last up to 5 minutes, and we never save the audio or your phone number. To run it yourself, point your Twilio number's **A call comes in** webhook at `https://<your site>/twilio/line/incoming` (POST), and add `GMAIL_ADDRESS` and `GMAIL_APP_PASSWORD` to `.env` for the emails.
 - **Live demo:** a teammate calls the Scam Shield number and acts out a scam script. Another teammate plays the senior with the calling app open in a browser, so no forwarding or adapter is needed on stage.
 
 **Privacy and consent:** our demos use **simulated calls only**, with scripts and teammates. Florida, where we're based, requires everyone on a call to agree before it's recorded, so we never record or transcribe real people without their consent.
@@ -271,9 +273,9 @@ With `DEMO_MODE=false`, every webhook must carry Twilio's signature, so nobody c
 
 ## What's next
 
-- The demo player: Grandma's phone, the live transcript, and the risk meter climbing line by line
+- Live transcription on forwarded calls, so protection is always on without the senior adding Scam Shield to the call
+- Real text alerts once our US carrier sign-up is approved (email for now)
 - More languages: Vietnamese and Chinese
-- A spoken warning to the senior during the call
 - Trusted contact setup the family can do in two minutes from their phone
 - A phone app (App Store and Google Play), so a blocked number is blocked on the phone itself too, including texts. Today our block works on calls that come through Scam Shield, and the dashboard shows the steps to block a number in the phone's settings.
 

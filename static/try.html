@@ -1,0 +1,183 @@
+<!--
+  try.html
+
+  The "Call it yourself" page. A judge (or anyone) gets a code, calls our
+  Scam Shield number from their own phone, plays the scammer, and watches
+  Nemotron catch them right here while they talk.
+
+  How it fits in: app/phone_line.py sends this page at /try and runs the
+  phone line behind it. It uses the same look as the demo player
+  (demo.css) and try.js for the behavior.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Call it yourself · Scam Shield</title>
+  <meta name="description" content="Call Scam Shield from your own phone, play a scammer, and watch NVIDIA Nemotron catch you live.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/demo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="/"><i data-lucide="shield-check" aria-hidden="true"></i> Scam Shield</a>
+    <nav class="nav" aria-label="Main">
+      <a href="/">Protect someone</a>
+      <a href="/demo">Live demo</a>
+      <a href="/try" aria-current="page">Call it yourself</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <p class="eyebrow">Call it yourself</p>
+      <h1>Call Scam Shield and try to fool it.</h1>
+      <p class="lead">
+        Get a code, call our number from your phone, and play a scammer calling Grandma Rosa.
+        NVIDIA Nemotron reads every sentence while you talk, and you watch it all here.
+        Rosa, Ana and Danny are made up, and we never save the audio.
+      </p>
+
+      <form id="code-form" class="controls">
+        <label class="field field-small">
+          <span>You'll speak</span>
+          <select id="language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+        <label class="field field-small">
+          <span>Ana reads</span>
+          <select id="family-language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Get Ana's alert by email (optional)</span>
+          <input type="email" id="email" autocomplete="email" placeholder="you@example.com">
+        </label>
+        <div class="buttons">
+          <button type="submit" id="get-code" class="primary"><i data-lucide="phone-call" aria-hidden="true"></i> <span>Get my code</span></button>
+        </div>
+      </form>
+      <p id="line-error" class="error" role="alert"></p>
+
+      <div id="dial-card" class="dial-card" hidden>
+        <div>
+          <p class="dial-label">Call this number</p>
+          <p class="dial-number"><a id="dial-number" href="#"></a></p>
+        </div>
+        <div>
+          <p class="dial-label">Then type this code</p>
+          <p class="dial-code" id="dial-code"></p>
+        </div>
+        <div>
+          <p class="dial-label">Status</p>
+          <p class="line-status" id="line-status" aria-live="polite">Waiting for your call</p>
+        </div>
+        <div class="dial-steps-wrap">
+          <p class="dial-label">Ideas to try</p>
+          <ol class="dial-steps">
+            <li>Start friendly: <em>"Hi Grandma, it's me, Danny."</em></li>
+            <li>Then the trouble: <em>"I got arrested and I need bail money. Please don't tell Mom."</em></li>
+            <li>Then the ask: <em>"Can you buy gift cards and read me the numbers?"</em></li>
+          </ol>
+          <p class="note">Want to test it the other way? Try a normal call, like a pharmacy reminder, and see that it stays calm.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="stage">
+      <!-- Rosa's phone: what you say, line by line, and her warning -->
+      <section class="phone" aria-labelledby="rosa-title">
+        <header class="phone-header">
+          <p class="phone-owner" id="rosa-title">Rosa's phone <span>grandma</span></p>
+          <p class="call-status" id="call-status">Waiting</p>
+        </header>
+        <div class="caller-card">
+          <i data-lucide="phone-incoming" aria-hidden="true"></i>
+          <div>
+            <p class="caller-label">Incoming call</p>
+            <p class="caller-number" id="caller-number">You, playing the caller</p>
+          </div>
+        </div>
+        <ol id="transcript" class="transcript" aria-live="polite" aria-label="What you've said on the call"></ol>
+        <div id="senior-warning" class="senior-warning" role="alert" hidden>
+          <i data-lucide="triangle-alert" aria-hidden="true"></i>
+          <p id="senior-warning-text"></p>
+        </div>
+      </section>
+
+      <!-- What Nemotron sees: the risk, the reasons, and what Tavily found -->
+      <section class="ai" id="ai" data-verdict="waiting" aria-labelledby="ai-title" aria-busy="false">
+        <p class="eyebrow">What the AI sees</p>
+        <h2 id="ai-title">Scam risk</h2>
+
+        <div class="score">
+          <p class="score-number"><span id="score">0</span><small>/100</small></p>
+          <p class="verdict" id="verdict">Start talking to see the score</p>
+        </div>
+
+        <div class="meter" aria-hidden="true">
+          <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+          <div class="meter-marks"><span class="mark-suspicious">40 suspicious</span><span class="mark-alert">70 family alerted</span></div>
+        </div>
+
+        <ol id="trail" class="trail" aria-label="The score after each sentence"></ol>
+
+        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> Nemotron is reading the call</p>
+
+        <div class="facts">
+          <h3>Who they say they are</h3>
+          <p id="claimed" class="claimed">Nobody yet</p>
+
+          <h3>Why</h3>
+          <ul id="reasons" class="reasons"></ul>
+
+          <h3><i data-lucide="search" aria-hidden="true"></i> What the web says</h3>
+          <p id="research-note" class="note">Once the call seems suspicious, Tavily looks for matching scam warnings.</p>
+          <ul id="sources" class="sources"></ul>
+        </div>
+
+        <p class="model-line" id="model-line"></p>
+      </section>
+
+      <!-- The family: Ana gets the alerts, Danny gets "Is it really you?" -->
+      <div class="family">
+        <section class="phone phone-small" id="ana-phone" aria-labelledby="ana-title">
+          <header class="phone-header">
+            <p class="phone-owner" id="ana-title">Ana's phone <span>daughter</span></p>
+            <i data-lucide="message-square" aria-hidden="true"></i>
+          </header>
+          <ol id="family-texts" class="texts" aria-live="polite" aria-label="Alerts Ana got"></ol>
+          <p id="email-note" class="note" hidden></p>
+        </section>
+
+        <section class="phone phone-small" id="danny-phone" aria-labelledby="danny-title">
+          <header class="phone-header">
+            <p class="phone-owner" id="danny-title">Danny's phone <span>grandson</span></p>
+            <i data-lucide="user-check" aria-hidden="true"></i>
+          </header>
+          <ol id="contact-texts" class="texts" aria-live="polite" aria-label="Texts Danny got"></ol>
+          <div id="verify-buttons" class="verify-buttons" hidden>
+            <button type="button" id="verify-yes" class="secondary">Yes, it's me</button>
+            <button type="button" id="verify-no" class="danger">No, it's not me</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, <strong>Tavily</strong> and <strong>Twilio</strong>.</p>
+    <p>Calls last up to 5 minutes. We turn your words into text, and never save the audio or your phone number.</p>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="/static/try.js"></script>
+</body>
+</html>
