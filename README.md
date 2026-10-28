@@ -11,7 +11,10 @@
 
 Scam Shield follows a senior's phone call through a live transcript, checks the caller against the web, and uses **NVIDIA Nemotron** on **Nebius Token Factory** to spot the warning signs of a scam: gift cards, secrecy, urgency, a "grandchild" in trouble. When the risk is high, the family gets an alert right away, in their own language, with a link to join the call.
 
-**🌐 Try it: <https://scam-shield-silk.vercel.app>**: the landing page, family sign up and log in, and the family dashboard. The site runs in demo mode, so no real calls or texts ever go out.
+**🌐 Try it: <https://scam-shield-ity3.onrender.com>**
+- **[Watch a scam get caught](https://scam-shield-ity3.onrender.com/demo):** play a scripted scam call and watch Nemotron score it line by line. No phone or account needed.
+- **[Call it yourself](https://scam-shield-ity3.onrender.com/try):** call our number from your own phone, play the scammer, and watch it catch you live.
+- Family sign up, log in and the family dashboard are on the same site. It runs in demo mode, so no real texts go out and the family is made up.
 
 > 🚧 **Work in progress** for the Nebius x NVIDIA Global AI Hackathon. Parts marked *Coming soon* are being built now.
 
@@ -180,7 +183,7 @@ pytest
 
 ## Demo
 
-**On the live site:** open <https://scam-shield-silk.vercel.app>, tap **Log in** in the header (on a phone it's under **Menu**), and make an account. Then follow the steps below from "sign someone up". Heads up: the live site's database can reset now and then, so a senior you signed up might disappear. Your login stays.
+**On the live site:** open <https://scam-shield-ity3.onrender.com>, tap **Log in** in the header (on a phone it's under **Menu**), and make an account. Then follow the steps below from "sign someone up". We host on Render because the live demo and the phone line need one always-on server that remembers each call (and a disk, so the database doesn't reset).
 
 - **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000/dashboard>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>. Back on the dashboard, **Your family** lists everyone you protect, with their past calls: tap a call to see its score, the reasons and the Tavily links. **Pause protection** turns listening off (calls still ring like normal) until you turn it back on.
 - **Demo player** (`/demo`): pick one of our sample calls and watch it play line by line as if it were live: the risk score climbs, the family alert goes out, Danny gets "Is it really you?", and Grandma hears a spoken warning.

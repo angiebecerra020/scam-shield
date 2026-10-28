@@ -11,9 +11,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scam Shield">
+  <meta property="og:title" content="Scam Shield: stop scam calls while they happen">
+  <meta property="og:description" content="AI that listens with permission, warns Grandma on the call, and alerts the family in their language. Built with NVIDIA Nemotron, Tavily and Twilio.">
+  <meta property="og:url" content="https://scam-shield-ity3.onrender.com/">
+  <meta property="og:image" content="https://scam-shield-ity3.onrender.com/static/icons/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scam Shield showing a 92 out of 100 scam risk for a fake grandson call">
+  <meta name="twitter:card" content="summary_large_image">
   <title>Scam Shield</title>
   <meta name="description" content="Scam Shield catches scam phone calls while they happen and tells the family right away.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
   <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
 </head>
 <body class="landing">
   <!-- The header with the logo and links. nav.js fills it in. -->
@@ -26,10 +44,18 @@
         <p class="badge badge-alert" data-text="landing.badge">Live scam call protection</p>
         <h1><span data-text="landing.title1">Stop scam calls</span> <span class="text-red" data-text="landing.title2">while they happen.</span></h1>
         <p class="lead" data-text="landing.lead">Scam Shield listens for scam tricks on your loved one's calls, with their OK, and tells you right away, in your language.</p>
+        <!-- First, the two things anyone can try right now with no account.
+             Then Cass's sign up and log in, for families ready to protect someone. -->
         <div class="hero-actions">
-          <a class="button" href="/login?mode=signup" data-text="landing.protect">Protect a loved one</a>
-          <a class="button button-outline" href="/login" data-text="landing.logIn">Log in</a>
+          <a class="button" href="/demo" data-text="landing.watchDemo">Watch a scam get caught</a>
+          <a class="button button-outline" href="/try" data-text="landing.callIt">Call it yourself</a>
         </div>
+        <p class="hero-more">
+          <span data-text="landing.ready">Ready to protect someone you love?</span>
+          <a href="/login?mode=signup" data-text="landing.protect">Protect a loved one</a>
+          ·
+          <a href="/login" data-text="landing.logIn">Log in</a>
+        </p>
       </div>
 
       <!-- A sample family alert, so people see what they'd get -->
@@ -88,12 +114,14 @@
     <section class="section cta">
       <h2 data-text="landing.ctaTitle">Give your family peace of mind.</h2>
       <a class="button" href="/login?mode=signup" data-text="landing.cta">Get started free</a>
+      <a class="button button-outline" href="/demo" data-text="landing.ctaDemo">Watch the live demo</a>
     </section>
   </main>
 
   <footer class="site-footer">
     <p data-text="landing.footer1">Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
     <p data-text="landing.footer2">We only listen with permission. Our demos use acted, simulated calls.</p>
+    <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>
   </footer>
   <!-- Supabase and auth.js let the header say Log in or Log out -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>

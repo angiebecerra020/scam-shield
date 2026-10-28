@@ -63,7 +63,7 @@ from app.alerts import DEMO_OUTBOX
 from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
-from app import demo_api, phone_line
+from app import demo_api, phone_line, site_pages
 
 # static/ sits next to app/ in the project folder.
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -81,6 +81,11 @@ app.include_router(demo_api.router)
 
 # The "Call it yourself" phone line and its page live in phone_line.py.
 app.include_router(phone_line.router)
+
+# Privacy, terms, the tab icon, robots.txt, the sitemap, the friendly 404
+# page and the safety headers live in site_pages.py.
+app.include_router(site_pages.router)
+site_pages.add_site_extras(app)
 
 
 @app.get("/")

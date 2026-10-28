@@ -1,0 +1,80 @@
+<!--
+  terms.html
+
+  Our terms of use, in plain English: what Scam Shield is, what it isn't,
+  and the few rules for using it.
+
+  How it fits in: app/site_pages.py sends this page at /terms. Same look as
+  privacy.html (Cass's styles.css plus our theme.css, and nav.js for the header).
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terms · Scam Shield</title>
+  <meta name="description" content="The terms for using Scam Shield: a hackathon demo that warns families about scam calls, only with everyone's OK.">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scam Shield">
+  <meta property="og:title" content="Terms · Scam Shield">
+  <meta property="og:description" content="The terms for using Scam Shield, in plain English.">
+  <meta property="og:url" content="https://scam-shield-ity3.onrender.com/terms">
+  <meta property="og:image" content="https://scam-shield-ity3.onrender.com/static/icons/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+</head>
+<body class="landing">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="page">
+    <p class="eyebrow">Terms</p>
+    <h1>The simple rules for using Scam Shield.</h1>
+    <p class="lead">By using this site or calling our test line, you agree to these terms. We kept them short.</p>
+    <p class="updated">Last updated October 28, 2026</p>
+
+    <h2>It's a demo</h2>
+    <p>Scam Shield is a hackathon project, not a finished product or a paid service. It can be offline, change, or lose demo data at any time.</p>
+
+    <h2>It helps, but it's not a guarantee</h2>
+    <p>Scam Shield uses AI to spot scam tricks, and AI can be wrong. It can miss a scam, or warn about a call that's fine. Always double check before sending money or sharing personal numbers, and call your family member back on a number you already know.</p>
+
+    <h2>Not for emergencies</h2>
+    <p>Scam Shield isn't an emergency service. If someone is in danger, call 911.</p>
+
+    <h2>Only use it with everyone's OK</h2>
+    <ul>
+      <li>Only sign someone up if they agree. Scam Shield asks them for a YES on their own phone before it listens.</li>
+      <li>Only add Scam Shield to a call, or use the test line, when everyone on the call knows and agrees. Scam Shield says out loud that it's listening.</li>
+      <li>Don't use the test line to harass anyone or to test real people without their OK.</li>
+    </ul>
+
+    <h2>Play fair</h2>
+    <p>Please don't try to break the site, flood it with calls or messages, or get around its limits. We limit how often each visitor and phone can use it so it keeps working for everyone.</p>
+
+    <h2>Questions</h2>
+    <p>Email us at <a href="mailto:scam.shield.demo@gmail.com">scam.shield.demo@gmail.com</a>. You can also read our <a href="/privacy">privacy policy</a>.</p>
+
+    <div class="actions">
+      <a class="button" href="/demo">Watch the live demo</a>
+      <a class="button button-outline" href="/try">Call it yourself</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+  </footer>
+
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/nav.js"></script>
+</body>
+</html>
