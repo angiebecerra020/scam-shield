@@ -33,11 +33,15 @@ DATA_PATHS = ("/api/", "/twilio/", "/static/")
 #   Referrer-Policy: other sites only see our domain, never the full link
 #     (our "Join call" links have secrets in them)
 #   X-Frame-Options: nobody can put our pages inside their own site to trick people
+#   Cache-Control: browsers check with us for a newer copy every time, so
+#     after a deploy nobody gets the new page with an old app.js (it would
+#     look for buttons that aren't there anymore and leave the page empty)
 SAFETY_HEADERS = {
     "Strict-Transport-Security": "max-age=31536000",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Frame-Options": "DENY",
+    "Cache-Control": "no-cache",
 }
 
 

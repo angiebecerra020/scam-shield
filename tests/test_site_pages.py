@@ -80,12 +80,13 @@ def test_sitemap_lists_the_public_pages():
 
 def test_every_answer_has_the_safety_headers():
     """Pages and data both come with the safety headers."""
-    for path in ("/", "/api/demo/calls"):
+    for path in ("/", "/api/demo/calls", "/static/app.js"):
         headers = client.get(path).headers
         assert headers["x-content-type-options"] == "nosniff"
         assert headers["x-frame-options"] == "DENY"
         assert headers["referrer-policy"] == "strict-origin-when-cross-origin"
         assert "max-age" in headers["strict-transport-security"]
+        assert headers["cache-control"] == "no-cache"
 
 
 @pytest.mark.parametrize(
