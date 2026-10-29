@@ -23,6 +23,8 @@ Routes:
     POST /twilio/sms              -> Twilio: the senior texted us back
     POST /twilio/consent-call     -> Twilio: what to say on the consent call
     POST /twilio/consent-answer   -> Twilio: the key the senior pressed
+    POST /twilio/senior-menu      -> Twilio: a protected senior called us: "press 2 to cancel"
+    POST /twilio/senior-menu-answer -> Twilio: the key the senior pressed in that menu
 
   Family dashboard (family.py): each family only sees the seniors they signed up
     GET  /api/family              -> [login] the seniors you protect and their recent calls
@@ -459,6 +461,37 @@ async def receive_consent_key(request: Request, enrollment_id: str):
 # ---------------------------------------------------------------------------
 
 
+@app.post("/twilio/senior-menu")
+async def speak_senior_menu(request: Request, enrollment_id: str, attempt: int = 1):
+    """
+    Twilio asks what to say (again) to a protected senior who called us.
+
+    Example:
+        POST /twilio/senior-menu?enrollment_id=abc&attempt=2
+        ->  <Response><Gather ...><Say>Hello Rosa... press 2.</Say></Gather>...</Response>
+    """
+    if await read_twilio_form(request) is None:
+        return error("This request didn't come from Twilio.", 403)
+    return twiml(consent.senior_menu_twiml(enrollment_id, attempt))
+
+
+@app.post("/twilio/senior-menu-answer")
+async def receive_senior_menu_key(request: Request, enrollment_id: str):
+    """
+    Twilio tells us which key the senior pressed: 2 cancels Scam Shield.
+
+    Example:
+        curl -X POST "localhost:8000/twilio/senior-menu-answer?enrollment_id=abc" \\
+             -d From=+13055550100 -d Digits=2
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return error("This request didn't come from Twilio.", 403)
+    return twiml(
+        consent.handle_senior_menu_digits(enrollment_id, form.get("From", ""), form.get("Digits", ""))
+    )
+
+
 @app.get("/phone/{device_key}")
 def show_calling_app(device_key: str) -> FileResponse:
     """
@@ -523,6 +556,12 @@ async def receive_call(request: Request):
     form = await read_twilio_form(request)
     if form is None:
         return error("This request didn't come from Twilio.", 403)
+
+    # A senior we protect calling us from their own phone (not a call their
+    # phone forwarded): offer them the "press 2 to cancel" menu.
+    senior = None if form.get("ForwardedFrom") else consent.find_senior_calling_in(form.get("From", ""))
+    if senior is not None:
+        return twiml(consent.senior_menu_twiml(senior["id"]))
 
     xml = calls.handle_incoming_call(
         caller=form.get("From", ""),

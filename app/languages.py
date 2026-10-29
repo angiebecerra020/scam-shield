@@ -77,6 +77,18 @@ MESSAGES = {
         ),
         "consent_call_no": "OK. Scam Shield will not listen to your calls. Goodbye.",
         "consent_call_goodbye": "We didn't hear an answer. Goodbye.",
+        # SPOKEN when a protected senior calls our number themselves.
+        "consent_call_menu": (
+            "Hello {senior_name}. This is Scam Shield. {family_name} set up Scam Shield "
+            "to listen to your calls and warn them about scams. "
+            "If you want to cancel Scam Shield from listening to your conversations, press 2. "
+            "To keep it on, press 1."
+        ),
+        "consent_call_canceled": (
+            "Scam Shield is now canceled. We will not listen to your calls anymore. "
+            "We let {family_name} know. Goodbye."
+        ),
+        "consent_call_kept": "OK. Scam Shield stays on. Goodbye.",
     },
     "es": {
         "consent_request": (
@@ -116,6 +128,17 @@ MESSAGES = {
         ),
         "consent_call_no": "Entendido. Scam Shield no escuchará sus llamadas. Adiós.",
         "consent_call_goodbye": "No escuchamos una respuesta. Adiós.",
+        "consent_call_menu": (
+            "Hola {senior_name}. Le habla Scam Shield. {family_name} configuró Scam Shield "
+            "para escuchar sus llamadas y avisarle si hay una estafa. "
+            "Si quiere cancelar Scam Shield para que deje de escuchar sus conversaciones, marque 2. "
+            "Para mantenerlo activado, marque 1."
+        ),
+        "consent_call_canceled": (
+            "Scam Shield está cancelado. Ya no escucharemos sus llamadas. "
+            "Le avisamos a {family_name}. Adiós."
+        ),
+        "consent_call_kept": "Entendido. Scam Shield sigue activado. Adiós.",
     },
     # Haitian Creole. We wrote these ourselves, and they still need a check
     # from someone who speaks Creole (issue #22). There are no SPOKEN

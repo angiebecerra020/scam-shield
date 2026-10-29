@@ -24,7 +24,11 @@ The steps:
 
 After a YES, the family can pause protection from the dashboard ("paused")
 and turn it back on later (family.py). They can also cancel it for good
-("canceled"); to protect that senior again, we ask for a new YES. Pausing doesn't need the senior's OK,
+("canceled"); to protect that senior again, we ask for a new YES.
+
+The senior can turn it off themselves too, without a text: they call our
+Scam Shield number from their own phone, and we say "To cancel Scam Shield,
+press 2." Pressing 2 works like texting STOP ("revoked"). Pausing doesn't need the senior's OK,
 since it means we listen LESS. Turning it back on only works if they already
 said YES.
 
@@ -476,6 +480,134 @@ def handle_consent_digits(enrollment_id: str, called_phone: str, digits: str) ->
         # A different key: ask again.
         response.redirect(
             public_url(f"/twilio/consent-call?enrollment_id={enrollment_id}&attempt=2")
+        )
+        return str(response)
+
+    response.hangup()
+    return str(response)
+
+
+# ---------------------------------------------------------------------------
+# The senior calls us to turn Scam Shield off
+# ---------------------------------------------------------------------------
+
+
+def find_senior_calling_in(from_phone: str) -> dict | None:
+    """
+    Is this call to our number coming from a senior we're protecting?
+
+    If it is, main.py plays them the cancel menu (senior_menu_twiml) instead
+    of treating them like a caller to protect them from.
+
+    Input:  from_phone — who is calling (Twilio's "From")
+    Output: their newest "active" or "paused" enrollment, or None
+
+    Example:
+        find_senior_calling_in("+13055550100")  ->  {"senior_name": "Rosa", "status": "active", ...}
+        find_senior_calling_in("+15555550199")  ->  None (not a senior we protect)
+    """
+    phone = normalize_phone(from_phone or "")
+    if phone is None:
+        return None
+    for enrollment in storage.find_enrollments_for_senior(phone):
+        if enrollment["status"] in ("active", "paused"):
+            return enrollment
+    return None
+
+
+def senior_menu_twiml(enrollment_id: str, attempt: int = 1) -> str:
+    """
+    What the senior hears when they call our number: Scam Shield is on, and
+    they can press 2 to cancel it.
+
+    We ask twice. If they don't press anything, nothing changes.
+
+    Input:  enrollment_id — the senior who called
+            attempt       — 1 the first time, 2 when we ask again
+    Output: TwiML that reads the menu and listens for one key press
+
+    Example:
+        senior_menu_twiml("abc")
+        ->  '<Response><Gather numDigits="1" ...><Say>Hello Rosa. This is Scam Shield...</Say>...'
+    """
+    response = VoiceResponse()
+    enrollment = storage.get_enrollment(enrollment_id)
+    if enrollment is None or enrollment["status"] not in ("active", "paused"):
+        response.hangup()
+        return str(response)
+
+    language = enrollment["senior_language"]
+    voice = spoken_language(language)
+    gather = response.gather(
+        num_digits=1,
+        timeout=8,
+        action=public_url(f"/twilio/senior-menu-answer?enrollment_id={enrollment_id}"),
+    )
+    gather.say(
+        message(
+            "consent_call_menu",
+            language,
+            senior_name=enrollment["senior_name"],
+            family_name=enrollment["family_name"],
+        ),
+        language=voice,
+    )
+
+    if attempt < 2:
+        response.redirect(
+            public_url(f"/twilio/senior-menu?enrollment_id={enrollment_id}&attempt=2")
+        )
+    else:
+        response.say(message("consent_call_kept", language), language=voice)
+        response.hangup()
+    return str(response)
+
+
+def handle_senior_menu_digits(enrollment_id: str, from_phone: str, digits: str) -> str:
+    """
+    Act on the key the senior pressed in the cancel menu.
+
+    It only counts if the call came FROM the senior's own phone, so we check
+    the number Twilio says is calling.
+
+    Input:  enrollment_id — the senior who called
+            from_phone    — who is calling (Twilio's "From")
+            digits        — the key they pressed: "2" cancels, "1" keeps it on
+    Output: TwiML: what they hear next
+
+    Examples:
+        handle_senior_menu_digits("abc", "+13055550100", "2")
+        ->  "Scam Shield is now canceled..." and Ana gets "Rosa turned Scam Shield off"
+        handle_senior_menu_digits("abc", "+13055550100", "1")
+        ->  "OK. Scam Shield stays on..."
+    """
+    response = VoiceResponse()
+    enrollment = storage.get_enrollment(enrollment_id)
+    if (
+        enrollment is None
+        or enrollment["status"] not in ("active", "paused")
+        or normalize_phone(from_phone or "") != enrollment["senior_phone"]
+    ):
+        response.hangup()
+        return str(response)
+
+    language = enrollment["senior_language"]
+    voice = spoken_language(language)
+
+    if digits == "2":
+        # The same as texting STOP: the senior said no, so the family can't
+        # turn it back on, and can't ask again for 30 days.
+        storage.set_enrollment_status(enrollment_id, "revoked", answered=True)
+        tell_family(enrollment, "family_told_off")
+        response.say(
+            message("consent_call_canceled", language, family_name=enrollment["family_name"]),
+            language=voice,
+        )
+    elif digits == "1":
+        response.say(message("consent_call_kept", language), language=voice)
+    else:
+        response.redirect(
+            public_url(f"/twilio/senior-menu?enrollment_id={enrollment_id}&attempt=2")
         )
         return str(response)
 

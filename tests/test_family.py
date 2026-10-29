@@ -373,6 +373,124 @@ def test_other_families_cant_cancel_your_senior(login_on):
     assert storage.get_enrollment(rosa)["status"] == "active"
 
 
+# ----- The senior calls our number to cancel -----
+
+
+def senior_calls_us(forwarded_from: str | None = None):
+    """Pretend Rosa called the Scam Shield number from her own phone."""
+    data = {"From": SENIOR_PHONE, "CallSid": "CA-rosa"}
+    if forwarded_from:
+        data["ForwardedFrom"] = forwarded_from
+    return client.post("/twilio/voice", data=data)
+
+
+def senior_presses(enrollment_id: str, digits: str, from_phone: str = SENIOR_PHONE):
+    """Pretend Twilio is telling us which key Rosa pressed in the menu."""
+    return client.post(
+        f"/twilio/senior-menu-answer?enrollment_id={enrollment_id}",
+        data={"From": from_phone, "Digits": digits},
+    )
+
+
+def test_senior_calling_us_hears_press_2_to_cancel():
+    sign_up_rosa()
+
+    response = senior_calls_us()
+
+    assert "<Gather" in response.text
+    assert "cancel Scam Shield from listening to your conversations, press 2" in response.text
+    assert "<Conference" not in response.text
+
+
+def test_pressing_2_cancels_and_tells_the_family():
+    rosa = sign_up_rosa()
+
+    response = senior_presses(rosa, "2")
+
+    assert storage.get_enrollment(rosa)["status"] == "revoked"
+    assert "Scam Shield is now canceled" in response.text
+    assert "turned Scam Shield off" in texts_to_family()[-1]
+    # Rosa said no herself, so the family can't turn it back on
+    assert client.post(f"/api/enrollments/{rosa}/resume").status_code == 409
+
+
+def test_pressing_1_keeps_it_on():
+    rosa = sign_up_rosa()
+
+    response = senior_presses(rosa, "1")
+
+    assert storage.get_enrollment(rosa)["status"] == "active"
+    assert "stays on" in response.text
+
+
+def test_other_keys_ask_the_senior_again():
+    rosa = sign_up_rosa()
+
+    response = senior_presses(rosa, "7")
+
+    assert storage.get_enrollment(rosa)["status"] == "active"
+    assert "<Redirect" in response.text
+
+
+def test_pressing_2_from_a_different_phone_does_nothing():
+    rosa = sign_up_rosa()
+
+    senior_presses(rosa, "2", from_phone=SCAMMER_PHONE)
+
+    assert storage.get_enrollment(rosa)["status"] == "active"
+
+
+def test_a_paused_senior_can_cancel_too():
+    rosa = sign_up_rosa()
+    client.post(f"/api/enrollments/{rosa}/pause")
+
+    assert "press 2" in senior_calls_us().text
+    senior_presses(rosa, "2")
+
+    assert storage.get_enrollment(rosa)["status"] == "revoked"
+
+
+def test_calls_forwarded_from_the_seniors_phone_still_get_protected():
+    """A scammer calling Rosa forwards to us with ForwardedFrom; that's not Rosa calling us."""
+    sign_up_rosa()
+
+    xml = client.post(
+        "/twilio/voice",
+        data={"From": SCAMMER_PHONE, "CallSid": "CA123", "ForwardedFrom": SENIOR_PHONE},
+    ).text
+
+    assert "press 2" not in xml
+    assert "<Conference" in xml
+
+
+def test_strangers_calling_us_dont_get_the_menu():
+    sign_up_rosa()
+
+    xml = client.post("/twilio/voice", data={"From": SCAMMER_PHONE, "CallSid": "CA123"}).text
+
+    assert "press 2" not in xml
+
+
+def test_the_menu_is_spoken_in_spanish_for_spanish_speakers():
+    response = client.post(
+        "/api/enrollments",
+        json={
+            "senior_name": "Rosa",
+            "senior_phone": SENIOR_PHONE,
+            "family_name": "Ana",
+            "family_phone": FAMILY_PHONE,
+            "senior_language": "es",
+        },
+    )
+    client.post("/twilio/sms", data={"From": SENIOR_PHONE, "Body": "SI"})
+
+    xml = senior_calls_us().text
+
+    assert "marque 2" in xml
+    assert 'language="es-US"' in xml
+    assert response.status_code == 201
+
+
 def test_stop_still_works_while_paused():
     """Rosa can text STOP while paused, and then resume can't turn her back on."""
     rosa = sign_up_rosa()
