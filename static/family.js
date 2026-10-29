@@ -188,6 +188,7 @@ function seniorCard(senior) {
   if (senior.status === "active" || senior.status === "paused") {
     card.appendChild(pauseButton(senior));
   }
+  card.appendChild(seniorActions(senior));
 
   card.appendChild(makeElement("h4", "", t("family.pastCalls")));
   if (senior.calls.length === 0) {
@@ -200,6 +201,53 @@ function seniorCard(senior) {
     card.appendChild(calls);
   }
   return card;
+}
+
+/**
+ * The buttons on every senior's card: "Call again" while we're still waiting
+ * for them to press 1, and a red "Remove" that deletes them for good.
+ *
+ * Input:  senior, one entry from GET /api/family
+ * Output: an element with the buttons and a line for what happened
+ * Example: a senior still waiting on our call  gives you  "Call again" and "Remove"
+ */
+function seniorActions(senior) {
+  const wrapper = makeElement("div", "answer-buttons");
+  const note = makeElement("p", "hint");
+
+  if (senior.status === "pending" && senior.ask_by === "call") {
+    const again = makeElement("button", "button-small", t("family.callAgain"));
+    again.type = "button";
+    again.addEventListener("click", async () => {
+      setBusy(again, t("dash.busyCallAgain"));
+      const { ok, data } = await sendRequest(`/api/enrollments/${senior.id}/call-again`, { method: "POST" });
+      setReady(again);
+      note.textContent = ok ? t("dash.calledAgain") : data.error;
+    });
+    wrapper.appendChild(again);
+  }
+
+  const remove = makeElement("button", "button-small button-danger", t("family.remove"));
+  remove.type = "button";
+  remove.addEventListener("click", async () => {
+    // A quick "are you sure?", since this can't be undone.
+    if (!window.confirm(t("family.removeConfirm", { name: senior.senior_name }))) {
+      return;
+    }
+    setBusy(remove, t("family.busyRemove"));
+    const { ok, data } = await sendRequest(`/api/enrollments/${senior.id}`, { method: "DELETE" });
+    if (!ok) {
+      setReady(remove);
+      note.textContent = data.error;
+      return;
+    }
+    await loadFamily();
+  });
+  wrapper.appendChild(remove);
+
+  const box = makeElement("div", "senior-actions");
+  box.append(wrapper, note);
+  return box;
 }
 
 /**
