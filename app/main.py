@@ -23,6 +23,8 @@ Routes:
     POST /twilio/sms              -> Twilio: the senior texted us back
     POST /twilio/consent-call     -> Twilio: what to say on the consent call
     POST /twilio/consent-answer   -> Twilio: the key the senior pressed
+    POST /twilio/senior-menu      -> Twilio: a protected senior called us: "press 2 to cancel"
+    POST /twilio/senior-menu-answer -> Twilio: the key the senior pressed in that menu
 
   Family dashboard (family.py): each family only sees the seniors they signed up
     GET  /api/family              -> [login] the seniors you protect and their recent calls
@@ -31,6 +33,7 @@ Routes:
     POST /api/calls/{id}/scam-list -> [login] if this number calls again: warn, block, or none
     POST /api/enrollments/{id}/pause  -> [login] stop listening for now
     POST /api/enrollments/{id}/resume -> [login] turn protection back on
+    POST /api/enrollments/{id}/cancel -> [login] stop protecting them for good
 
   The senior's device (devices.py): how we ring them without a loop
     GET  /phone/{key}             -> the calling app for a cell phone
@@ -236,7 +239,7 @@ class EnrollmentForm(BaseModel):
     senior_language: str = "en"
     family_language: str = "en"
     phone_type: str = "cell"
-    # "text" or "call". Left out, consent.py picks by phone_type.
+    # Only "call" for now. Left out, consent.py calls them.
     ask_by: str | None = None
     # Where the family gets alerts by email (optional).
     family_email: str | None = None
@@ -386,6 +389,21 @@ def resume_protection(enrollment_id: str, user: dict | None = Depends(require_lo
         return error(problem.text, problem.status_code)
 
 
+@app.post("/api/enrollments/{enrollment_id}/cancel")
+def cancel_protection(enrollment_id: str, user: dict | None = Depends(require_login)):
+    """
+    The family cancels Scam Shield for one senior. We stop listening for
+    good; their calls keep ringing like normal.
+
+    Example:
+        POST /api/enrollments/abc/cancel gives you {"status": "canceled", ...}
+    """
+    try:
+        return family.cancel_protection(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
 @app.post("/twilio/sms")
 async def receive_text(request: Request):
     """
@@ -446,6 +464,37 @@ async def receive_consent_key(request: Request, enrollment_id: str):
 # ---------------------------------------------------------------------------
 # The senior's device: calling app (cell) and adapter (landline)
 # ---------------------------------------------------------------------------
+
+
+@app.post("/twilio/senior-menu")
+async def speak_senior_menu(request: Request, enrollment_id: str, attempt: int = 1):
+    """
+    Twilio asks what to say (again) to a protected senior who called us.
+
+    Example:
+        POST /twilio/senior-menu?enrollment_id=abc&attempt=2
+        ->  <Response><Gather ...><Say>Hello Rosa... press 2.</Say></Gather>...</Response>
+    """
+    if await read_twilio_form(request) is None:
+        return error("This request didn't come from Twilio.", 403)
+    return twiml(consent.senior_menu_twiml(enrollment_id, attempt))
+
+
+@app.post("/twilio/senior-menu-answer")
+async def receive_senior_menu_key(request: Request, enrollment_id: str):
+    """
+    Twilio tells us which key the senior pressed: 2 cancels Scam Shield.
+
+    Example:
+        curl -X POST "localhost:8000/twilio/senior-menu-answer?enrollment_id=abc" \\
+             -d From=+13055550100 -d Digits=2
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return error("This request didn't come from Twilio.", 403)
+    return twiml(
+        consent.handle_senior_menu_digits(enrollment_id, form.get("From", ""), form.get("Digits", ""))
+    )
 
 
 @app.get("/phone/{device_key}")
@@ -512,6 +561,12 @@ async def receive_call(request: Request):
     form = await read_twilio_form(request)
     if form is None:
         return error("This request didn't come from Twilio.", 403)
+
+    # A senior we protect calling us from their own phone (not a call their
+    # phone forwarded): offer them the "press 2 to cancel" menu.
+    senior = None if form.get("ForwardedFrom") else consent.find_senior_calling_in(form.get("From", ""))
+    if senior is not None:
+        return twiml(consent.senior_menu_twiml(senior["id"]))
 
     xml = calls.handle_incoming_call(
         caller=form.get("From", ""),

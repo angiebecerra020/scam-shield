@@ -49,6 +49,7 @@ from app import (
     alerts,
     call_monitor,
     calls,
+    consent,
     demo_api,
     detector,
     email_alerts,
@@ -736,6 +737,12 @@ async def incoming_call(request: Request):
             call_token=form.get("CallToken"),
         )
         return Response(content=xml, media_type="application/xml")
+
+    # A senior we protect calling from their own phone gets the "press 2 to
+    # cancel Scam Shield" menu instead of the code question (consent.py).
+    senior = consent.find_senior_calling_in(form.get("From", ""))
+    if senior is not None:
+        return Response(content=consent.senior_menu_twiml(senior["id"]), media_type="application/xml")
 
     if not demo_api.demo_is_on():
         return twiml(hang_up_with(SAYINGS["line_off"]))

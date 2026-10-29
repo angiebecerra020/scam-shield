@@ -35,8 +35,9 @@ let lastEnrollment = null;
 let seniorPhone = "";
 let enrollmentId = "";
 let phoneType = "cell";
-// How we asked them for their YES: "text" or "call".
-let askBy = "text";
+// How we asked them for their YES. New sign-ups are always "call"; older
+// ones may say "text".
+let askBy = "call";
 let statusTimer = null;
 
 /**
@@ -114,7 +115,9 @@ async function sendRequest(url, options = {}) {
  * Input:  event — the form's submit event
  * Output: nothing; it updates the page.
  * Example: Ana fills in Rosa's details and taps the button
- *          -> Rosa gets a text; the page says "Waiting for Rosa"
+ *          -> Rosa's phone rings; the page says "Waiting for Rosa"
+ *          Ana types Rosa's phone as 555-0100 (no area code)
+ *          -> a reminder to add the area code, and nothing is sent
  */
 async function submitSignup(event) {
   // Stop the browser from reloading the page; we send the form ourselves.
@@ -123,11 +126,20 @@ async function submitSignup(event) {
   const errorElement = document.getElementById("signup-error");
   errorElement.textContent = "";
 
+  // A phone number without its area code can't be called, so remind them
+  // and don't send anything until it's fixed. (The server checks too.)
+  const short = findPhoneMissingAreaCode(form);
+  if (short) {
+    errorElement.textContent = t("dash.areaCodeMissing", { field: short.label });
+    short.input.focus();
+    return;
+  }
+
   const fields = Object.fromEntries(new FormData(form));
-  // Sending the text or placing the call goes through Twilio, which can take
-  // a few seconds. Say so, and stop a second tap from asking them twice.
+  // Placing the call goes through Twilio, which can take a few seconds.
+  // Say so, and stop a second tap from asking them twice.
   const button = form.querySelector('button[type="submit"]');
-  setBusy(button, fields.ask_by === "call" ? t("dash.busyCall") : t("dash.busyText"));
+  setBusy(button, t("dash.busyCall"));
   const { ok, data } = await sendRequest("/api/enrollments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -159,30 +171,46 @@ async function submitSignup(event) {
 }
 
 /**
- * Keep the "How should we ask them?" choice sensible, and show a note when it
- * can't work.
+ * Find a phone number on the sign-up form that's missing its area code.
  *
- * A landline can't get texts, so for one we pick "Phone call" and turn
- * "Text message" off. And our phone voices can't speak Haitian Creole yet
- * (see app/languages.py), so a phone call in Creole gets a note.
+ * A US number needs all 10 digits. A number starting with "+" is an
+ * international one, so we leave it for the server to check.
+ *
+ * Input:  form — the sign-up form
+ * Output: {input, label} for the first short number, or null if both are fine
+ * Example: senior_phone "555-0100"  gives you  {input: <senior_phone>, label: "Their phone"}
+ */
+function findPhoneMissingAreaCode(form) {
+  for (const input of [form.senior_phone, form.family_phone]) {
+    const typed = input.value.trim();
+    const digits = typed.replace(/\D/g, "");
+    if (typed && !typed.startsWith("+") && digits.length < 10) {
+      return { input, label: input.previousElementSibling.textContent };
+    }
+  }
+  return null;
+}
+
+/**
+ * Show notes on the sign-up form as they fill it in.
+ *
+ * Our phone voices can't speak Haitian Creole yet (see app/languages.py), so
+ * picking Creole for the senior gets a note. And as soon as they leave a
+ * phone box that's missing its area code, they get a reminder to add it.
  *
  * Input:  nothing (it reads the form)
  * Output: nothing; it updates the form.
- * Example: pick Landline and Kreyòl ayisyen  gives you  "Haitian Creole works with cell phones for now..."
- *          pick Cell phone, Phone call and Kreyòl ayisyen  gives you  "We can't ask by phone call in Haitian Creole yet..."
+ * Example: pick Kreyòl ayisyen  gives you  "We can't ask in Haitian Creole on our call yet..."
+ *          type 555-0100 as their phone  gives you  "Their phone is missing the area code..."
  */
-function checkAskBy() {
+function checkSignupForm() {
   const form = document.getElementById("signup-form");
-  const landline = form.phone_type.value === "landline";
-  const textChoice = form.ask_by.querySelector('option[value="text"]');
-  textChoice.disabled = landline;
-  if (landline) {
-    form.ask_by.value = "call";
-  }
+  document.getElementById("creole-call-note").hidden = form.senior_language.value !== "ht";
 
-  const creoleCall = form.ask_by.value === "call" && form.senior_language.value === "ht";
-  document.getElementById("creole-landline-note").hidden = !(creoleCall && landline);
-  document.getElementById("creole-call-note").hidden = !(creoleCall && !landline);
+  const short = findPhoneMissingAreaCode(form);
+  document.getElementById("signup-error").textContent = short
+    ? t("dash.areaCodeMissing", { field: short.label })
+    : "";
 }
 
 /**
@@ -419,10 +447,10 @@ function openSignupIfAsked() {
 }
 
 document.getElementById("signup-form").addEventListener("submit", submitSignup);
-document.getElementById("signup-form").addEventListener("change", checkAskBy);
+document.getElementById("signup-form").addEventListener("change", checkSignupForm);
 // "Protect someone else" empties the form (family.js). The browser puts the
 // old values back only after the "reset" event, so we check right after it.
-document.getElementById("signup-form").addEventListener("reset", () => setTimeout(checkAskBy));
+document.getElementById("signup-form").addEventListener("reset", () => setTimeout(checkSignupForm));
 document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
 document.getElementById("call-again").addEventListener("click", callAgain);
 document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);

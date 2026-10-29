@@ -2,8 +2,10 @@
 test_consent.py — Tests for the consent check (app/consent.py).
 
 How it fits in: Scam Shield must NEVER listen to someone's calls unless they
-said YES from their own phone. These tests sign up a fake senior, pretend to
-be them texting back, and check that only a YES turns protection on.
+said YES from their own phone. These tests sign up a fake senior (we call
+them to ask), pretend to be them answering, and check that only a YES turns
+protection on. Text replies still count too: older sign-ups were asked by
+text, and STOP by text works any time.
 
 All numbers are 555-01XX numbers, which are reserved for fiction. Demo mode is
 on (see conftest.py), so no real texts are sent. Run with:  pytest
@@ -54,16 +56,15 @@ def status_of(enrollment_id: str) -> str:
     return client.get(f"/api/enrollments/{enrollment_id}").json()["status"]
 
 
-def test_sign_up_texts_the_senior_and_waits_for_their_answer():
+def test_sign_up_calls_the_senior_and_waits_for_their_answer():
     response = sign_up()
 
     assert response.status_code == 201
     assert response.json()["status"] == "pending"
-    # Exactly one text, to the SENIOR, naming who asked.
-    assert len(DEMO_OUTBOX) == 1
-    assert DEMO_OUTBOX[0]["to"] == SENIOR_PHONE
-    assert "Ana" in DEMO_OUTBOX[0]["body"]
-    assert "YES" in DEMO_OUTBOX[0]["body"]
+    assert response.json()["ask_by"] == "call"
+    # Exactly one call, to the SENIOR, and no text.
+    assert DEMO_CALL_LOG == [{"to": SENIOR_PHONE, "who": "consent", "conference": None}]
+    assert DEMO_OUTBOX == []
 
 
 def test_dashboard_hides_most_of_each_phone_number():
@@ -123,9 +124,8 @@ def test_stop_turns_protection_off_later():
     assert "turned Scam Shield off" in DEMO_OUTBOX[-1]["body"]
 
 
-def test_spanish_speaking_senior_gets_spanish_texts_and_can_answer_si():
+def test_spanish_speaking_senior_can_answer_si():
     enrollment_id = sign_up(senior_language="es").json()["id"]
-    assert "Responda SI" in DEMO_OUTBOX[0]["body"]
 
     response = senior_texts("Sí")
 
@@ -141,7 +141,7 @@ def test_cant_ask_again_while_waiting_for_an_answer():
     second = sign_up(family_name="Luis", family_phone="555-555-0102")
 
     assert second.status_code == 409
-    assert len(DEMO_OUTBOX) == 1  # no second text to the senior
+    assert len(DEMO_CALL_LOG) == 1  # no second call to the senior
 
 
 def test_cant_ask_again_soon_after_a_no():
@@ -182,11 +182,31 @@ def test_bad_phone_number_is_rejected():
     assert "phone" in response.json()["error"]
 
 
+def test_senior_phone_without_an_area_code_is_stopped_with_a_reminder():
+    response = sign_up(senior_phone="555-0100")
+
+    assert response.status_code == 400
+    assert "area code" in response.json()["error"]
+    # Nobody is called, and nothing is saved.
+    assert DEMO_CALL_LOG == []
+    assert storage.find_all_enrollments() == []
+
+
+def test_family_phone_without_an_area_code_is_stopped_with_a_reminder():
+    response = sign_up(family_phone="5550101")
+
+    assert response.status_code == 400
+    assert "Your phone is missing the area code" in response.json()["error"]
+    assert DEMO_CALL_LOG == []
+
+
 def test_reply_words_are_understood():
     assert read_answer("YES") == "yes"
     assert read_answer(" sí, claro ") == "yes"
     assert read_answer("No thanks") == "no"
     assert read_answer("Stop") == "stop"
+    assert read_answer("Wi") == "yes"  # Haitian Creole
+    assert read_answer("Non") == "no"
     assert read_answer("") == "unclear"
 
 
@@ -203,27 +223,8 @@ def test_fake_twilio_requests_are_refused_in_live_mode(monkeypatch):
     assert status_of(enrollment_id) == "pending"
 
 
-# Haitian Creole (text only, so cell phones only for the senior)
-
-
-def test_creole_speaking_senior_gets_creole_texts_and_can_answer_wi():
-    """Rosa speaks Creole: she gets the request in Creole, and "Wi" turns protection on."""
-    enrollment_id = sign_up(senior_language="ht").json()["id"]
-    assert "Reponn WI" in DEMO_OUTBOX[0]["body"]
-
-    response = senior_texts("Wi")
-
-    assert status_of(enrollment_id) == "active"
-    assert "Mèsi" in response.text
-
-
-def test_creole_speaking_senior_can_say_non():
-    """"Non" is NO in Creole."""
-    enrollment_id = sign_up(senior_language="ht").json()["id"]
-
-    senior_texts("Non")
-
-    assert status_of(enrollment_id) == "declined"
+# Haitian Creole: our phone voices can't speak it yet, so a Creole-speaking
+# senior can't be asked on our call. Creole-reading family members are fine.
 
 
 def test_creole_speaking_family_gets_creole_updates():
@@ -235,12 +236,14 @@ def test_creole_speaking_family_gets_creole_updates():
     assert "di WI" in DEMO_OUTBOX[-1]["body"]
 
 
-def test_creole_landline_senior_is_turned_away_kindly():
-    """We can't speak Creole on the landline consent call yet, so the form says so."""
-    response = sign_up(senior_language="ht", phone_type="landline")
+def test_creole_speaking_senior_is_turned_away_kindly():
+    """We can't speak Creole on the consent call yet, so the form says so."""
+    for phone_type in ("cell", "landline"):
+        response = sign_up(senior_language="ht", phone_type=phone_type)
 
-    assert response.status_code == 400
-    assert "cell phones" in response.json()["error"]
+        assert response.status_code == 400
+        assert "English or Spanish" in response.json()["error"]
+    assert DEMO_CALL_LOG == []
     assert DEMO_OUTBOX == []
 
 
@@ -251,29 +254,35 @@ def test_creole_family_with_a_landline_senior_is_fine():
     assert response.status_code == 201
 
 
-# ----- Text or call: the family picks how we ask -----
+# ----- We always ask with a phone call -----
 
 
-def test_cell_phone_is_texted_when_the_family_doesnt_pick():
+def test_cell_phone_is_called():
     response = sign_up(phone_type="cell")
 
-    assert response.json()["ask_by"] == "text"
-    assert DEMO_OUTBOX[0]["to"] == SENIOR_PHONE
+    assert response.json()["ask_by"] == "call"
+    assert DEMO_CALL_LOG[0]["to"] == SENIOR_PHONE
+
+
+def test_landline_is_called():
+    response = sign_up(phone_type="landline")
+
+    assert response.json()["ask_by"] == "call"
+
+
+def test_asking_by_text_is_turned_away():
+    """Texts from our number weren't arriving, so we don't offer them anymore."""
+    for phone_type in ("cell", "landline"):
+        response = sign_up(phone_type=phone_type, ask_by="text")
+
+        assert response.status_code == 400
+        assert "phone call" in response.json()["error"]
+    assert DEMO_OUTBOX == []
     assert DEMO_CALL_LOG == []
 
 
-def test_cell_phone_can_be_asked_with_a_phone_call():
-    """Some seniors never read texts, so the family can pick a call instead."""
-    response = sign_up(phone_type="cell", ask_by="call")
-
-    assert response.status_code == 201
-    assert response.json()["ask_by"] == "call"
-    assert DEMO_OUTBOX == []  # no text
-    assert DEMO_CALL_LOG == [{"to": SENIOR_PHONE, "who": "consent", "conference": None}]
-
-
-def test_pressing_1_on_the_call_turns_a_cell_phone_on():
-    enrollment_id = sign_up(phone_type="cell", ask_by="call").json()["id"]
+def test_pressing_1_on_the_call_turns_protection_on():
+    enrollment_id = sign_up().json()["id"]
 
     client.post(
         f"/twilio/consent-answer?enrollment_id={enrollment_id}",
@@ -283,32 +292,8 @@ def test_pressing_1_on_the_call_turns_a_cell_phone_on():
     assert status_of(enrollment_id) == "active"
 
 
-def test_landline_cant_be_asked_by_text():
-    response = sign_up(phone_type="landline", ask_by="text")
-
-    assert response.status_code == 400
-    assert "phone call" in response.json()["error"]
-    assert DEMO_OUTBOX == []
-    assert DEMO_CALL_LOG == []
-
-
-def test_landline_is_called_when_the_family_doesnt_pick():
-    response = sign_up(phone_type="landline")
-
-    assert response.json()["ask_by"] == "call"
-
-
 def test_unknown_way_to_ask_is_rejected():
     assert sign_up(ask_by="carrier pigeon").status_code == 400
-
-
-def test_creole_cell_phone_cant_be_asked_by_call_yet():
-    """Our phone voices can't speak Creole, so a Creole speaker has to be texted."""
-    response = sign_up(senior_language="ht", ask_by="call")
-
-    assert response.status_code == 400
-    assert "text message" in response.json()["error"]
-    assert DEMO_CALL_LOG == []
 
 
 def test_old_sign_ups_without_ask_by_still_show_how_we_asked():

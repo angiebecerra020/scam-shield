@@ -46,6 +46,25 @@ def normalize_phone(raw: str) -> str | None:
     return None
 
 
+def missing_area_code(raw: str) -> bool:
+    """
+    Did someone type a US phone number but leave off the area code?
+
+    A US number without its area code is 7 digits ("555-0100"). We can't
+    guess the area code, so the sign-up form asks them to add it.
+
+    Input:  raw — a phone number as someone typed it
+    Output: True if it looks like a 7-digit number with no area code
+
+    Examples:
+        missing_area_code("555-0100")        ->  True
+        missing_area_code("(305) 555-0100")  ->  False
+        missing_area_code("+44 20 7946 0958") ->  False
+    """
+    text = (raw or "").strip()
+    return not text.startswith("+") and len(re.sub(r"\D", "", text)) == 7
+
+
 def mask_phone(phone: str) -> str:
     """
     Hide most of a phone number, so the dashboard never shows the whole thing.

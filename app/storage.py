@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
     device_key    TEXT NOT NULL,     -- secret part of the calling-app link
     senior_language TEXT NOT NULL,   -- "en" or "es"
     family_language TEXT NOT NULL,
-    status        TEXT NOT NULL,     -- pending / active / paused / declined / expired / revoked
+    status        TEXT NOT NULL,     -- pending / active / paused / canceled / declined / expired / revoked
     created_at    TEXT NOT NULL,
     answered_at   TEXT,              -- when the senior replied YES or NO
     owner_id      TEXT               -- the family's login (Supabase user ID), NULL when login is off

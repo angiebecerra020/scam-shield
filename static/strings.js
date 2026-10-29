@@ -54,7 +54,7 @@ const STRINGS = {
     "landing.joinCall": "Join call",
     "landing.howTitle": "How it works",
     "landing.step1Title": "They say YES",
-    "landing.step1": "We text or call your loved one first. Nothing is listened to until they agree.",
+    "landing.step1": "We call your loved one first. Nothing is listened to until they agree.",
     "landing.step2Title": "We watch for scams",
     "landing.step2":
       "NVIDIA Nemotron scores each call from 0 to 100 and spots tricks like gift cards, secrecy and rush.",
@@ -110,26 +110,22 @@ const STRINGS = {
     "dash.tagline": "The people you protect, and the calls they got.",
     "dash.signupTitle": "Protect someone's calls",
     "dash.signupHint":
-      "We'll ask them for their OK first, with a text or a phone call. Nothing is listened to until they say YES.",
+      "We'll call them first to ask for their OK. Nothing is listened to until they say YES.",
     "dash.whoProtecting": "Who are we protecting?",
     "dash.theirName": "Their name",
     "dash.theirPhone": "Their phone",
     "dash.phoneKind": "What kind of phone is it?",
     "dash.cell": "Cell phone",
     "dash.landline": "Landline (home phone)",
-    "dash.askBy": "How should we ask them?",
-    "dash.askByText": "Text message (they reply YES)",
-    "dash.askByCall": "Phone call (they press 1)",
     "dash.theirLanguage": "Their language",
     "dash.whoGetsAlerts": "Who gets the alerts?",
     "dash.yourName": "Your name",
     "dash.yourPhone": "Your phone",
     "dash.yourLanguage": "Your language",
-    "dash.creoleLandline":
-      "Haitian Creole works with cell phones for now, since we text them. For a landline, pick English or Spanish.",
-    "dash.creoleCall": "We can't ask by phone call in Haitian Creole yet. Choose a text message instead.",
+    "dash.creoleCall": "We can't ask in Haitian Creole on our call yet. Please pick English or Spanish.",
+    "dash.areaCodeHint": "Include the area code: all 10 digits.",
+    "dash.areaCodeMissing": "{field} is missing the area code. Please type all 10 digits, like 305-555-0100.",
     "dash.askButton": "Ask them for their OK",
-    "dash.busyText": "Sending the text…",
     "dash.busyCall": "Calling them…",
     "dash.settingUp": "Setting up Scam Shield for",
     "dash.finishTitle": "Finish setting up their phone",
@@ -195,6 +191,17 @@ const STRINGS = {
     "family.pauseNote": "Calls still ring like normal, but we won't listen or send alerts.",
     "family.statusActive": "Protected",
     "family.statusPaused": "Paused",
+    "family.statusCanceled": "Canceled",
+    "family.cancel": "Cancel Scam Shield",
+    "family.cancelAsk":
+      "Stop protecting {name} for good? We'll stop listening to their calls. To protect them again, they'll have to say YES again.",
+    "family.cancelYes": "Yes, cancel",
+    "family.cancelKeep": "Keep it",
+    "family.busyCancel": "Canceling…",
+    "family.canceledCell":
+      "Scam Shield is off for {name}, and we aren't listening. Their calls still ring like normal. To stop calls going through Scam Shield at all, turn off call forwarding on their phone: dial ##21# (Verizon: *73).",
+    "family.canceledLandline":
+      "Scam Shield is off for {name}, and we aren't listening. Please tell them. To finish, plug their phone back into the wall and dial *73 to turn off call forwarding.",
     "family.statusPending": "Waiting for their YES",
     "family.statusDeclined": "Said no",
     "family.statusExpired": "Didn't answer",
@@ -333,7 +340,7 @@ const STRINGS = {
     "landing.joinCall": "Unirse a la llamada",
     "landing.howTitle": "Cómo funciona",
     "landing.step1Title": "Dicen que SÍ",
-    "landing.step1": "Primero le escribimos o llamamos a su ser querido. No escuchamos nada hasta que esté de acuerdo.",
+    "landing.step1": "Primero llamamos a su ser querido. No escuchamos nada hasta que esté de acuerdo.",
     "landing.step2Title": "Vigilamos las estafas",
     "landing.step2":
       "NVIDIA Nemotron califica cada llamada del 0 al 100 y detecta trucos como tarjetas de regalo, secretos y prisa.",
@@ -388,26 +395,22 @@ const STRINGS = {
     "dash.tagline": "Las personas que usted protege, y las llamadas que recibieron.",
     "dash.signupTitle": "Proteja las llamadas de alguien",
     "dash.signupHint":
-      "Primero le pediremos su permiso, con un mensaje de texto o una llamada. No escuchamos nada hasta que digan que SÍ.",
+      "Primero le llamaremos para pedirle su permiso. No escuchamos nada hasta que diga que SÍ.",
     "dash.whoProtecting": "¿A quién vamos a proteger?",
     "dash.theirName": "Nombre",
     "dash.theirPhone": "Teléfono",
     "dash.phoneKind": "¿Qué tipo de teléfono es?",
     "dash.cell": "Celular",
     "dash.landline": "Teléfono de casa (fijo)",
-    "dash.askBy": "¿Cómo le pedimos permiso?",
-    "dash.askByText": "Mensaje de texto (responde SÍ)",
-    "dash.askByCall": "Llamada (marca el 1)",
     "dash.theirLanguage": "Idioma",
     "dash.whoGetsAlerts": "¿Quién recibe las alertas?",
     "dash.yourName": "Su nombre",
     "dash.yourPhone": "Su teléfono",
     "dash.yourLanguage": "Su idioma",
-    "dash.creoleLandline":
-      "Por ahora el criollo haitiano solo funciona con celulares, porque les enviamos mensajes de texto. Para un teléfono de casa, elija inglés o español.",
-    "dash.creoleCall": "Todavía no podemos pedir permiso por llamada en criollo haitiano. Elija un mensaje de texto.",
+    "dash.creoleCall": "Todavía no podemos pedir permiso en criollo haitiano en nuestra llamada. Elija inglés o español.",
+    "dash.areaCodeHint": "Incluya el código de área: los 10 dígitos.",
+    "dash.areaCodeMissing": "Falta el código de área en «{field}». Escriba los 10 dígitos, por ejemplo 305-555-0100.",
     "dash.askButton": "Pedirle su permiso",
-    "dash.busyText": "Enviando el mensaje…",
     "dash.busyCall": "Llamándole…",
     "dash.settingUp": "Configurando Scam Shield para",
     "dash.finishTitle": "Termine de configurar su teléfono",
@@ -474,6 +477,17 @@ const STRINGS = {
     "family.pauseNote": "Las llamadas siguen sonando como siempre, pero no escucharemos ni enviaremos alertas.",
     "family.statusActive": "Protegido",
     "family.statusPaused": "En pausa",
+    "family.statusCanceled": "Cancelado",
+    "family.cancel": "Cancelar Scam Shield",
+    "family.cancelAsk":
+      "¿Dejar de proteger a {name} para siempre? Dejaremos de escuchar sus llamadas. Para volver a protegerle, tendrá que decir que SÍ otra vez.",
+    "family.cancelYes": "Sí, cancelar",
+    "family.cancelKeep": "Mantenerlo",
+    "family.busyCancel": "Cancelando…",
+    "family.canceledCell":
+      "Scam Shield está apagado para {name} y no estamos escuchando. Sus llamadas siguen sonando como siempre. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
+    "family.canceledLandline":
+      "Scam Shield está apagado para {name} y no estamos escuchando. Por favor avísele. Para terminar, vuelva a conectar su teléfono a la pared y marque *73 para desactivar el desvío de llamadas.",
     "family.statusPending": "Esperando su SÍ",
     "family.statusDeclined": "Dijo que no",
     "family.statusExpired": "No respondió",
@@ -594,15 +608,16 @@ const SERVER_MESSAGES_ES = {
     "Ya le pedimos permiso a esta persona. Tiene 24 horas para responder.",
   "This person said no recently, so we won't ask them again yet.":
     "Esta persona dijo que no hace poco, así que todavía no le volveremos a preguntar.",
-  "Please choose a text message or a phone call.": "Por favor elija un mensaje de texto o una llamada.",
-  "Landlines can't get text messages. Choose a phone call instead.":
-    "Los teléfonos de casa no reciben mensajes de texto. Elija una llamada.",
-  "We can't ask by phone call in Haitian Creole yet. Choose a text message instead.":
-    "Todavía no podemos pedir permiso por llamada en criollo haitiano. Elija un mensaje de texto.",
-  "Haitian Creole works with cell phones for now, since we text them. For a landline, pick English or Spanish.":
-    "Por ahora el criollo haitiano solo funciona con celulares, porque les enviamos mensajes de texto. Para un teléfono de casa, elija inglés o español.",
+  "We ask by phone call only for now.": "Por ahora solo pedimos permiso con una llamada.",
+  "We can't ask by phone call in Haitian Creole yet. Please pick English or Spanish.":
+    "Todavía no podemos pedir permiso por llamada en criollo haitiano. Elija inglés o español.",
+  "Senior's phone is missing the area code. Please type all 10 digits, like 305-555-0100.":
+    "Falta el código de área en el teléfono de la persona protegida. Escriba los 10 dígitos, por ejemplo 305-555-0100.",
+  "Your phone is missing the area code. Please type all 10 digits, like 305-555-0100.":
+    "Falta el código de área en su teléfono. Escriba los 10 dígitos, por ejemplo 305-555-0100.",
   "We couldn't find that sign-up.": "No encontramos ese registro.",
   "We couldn't find that call.": "No encontramos esa llamada.",
+  "Scam Shield is already off for this person.": "Scam Shield ya está apagado para esta persona.",
   "Protection isn't on right now, so there's nothing to pause.":
     "La protección no está activa en este momento, así que no hay nada que pausar.",
   "Protection isn't paused, so there's nothing to turn back on.":

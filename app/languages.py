@@ -51,6 +51,11 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} said YES. Their calls are now protected.",
         "family_told_no": "Scam Shield: {senior_name} said NO, so we will not watch their calls.",
         "family_told_off": "Scam Shield: {senior_name} turned Scam Shield off. We stopped watching their calls.",
+        # Sent to the senior when the family cancels Scam Shield on the dashboard.
+        "senior_told_canceled": (
+            "Scam Shield: {family_name} canceled Scam Shield for your phone. "
+            "We will not listen to your calls anymore."
+        ),
         # Sent right after the family alert, when the caller is on the family's scam list.
         "reported_number_calling": (
             "Scam Shield: the number calling {senior_name} ({caller}) is one you reported as a scam."
@@ -72,6 +77,18 @@ MESSAGES = {
         ),
         "consent_call_no": "OK. Scam Shield will not listen to your calls. Goodbye.",
         "consent_call_goodbye": "We didn't hear an answer. Goodbye.",
+        # SPOKEN when a protected senior calls our number themselves.
+        "consent_call_menu": (
+            "Hello {senior_name}. This is Scam Shield. {family_name} set up Scam Shield "
+            "to listen to your calls and warn them about scams. "
+            "If you want to cancel Scam Shield from listening to your conversations, press 2. "
+            "To keep it on, press 1."
+        ),
+        "consent_call_canceled": (
+            "Scam Shield is now canceled. We will not listen to your calls anymore. "
+            "We let {family_name} know. Goodbye."
+        ),
+        "consent_call_kept": "OK. Scam Shield stays on. Goodbye.",
     },
     "es": {
         "consent_request": (
@@ -89,6 +106,10 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} dijo SÍ. Sus llamadas ahora están protegidas.",
         "family_told_no": "Scam Shield: {senior_name} dijo NO, así que no vigilaremos sus llamadas.",
         "family_told_off": "Scam Shield: {senior_name} apagó Scam Shield. Ya no vigilamos sus llamadas.",
+        "senior_told_canceled": (
+            "Scam Shield: {family_name} canceló Scam Shield para su teléfono. "
+            "Ya no escucharemos sus llamadas."
+        ),
         "reported_number_calling": (
             "Scam Shield: el número que está llamando a {senior_name} ({caller}) es uno que usted reportó como estafa."
         ),
@@ -107,6 +128,17 @@ MESSAGES = {
         ),
         "consent_call_no": "Entendido. Scam Shield no escuchará sus llamadas. Adiós.",
         "consent_call_goodbye": "No escuchamos una respuesta. Adiós.",
+        "consent_call_menu": (
+            "Hola {senior_name}. Le habla Scam Shield. {family_name} configuró Scam Shield "
+            "para escuchar sus llamadas y avisarle si hay una estafa. "
+            "Si quiere cancelar Scam Shield para que deje de escuchar sus conversaciones, marque 2. "
+            "Para mantenerlo activado, marque 1."
+        ),
+        "consent_call_canceled": (
+            "Scam Shield está cancelado. Ya no escucharemos sus llamadas. "
+            "Le avisamos a {family_name}. Adiós."
+        ),
+        "consent_call_kept": "Entendido. Scam Shield sigue activado. Adiós.",
     },
     # Haitian Creole. We wrote these ourselves, and they still need a check
     # from someone who speaks Creole (issue #22). There are no SPOKEN
@@ -127,6 +159,10 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} di WI. Apèl li yo pwoteje kounye a.",
         "family_told_no": "Scam Shield: {senior_name} di NON, kidonk nou pap veye apèl li yo.",
         "family_told_off": "Scam Shield: {senior_name} fèmen Scam Shield. Nou sispann veye apèl li yo.",
+        "senior_told_canceled": (
+            "Scam Shield: {family_name} anile Scam Shield pou telefòn ou. "
+            "Nou pap koute apèl ou yo ankò."
+        ),
         "reported_number_calling": (
             "Scam Shield: nimewo k ap rele {senior_name} ({caller}) a se youn ou te rapòte kòm eskwokri."
         ),

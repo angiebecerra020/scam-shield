@@ -437,3 +437,18 @@ def test_email_address_check():
     assert email_alerts.is_email("ana@example.com") is True
     assert email_alerts.is_email("ana at example") is False
     assert email_alerts.is_email("") is False
+
+
+def test_a_protected_senior_calling_hears_the_cancel_menu_not_the_code_question():
+    """Our number may point here instead of /twilio/voice, so a senior calling
+    from their own phone still gets "press 2 to cancel Scam Shield" (consent.py)."""
+    client.post(
+        "/api/enrollments",
+        json={"senior_name": "Rosa", "senior_phone": "+15555550100", "family_name": "Ana", "family_phone": "+15555550101"},
+    )
+    client.post("/twilio/sms", data={"From": "+15555550100", "Body": "YES"})
+
+    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA-rosa", "From": "+15555550100"})
+
+    assert "press 2" in response.text
+    assert "code" not in response.text

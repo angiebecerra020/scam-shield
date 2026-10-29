@@ -24,7 +24,7 @@ SCAM_SHIELD_NUMBER = "+15555550150"  # set in conftest.py
 
 
 def sign_up_senior(say_yes: bool = True) -> str:
-    """Sign up Rosa (and have her text YES, unless say_yes=False). Returns the ID."""
+    """Sign up Rosa (and have her press 1 on our call, unless say_yes=False). Returns the ID."""
     response = client.post(
         "/api/enrollments",
         json={
@@ -34,9 +34,15 @@ def sign_up_senior(say_yes: bool = True) -> str:
             "family_phone": FAMILY_PHONE,
         },
     )
+    enrollment_id = response.json()["id"]
     if say_yes:
-        client.post("/twilio/sms", data={"From": SENIOR_PHONE, "Body": "YES"})
-    return response.json()["id"]
+        client.post(
+            f"/twilio/consent-answer?enrollment_id={enrollment_id}",
+            data={"To": SENIOR_PHONE, "Digits": "1"},
+        )
+    # Forget the consent call, so the tests below only see the calls they cause.
+    calls.DEMO_CALL_LOG.clear()
+    return enrollment_id
 
 
 def call_comes_in(**extra):
