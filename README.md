@@ -32,7 +32,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 
 | # | Feature | Status |
 |---|---|---|
-| 0 | **Senior's OK first.** When a family member signs someone up, we ask the senior on their own phone, by text (*"Reply YES or NO"*) or by phone call (*"Press 1 to allow, 2 to say no"*). The family picks which on the sign-up form; a landline can't get texts, so it always gets the call. Nothing is listened to until they say YES. The senior can turn it off any time by calling the Scam Shield number from their own phone and pressing **2** (*"If you want to cancel Scam Shield from listening to your conversations, press 2"*); the family can cancel it from the dashboard too. | Done |
+| 0 | **Senior's OK first.** When a family member signs someone up, we call the senior on their own phone (*"Press 1 to allow, 2 to say no"*). We used to offer a text too, but texts from our number weren't arriving, so every senior now gets the call. The sign-up form won't send until both phone numbers include the area code. Nothing is listened to until they say YES. The senior can turn it off any time by calling the Scam Shield number from their own phone and pressing **2** (*"If you want to cancel Scam Shield from listening to your conversations, press 2"*); the family can cancel it from the dashboard too. | Done |
 | 0b | **Works on cell phones and landlines.** The senior keeps their number. Calls forward to Scam Shield, which rings a calling app on their cell phone or an adapter on their home phone. See [Cell phone or landline?](#cell-phone-or-landline) | Done (needs a real-phone test) |
 | 1 | **Live transcript.** The senior's calls forward to a Scam Shield number, which turns the call into text as it happens. | Working on our "Call it yourself" test line (Twilio live transcription). Forwarded calls coming soon |
 | 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds scam warnings that match the call. It looks at trusted sites first: the FTC, FBI, Social Security, Medicare, AARP and the BBB. | Done |
@@ -122,7 +122,7 @@ Today we save the answer, the score and the reasons, but **not what was said on 
 | **NVIDIA Nemotron** | The brain. Nemotron 3.5 Lightning reads the transcript, scores the scam risk, explains why, and writes the family alert in their language. |
 | **Nebius Token Factory** | Runs Nemotron for us through a fast, OpenAI compatible API with structured JSON output. |
 | **Tavily** | Real-time web search: reports about the caller's number, and scam warnings from trusted sites. |
-| **Twilio** | Phone number, forwarded calls and 3-way "Join call" calls, the senior's consent text or call, and the family alerts. Live call transcription and the "Is it really you?" texts are coming soon. |
+| **Twilio** | Phone number, forwarded calls and 3-way "Join call" calls, the senior's consent call, and the family alerts. Live call transcription and the "Is it really you?" texts are coming soon. |
 | **FastAPI** (Python) | Our backend server, which also hosts the dashboard. |
 | **Supabase** | Family accounts: sign up and log in with an email and password. |
 | **Vercel** | Hosts the live site. |
@@ -229,7 +229,7 @@ Seniors keep the phone number they already have, whether it's a cell phone or a 
 
 | | Cell phone | Landline (home phone) |
 |---|---|---|
-| **How we ask for their OK** | A text: reply YES or NO | A phone call: press 1 or 2 (landlines can't get texts) |
+| **How we ask for their OK** | A phone call: press 1 or 2 | A phone call: press 1 or 2 |
 | **What rings** | Our calling app (`/phone/<link>`) on their phone | Their own home phone, plugged into a small adapter |
 | **Extra hardware** | None | A phone adapter (ATA), about $40. Homes without internet need one that uses cell data, about $100 |
 | **Their outgoing calls** | Unchanged | Go through Scam Shield and still show their own number |

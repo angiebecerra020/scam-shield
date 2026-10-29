@@ -236,7 +236,7 @@ class EnrollmentForm(BaseModel):
     senior_language: str = "en"
     family_language: str = "en"
     phone_type: str = "cell"
-    # "text" or "call". Left out, consent.py picks by phone_type.
+    # Only "call" for now. Left out, consent.py calls them.
     ask_by: str | None = None
 
 

@@ -2,20 +2,20 @@
 consent.py — Makes sure the senior agrees before we ever listen to their calls.
 
 How it fits in: when a family member sets up Scam Shield, we don't start
-listening right away. We ask the SENIOR, on their own phone, the way the
-family picks on the sign-up form:
-  - by text: "Ana wants to protect your phone calls... Reply YES or NO."
-  - by phone call: "...press 1 to allow, 2 to say no."
-A cell phone can be asked either way. A landline can't get texts, so we
-always call it. Only a YES from that phone turns protection on. That way a stranger who types
+listening right away. We ask the SENIOR, on their own phone, with a phone
+call: "Ana wants to protect your phone calls... press 1 to allow, 2 to say no."
+We used to offer a text instead, but texts from our number weren't arriving
+(US carriers block texts from numbers that aren't registered with them), so
+now every senior gets a call. Only a YES from that phone turns protection on. That way a stranger who types
 in someone else's number can't start listening to their calls: they would
 need the senior's phone to say YES.
 
 The steps:
-  1. start_enrollment()      — family signs up; we text or call the senior
+  1. start_enrollment()      — family signs up; we call the senior
                                (status "pending")
-  2. handle_senior_reply()   — by text: Twilio forwards the senior's text to us
-     handle_consent_digits() — by call: the senior presses a key on our call
+  2. handle_consent_digits() — the senior presses a key on our call
+     handle_senior_reply()   — or texts us back (older sign-ups were asked
+                               by text, and STOP by text still works)
        YES / 1 -> "active"   (calls.py will now protect their calls)
        NO / 2  -> "declined"
        STOP    -> "revoked"  (texts only; works any time, even months later,
@@ -52,11 +52,12 @@ from app.alerts import send_sms, twilio_client
 from app.calls import DEMO_CALL_LOG, public_url
 from app.config import get_settings
 from app.languages import SPOKEN_LANGUAGES, message, pick_language, spoken_language
-from app.phone_numbers import mask_phone, normalize_phone
+from app.phone_numbers import mask_phone, missing_area_code, normalize_phone
 
 PHONE_TYPES = ("cell", "landline")
-# The ways we can ask the senior for their YES.
-ASK_WAYS = ("text", "call")
+# The ways we can ask the senior for their YES. Only a call for now: see the
+# note at the top of this file.
+ASK_WAYS = ("call",)
 
 # How long the senior has to answer the first text.
 ANSWER_WINDOW = timedelta(hours=24)
@@ -125,9 +126,19 @@ def clean_phone(raw: str, label: str) -> str:
     """
     Check a phone number from the sign-up form and put it in E.164 format.
 
-    Example:
+    A US number typed without its area code ("555-0100") is a common slip, so
+    it gets its own message reminding them to add it, and isn't accepted.
+
+    Examples:
         clean_phone("(305) 555-0100", "Senior's phone")  ->  "+13055550100"
+        clean_phone("555-0100", "Senior's phone")        ->  EnrollmentError
+            ("Senior's phone is missing the area code...")
     """
+    if missing_area_code(raw or ""):
+        raise EnrollmentError(
+            f"{label} is missing the area code. Please type all 10 digits, like 305-555-0100.",
+            400,
+        )
     phone = normalize_phone(raw or "")
     if phone is None:
         raise EnrollmentError(f"{label} doesn't look like a phone number.", 400)
@@ -214,8 +225,7 @@ def start_enrollment(
     owner_id: str | None = None,
 ) -> dict:
     """
-    Sign a senior up for Scam Shield and ask them for their YES, by text or
-    by phone call.
+    Sign a senior up for Scam Shield and call them to ask for their YES.
 
     Nothing is listened to yet: the enrollment starts as "pending".
 
@@ -223,8 +233,7 @@ def start_enrollment(
             family_name, family_phone — the person signing up, who gets alerts
             senior_language, family_language — "en" or "es"
             phone_type — "cell" or "landline": the kind of phone senior_phone is
-            ask_by — "text" or "call": how to ask them. Left out, we text a
-                     cell phone and call a landline.
+            ask_by — "call", or left out (we always call now)
             owner_id — the logged in family member's Supabase user ID, so only
                        they see this senior on their dashboard (None when login is off)
     Output: the new enrollment (as public_view() shows it)
@@ -234,10 +243,7 @@ def start_enrollment(
     Example:
         start_enrollment("Rosa", "305-555-0100", "Ana", "305-555-0101", "es", "en")
         ->  {"id": "...", "status": "pending", ...}
-        and Rosa gets: "Scam Shield: Ana quiere proteger sus llamadas..."
-
-        start_enrollment(..., phone_type="cell", ask_by="call")
-        ->  Rosa's cell phone rings: "...press 1 to allow, 2 to say no."
+        and Rosa's phone rings: "...marque 1 para permitirlo, 2 para decir que no."
     """
     clean_type = clean_phone_type(phone_type)
     enrollment = {
@@ -267,33 +273,15 @@ def start_enrollment(
         raise EnrollmentError("The senior's phone and your phone must be different.", 400)
 
     # The consent call is SPOKEN, and Twilio can't speak Haitian Creole yet.
-    # So we can only ask a Creole speaker by text, which needs a cell phone.
-    if enrollment["ask_by"] == "call" and enrollment["senior_language"] not in SPOKEN_LANGUAGES:
-        if enrollment["phone_type"] == "landline":
-            raise EnrollmentError(
-                "Haitian Creole works with cell phones for now, since we text them. "
-                "For a landline, pick English or Spanish.",
-                400,
-            )
+    if enrollment["senior_language"] not in SPOKEN_LANGUAGES:
         raise EnrollmentError(
-            "We can't ask by phone call in Haitian Creole yet. Choose a text message instead.",
+            "We can't ask by phone call in Haitian Creole yet. Please pick English or Spanish.",
             400,
         )
 
     check_allowed_to_ask(enrollment["senior_phone"])
     storage.save_enrollment(enrollment)
-
-    if enrollment["ask_by"] == "call":
-        call_senior_for_consent(enrollment)
-    else:
-        send_sms(
-            enrollment["senior_phone"],
-            message(
-                "consent_request",
-                enrollment["senior_language"],
-                family_name=enrollment["family_name"],
-            ),
-        )
+    call_senior_for_consent(enrollment)
     return public_view(enrollment)
 
 
@@ -313,28 +301,26 @@ def clean_phone_type(raw: str) -> str:
 
 def clean_ask_by(raw: str | None, phone_type: str) -> str:
     """
-    Check the "How should we ask them?" answer from the sign-up form.
+    Check how the sign-up asks us to reach the senior.
 
-    Left blank, we pick for them: a text for a cell phone, a call for a
-    landline. A landline can't get texts, so "text" for one is a mistake.
+    We only ask by phone call now (see the note at the top of this file), so
+    left blank means "call", and "text" is turned away.
 
-    Input:  raw        — "text", "call", or None
+    Input:  raw        — "call" or None
             phone_type — "cell" or "landline", already checked
-    Output: "text" or "call"
-    Raises: EnrollmentError for anything else, or a text to a landline
+    Output: "call"
+    Raises: EnrollmentError for anything else, including "text"
 
     Examples:
-        clean_ask_by("Call", "cell")      ->  "call"
-        clean_ask_by(None, "landline")    ->  "call"
-        clean_ask_by("text", "landline")  ->  EnrollmentError
+        clean_ask_by("Call", "cell")  ->  "call"
+        clean_ask_by(None, "cell")    ->  "call"
+        clean_ask_by("text", "cell")  ->  EnrollmentError
     """
     if raw is None or raw.strip() == "":
-        return "call" if phone_type == "landline" else "text"
+        return "call"
     ask_by = raw.strip().lower()
     if ask_by not in ASK_WAYS:
-        raise EnrollmentError("Please choose a text message or a phone call.", 400)
-    if ask_by == "text" and phone_type == "landline":
-        raise EnrollmentError("Landlines can't get text messages. Choose a phone call instead.", 400)
+        raise EnrollmentError("We ask by phone call only for now.", 400)
     return ask_by
 
 
