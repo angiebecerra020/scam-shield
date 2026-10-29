@@ -87,6 +87,8 @@ def test_pressing_1_turns_protection_on():
 
     assert status_of(enrollment_id) == "active"
     assert "Scam Shield is now on" in response.text
+    # Before we hang up, they hear how to turn it off again.
+    assert "call this same number back" in response.text
     assert DEMO_OUTBOX[-1]["to"] == FAMILY_PHONE
     assert "said YES" in DEMO_OUTBOX[-1]["body"]
 

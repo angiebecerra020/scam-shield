@@ -51,7 +51,9 @@ MESSAGES = {
             "To allow it, press 1. To say no, press 2."
         ),
         "consent_call_yes": (
-            "Thank you. Scam Shield is now on. {family_name} will finish setting it up. Goodbye."
+            "Thank you. Scam Shield is now on. {family_name} will finish setting it up. "
+            "If you ever want to stop {family_name} from listening in on your calls, "
+            "call this same number back. Goodbye."
         ),
         "consent_call_no": "OK. Scam Shield will not listen to your calls. Goodbye.",
         "consent_call_goodbye": "We didn't hear an answer. Goodbye.",
@@ -104,7 +106,9 @@ MESSAGES = {
             "Para permitirlo, marque 1. Para negarlo, marque 2."
         ),
         "consent_call_yes": (
-            "Gracias. Scam Shield ya está activado. {family_name} terminará de configurarlo. Adiós."
+            "Gracias. Scam Shield ya está activado. {family_name} terminará de configurarlo. "
+            "Si algún día quiere que {family_name} deje de escuchar sus llamadas, "
+            "llame de vuelta a este mismo número. Adiós."
         ),
         "consent_call_no": "Entendido. Scam Shield no escuchará sus llamadas. Adiós.",
         "consent_call_goodbye": "No escuchamos una respuesta. Adiós.",
