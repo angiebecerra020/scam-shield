@@ -180,8 +180,11 @@ def handle_incoming_call(
     if reported == "warn":
         warn_about_reported_number(call, enrollment)
 
-    # Coming soon: <Start><Transcription> goes here, so detector.py can read
-    # the call as it happens. Only calls from seniors who said YES get it.
+    # Live transcription, so detector.py can read the call as it happens.
+    # Only calls from seniors who said YES get it (see live_calls.py). We
+    # import it here because live_calls.py uses this file too.
+    from app import live_calls
+    live_calls.start_transcription(response, call["id"])
 
     dial = response.dial()
     dial.conference(
@@ -306,7 +309,7 @@ def ring_into_conference(
     if caller_id is None:
         caller_id = {"from_": settings.twilio_phone_number}
 
-    if settings.demo_mode:
+    if settings.demo_mode and not settings.real_calls:
         DEMO_CALL_LOG.append(
             {"to": to, "conference": conference_name, "who": who, "shows": caller_id["from_"]}
         )
@@ -358,7 +361,8 @@ def handle_senior_status(call_id: str, call_status: str) -> None:
         return
 
     storage.mark_call_ended(call_id)
-    if get_settings().demo_mode:
+    settings = get_settings()
+    if settings.demo_mode and not settings.real_calls:
         return
 
     goodbye = VoiceResponse()

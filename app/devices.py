@@ -125,10 +125,11 @@ def app_details(device_key: str) -> dict:
     settings = get_settings()
     details = {
         "senior_name": enrollment["senior_name"],
-        "demo_mode": settings.demo_mode,
+        # With REAL_CALLS on, the calling app works for real even on the demo site.
+        "demo_mode": settings.demo_mode and not settings.real_calls,
         "token": None,
     }
-    if settings.demo_mode:
+    if details["demo_mode"]:
         return details
 
     if not (settings.twilio_api_key_sid and settings.twilio_api_key_secret):

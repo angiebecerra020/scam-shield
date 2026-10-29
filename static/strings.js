@@ -138,6 +138,7 @@ const STRINGS = {
     "dash.demoScam": "Pretend a scam call starts",
     "dash.busyYes": "Saying YES…",
     "dash.callAgain": "Call them again",
+    "dash.yourEmail": "Your email, for alerts",
     "family.callAgain": "Call again",
     "family.remove": "Remove",
     "family.busyRemove": "Removing…",
@@ -170,10 +171,12 @@ const STRINGS = {
       "While {name}'s phone is still plugged into the wall, pick it up and dial *72 then {number}. Wait for the tone, then hang up.",
     "setup.landline3": "Unplug {name}'s phone from the wall and plug it into the adapter.",
     "setup.landlineOff": "To turn Scam Shield off later: plug the phone back into the wall and dial *73.",
-    "setup.cell1": "On {name}'s phone, open {appLink} and tap “Turn on calls”. Then add it to the home screen, so it's always one tap away.",
+    "setup.cell1":
+      "On {name}'s phone, open {appLink} in the web browser, tap “Turn on calls” and allow the microphone. Keep that page open: protected calls ring there, not in the normal phone app.",
     "setup.cellAppLink": "this calling app link",
+    "setup.cell3": "To turn it off later, dial ##21# and press call (Verizon: *73).",
     "setup.cell2":
-      "Send {name}'s calls through Scam Shield: on {name}'s phone, dial **21*{number}# and press call. On Verizon, dial *72{number} instead.",
+      "On {name}'s phone, open the Phone app, dial **21*{number}# and press call. That sends their calls through Scam Shield. (Verizon: dial *72{number} instead.)",
     "setup.cellOff":
       "To turn Scam Shield off later: dial ##21# (Verizon: *73), or text STOP to the Scam Shield number.",
 
@@ -413,6 +416,7 @@ const STRINGS = {
     "dash.demoScam": "Simular que empieza una llamada de estafa",
     "dash.busyYes": "Diciendo que SÍ…",
     "dash.callAgain": "Llamarle otra vez",
+    "dash.yourEmail": "Su correo, para las alertas",
     "family.callAgain": "Llamar otra vez",
     "family.remove": "Eliminar",
     "family.busyRemove": "Eliminando…",
@@ -447,10 +451,11 @@ const STRINGS = {
     "setup.landlineOff":
       "Para apagar Scam Shield más adelante: vuelva a conectar el teléfono a la pared y marque *73.",
     "setup.cell1":
-      "En el teléfono de {name}, abra {appLink} y toque “Activar llamadas”. Luego agréguelo a la pantalla de inicio, para tenerlo siempre a mano.",
+      "En el teléfono de {name}, abra {appLink} en el navegador, toque “Activar llamadas” y permita el micrófono. Deje esa página abierta: las llamadas protegidas suenan ahí, no en la aplicación de teléfono normal.",
     "setup.cellAppLink": "este enlace de la aplicación de llamadas",
+    "setup.cell3": "Para apagarlo después, marque ##21# y presione llamar (Verizon: *73).",
     "setup.cell2":
-      "Pase las llamadas de {name} por Scam Shield: en el teléfono de {name}, marque **21*{number}# y presione llamar. Con Verizon, marque *72{number}.",
+      "En el teléfono de {name}, abra la aplicación Teléfono, marque **21*{number}# y presione llamar. Así sus llamadas pasan por Scam Shield. (Verizon: marque *72{number}.)",
     "setup.cellOff":
       "Para apagar Scam Shield más adelante: marque ##21# (Verizon: *73), o envíe STOP al número de Scam Shield.",
 

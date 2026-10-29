@@ -44,6 +44,7 @@ from twilio.twiml.voice_response import VoiceResponse
 
 from app import storage
 from app.alerts import send_sms, twilio_client
+from app.email_alerts import is_email
 from app.calls import DEMO_CALL_LOG, public_url
 from app.config import get_settings
 from app.languages import SPOKEN_LANGUAGES, message, pick_language, spoken_language
@@ -207,6 +208,7 @@ def start_enrollment(
     phone_type: str = "cell",
     ask_by: str | None = None,
     owner_id: str | None = None,
+    family_email: str | None = None,
 ) -> dict:
     """
     Sign a senior up for Scam Shield and ask them for their YES, by text or
@@ -256,6 +258,7 @@ def start_enrollment(
         "created_at": storage.now_text(),
         "answered_at": None,
         "owner_id": owner_id,
+        "family_email": clean_email(family_email),
     }
 
     if enrollment["senior_phone"] == enrollment["family_phone"]:
@@ -290,6 +293,23 @@ def start_enrollment(
             ),
         )
     return public_view(enrollment)
+
+
+def clean_email(raw: str | None) -> str | None:
+    """
+    Check the family's email for alerts. It's optional.
+
+    Example:
+        clean_email(" ana@example.com ") gives you "ana@example.com"
+        clean_email("") gives you None
+    Raises: EnrollmentError if it doesn't look like an email
+    """
+    email = (raw or "").strip()
+    if not email:
+        return None
+    if not is_email(email):
+        raise EnrollmentError("That email doesn't look right. Check it, or leave it blank.", 400)
+    return email
 
 
 def clean_phone_type(raw: str) -> str:
@@ -369,7 +389,7 @@ def call_senior_for_consent(enrollment: dict) -> None:
 
     # REAL_CONSENT_CALLS lets the live demo site place this one real call
     # (texts need carrier sign-up, calls don't), while everything else stays demo.
-    if settings.demo_mode and not settings.real_consent_calls:
+    if settings.demo_mode and not (settings.real_consent_calls or settings.real_calls):
         DEMO_CALL_LOG.append(
             {"to": enrollment["senior_phone"], "who": "consent", "conference": None}
         )

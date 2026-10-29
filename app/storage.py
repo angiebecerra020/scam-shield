@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
     family_phone  TEXT NOT NULL,
     phone_type    TEXT NOT NULL,     -- "cell" or "landline"
     ask_by        TEXT,              -- "text" or "call": how we asked for their YES
+    family_email  TEXT,              -- where the family gets alerts by email (optional)
     device_id     TEXT NOT NULL,     -- name of the senior's app or adapter at Twilio
     device_key    TEXT NOT NULL,     -- secret part of the calling-app link
     senior_language TEXT NOT NULL,   -- "en" or "es"
@@ -78,7 +79,7 @@ CREATE TABLE IF NOT EXISTS scam_numbers (
 # EXISTS skips tables that are already there, so a database made before these
 # columns existed wouldn't get them. add_missing_columns() adds them.
 NEWER_COLUMNS = {
-    "enrollments": {"owner_id": "TEXT", "ask_by": "TEXT"},
+    "enrollments": {"owner_id": "TEXT", "ask_by": "TEXT", "family_email": "TEXT"},
     "calls": {
         "risk_score": "INTEGER",
         "verdict": "TEXT",
@@ -187,18 +188,18 @@ def save_enrollment(enrollment: dict) -> None:
     """
     # Code written before logins (like the demo) doesn't set owner_id or
     # ask_by, so we fill in "no owner" and "not saved" for them.
-    row = {"owner_id": None, "ask_by": None, **enrollment}
+    row = {"owner_id": None, "ask_by": None, "family_email": None, **enrollment}
     with connect() as db:
         db.execute(
             """
             INSERT INTO enrollments (id, senior_name, senior_phone, family_name,
                 family_phone, phone_type, ask_by, device_id, device_key,
                 senior_language, family_language, status, created_at, answered_at,
-                owner_id)
+                owner_id, family_email)
             VALUES (:id, :senior_name, :senior_phone, :family_name,
                 :family_phone, :phone_type, :ask_by, :device_id, :device_key,
                 :senior_language, :family_language, :status, :created_at, :answered_at,
-                :owner_id)
+                :owner_id, :family_email)
             """,
             row,
         )

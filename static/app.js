@@ -298,6 +298,7 @@ function showSetupSteps(enrollment) {
   } else {
     addStep("setup.cell1", { name, appLink: { link: setup.app_link, label: t("setup.cellAppLink") } });
     addStep("setup.cell2", { name, number });
+    addStep("setup.cell3", {});
     document.getElementById("setup-note").textContent = t("setup.cellOff");
   }
 }
