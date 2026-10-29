@@ -33,7 +33,6 @@ Routes:
     POST /api/calls/{id}/scam-list -> [login] if this number calls again: warn, block, or none
     POST /api/enrollments/{id}/pause  -> [login] stop listening for now
     POST /api/enrollments/{id}/resume -> [login] turn protection back on
-    POST /api/enrollments/{id}/cancel -> [login] stop protecting them for good
 
   The senior's device (devices.py): how we ring them without a loop
     GET  /phone/{key}             -> the calling app for a cell phone
@@ -385,21 +384,6 @@ def resume_protection(enrollment_id: str, user: dict | None = Depends(require_lo
     """
     try:
         return family.resume_protection(enrollment_id, user)
-    except family.FamilyError as problem:
-        return error(problem.text, problem.status_code)
-
-
-@app.post("/api/enrollments/{enrollment_id}/cancel")
-def cancel_protection(enrollment_id: str, user: dict | None = Depends(require_login)):
-    """
-    The family cancels Scam Shield for one senior. We stop listening for
-    good; their calls keep ringing like normal.
-
-    Example:
-        POST /api/enrollments/abc/cancel gives you {"status": "canceled", ...}
-    """
-    try:
-        return family.cancel_protection(enrollment_id, user)
     except family.FamilyError as problem:
         return error(problem.text, problem.status_code)
 

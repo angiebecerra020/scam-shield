@@ -584,16 +584,11 @@ h3 {
   color: var(--color-black);
 }
 
-.pause .hint,
-.cancel .hint {
+.pause .hint {
   margin: 4px 0 0;
 }
 
-.cancel {
-  margin-top: 12px;
-}
-
-.cancel-question .hint {
+.remove-question .hint {
   margin-bottom: 8px;
 }
 

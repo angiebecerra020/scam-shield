@@ -2,7 +2,7 @@
 family.py
 
 The family dashboard: the people you protect, their past calls, and the
-pause and cancel buttons.
+pause button.
 
 How it fits in: once a family member signs a senior up (consent.py), they
 come back to the dashboard to see how it's going. This file answers the
@@ -11,8 +11,6 @@ dashboard's questions:
   2. what calls did they get, and how risky was each one? (call_monitor.py
      saves the score, reasons and Tavily links as each call happens)
   3. pause protection, and turn it back on
-  3b. cancel protection for good: we stop listening, and it can't be turned
-      back on without a new YES from the senior
   4. "Was this a scam?": the family tells us if we got a call right. We save
      the answer with the call, so we can see where the detector is wrong and
      make it smarter (see "Learning from the family's answers" in the README)
@@ -29,8 +27,6 @@ anyone, so it shows everyone.
 import json
 
 from app import consent, storage
-from app.alerts import send_sms
-from app.languages import message
 
 # How many past calls we show for each senior.
 CALLS_TO_SHOW = 50
@@ -279,56 +275,6 @@ def resume_protection(enrollment_id: str, user: dict | None) -> dict:
         raise FamilyError("Protection isn't paused, so there's nothing to turn back on.", 409)
     storage.set_enrollment_status(enrollment_id, "active", answered=False)
     enrollment["status"] = "active"
-    return consent.public_view(enrollment)
-
-
-# The statuses that can be canceled. Seniors who said NO, didn't answer, or
-# texted STOP are already off.
-CAN_CANCEL = ("pending", "active", "paused")
-
-
-def cancel_protection(enrollment_id: str, user: dict | None) -> dict:
-    """
-    Cancels Scam Shield for one senior, for good. We never listen to their
-    calls again, and the family can't turn it back on from the dashboard.
-    To protect them again, they sign them up again and the senior has to
-    say YES again (consent.py).
-
-    Their calls still ring them like normal (calls.py passes calls straight
-    through for anyone who isn't "active"), so nothing breaks while their
-    phone still forwards to us. The dashboard shows how to turn forwarding off.
-
-    If the senior already said YES, we text them so they know it's off.
-    Landlines can't get texts, so the family tells them.
-
-    Input:  enrollment_id, which senior
-            user, the same as owns()
-    Output: the senior, as consent.public_view() shows it, now "canceled"
-    Raises: FamilyError (404) if it isn't theirs, (409) if it's already off
-
-    Example:
-        cancel_protection("abc", {"id": "user-ana"}) gives you {"status": "canceled", ...}
-        and Rosa gets "Scam Shield: Ana canceled Scam Shield for your phone..."
-    """
-    enrollment = find_my_enrollment(enrollment_id, user)
-    # A pending one may have run out of time, which also means it's off.
-    consent.expire_old_requests([enrollment])
-    if enrollment["status"] not in CAN_CANCEL:
-        raise FamilyError("Scam Shield is already off for this person.", 409)
-
-    said_yes = enrollment["status"] in ("active", "paused")
-    storage.set_enrollment_status(enrollment_id, "canceled", answered=False)
-    enrollment["status"] = "canceled"
-
-    if said_yes and enrollment["phone_type"] == "cell":
-        send_sms(
-            enrollment["senior_phone"],
-            message(
-                "senior_told_canceled",
-                enrollment["senior_language"],
-                family_name=enrollment["family_name"],
-            ),
-        )
     return consent.public_view(enrollment)
 
 

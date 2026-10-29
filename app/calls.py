@@ -115,13 +115,11 @@ def find_senior_for_call(forwarded_from: str | None) -> dict | None:
             return enrollments[0]
         return None
 
-    # Paused and canceled seniors count too: their calls may still come to
-    # us, and we pass them straight through without listening. We count
-    # phones, not sign-ups, since someone canceled and signed up again has two.
-    signed_up = storage.find_enrollments_with_status(("active", "paused", "canceled"))
-    phones = {enrollment["senior_phone"] for enrollment in signed_up}
-    if len(phones) == 1:
-        return find_senior_for_call(phones.pop())
+    # Paused seniors count too: their calls still come to us, and we pass
+    # them straight through without listening.
+    signed_up = storage.find_enrollments_with_status(("active", "paused"))
+    if len(signed_up) == 1:
+        return signed_up[0]
     return None
 
 

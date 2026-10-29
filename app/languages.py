@@ -51,11 +51,6 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} said YES. Their calls are now protected.",
         "family_told_no": "Scam Shield: {senior_name} said NO, so we will not watch their calls.",
         "family_told_off": "Scam Shield: {senior_name} turned Scam Shield off. We stopped watching their calls.",
-        # Sent to the senior when the family cancels Scam Shield on the dashboard.
-        "senior_told_canceled": (
-            "Scam Shield: {family_name} canceled Scam Shield for your phone. "
-            "We will not listen to your calls anymore."
-        ),
         # Sent right after the family alert, when the caller is on the family's scam list.
         "reported_number_calling": (
             "Scam Shield: the number calling {senior_name} ({caller}) is one you reported as a scam."
@@ -106,10 +101,6 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} dijo SÍ. Sus llamadas ahora están protegidas.",
         "family_told_no": "Scam Shield: {senior_name} dijo NO, así que no vigilaremos sus llamadas.",
         "family_told_off": "Scam Shield: {senior_name} apagó Scam Shield. Ya no vigilamos sus llamadas.",
-        "senior_told_canceled": (
-            "Scam Shield: {family_name} canceló Scam Shield para su teléfono. "
-            "Ya no escucharemos sus llamadas."
-        ),
         "reported_number_calling": (
             "Scam Shield: el número que está llamando a {senior_name} ({caller}) es uno que usted reportó como estafa."
         ),
@@ -159,10 +150,6 @@ MESSAGES = {
         "family_told_yes": "Scam Shield: {senior_name} di WI. Apèl li yo pwoteje kounye a.",
         "family_told_no": "Scam Shield: {senior_name} di NON, kidonk nou pap veye apèl li yo.",
         "family_told_off": "Scam Shield: {senior_name} fèmen Scam Shield. Nou sispann veye apèl li yo.",
-        "senior_told_canceled": (
-            "Scam Shield: {family_name} anile Scam Shield pou telefòn ou. "
-            "Nou pap koute apèl ou yo ankò."
-        ),
         "reported_number_calling": (
             "Scam Shield: nimewo k ap rele {senior_name} ({caller}) a se youn ou te rapòte kòm eskwokri."
         ),

@@ -28,15 +28,11 @@
 const FAMILY_STATUS_LABELS = {
   active: "family.statusActive",
   paused: "family.statusPaused",
-  canceled: "family.statusCanceled",
   pending: "family.statusPending",
   declined: "family.statusDeclined",
   expired: "family.statusExpired",
   revoked: "family.statusRevoked",
 };
-
-// The statuses the family can cancel (the same list as family.CAN_CANCEL).
-const CAN_CANCEL = ["pending", "active", "paused"];
 
 // What each verdict means, for the call history.
 const VERDICT_LABELS = {
@@ -192,12 +188,6 @@ function seniorCard(senior) {
   if (senior.status === "active" || senior.status === "paused") {
     card.appendChild(pauseButton(senior));
   }
-  if (CAN_CANCEL.includes(senior.status)) {
-    card.appendChild(cancelButton(senior));
-  }
-  if (senior.status === "canceled") {
-    card.appendChild(makeElement("p", "hint", canceledNote(senior)));
-  }
   card.appendChild(seniorActions(senior));
 
   card.appendChild(makeElement("h4", "", t("family.pastCalls")));
@@ -239,24 +229,42 @@ function seniorActions(senior) {
 
   const remove = makeElement("button", "button-small button-danger", t("family.remove"));
   remove.type = "button";
-  remove.addEventListener("click", async () => {
-    // A quick "are you sure?", since this can't be undone.
-    if (!window.confirm(t("family.removeConfirm", { name: senior.senior_name }))) {
-      return;
-    }
-    setBusy(remove, t("family.busyRemove"));
+  wrapper.appendChild(remove);
+
+  // Removing can't be undone, so the first tap only asks "Are you sure?",
+  // right on the card, with a red button to go ahead and one to back out.
+  const question = makeElement("div", "remove-question");
+  question.hidden = true;
+  question.appendChild(makeElement("p", "hint", t("family.removeConfirm", { name: senior.senior_name })));
+  const yes = makeElement("button", "button-small button-danger", t("family.removeYes"));
+  yes.type = "button";
+  const keep = makeElement("button", "button-small button-outline", t("family.removeKeep"));
+  keep.type = "button";
+  question.append(yes, " ", keep);
+
+  remove.addEventListener("click", () => {
+    wrapper.hidden = true;
+    question.hidden = false;
+    note.textContent = "";
+  });
+  keep.addEventListener("click", () => {
+    question.hidden = true;
+    wrapper.hidden = false;
+  });
+  yes.addEventListener("click", async () => {
+    // Stops a double tap from sending it twice.
+    setBusy(yes, t("family.busyRemove"));
     const { ok, data } = await sendRequest(`/api/enrollments/${senior.id}`, { method: "DELETE" });
     if (!ok) {
-      setReady(remove);
+      setReady(yes);
       note.textContent = data.error;
       return;
     }
     await loadFamily();
   });
-  wrapper.appendChild(remove);
 
   const box = makeElement("div", "senior-actions");
-  box.append(wrapper, note);
+  box.append(wrapper, question, note);
   return box;
 }
 
@@ -312,76 +320,6 @@ async function togglePause(senior, button) {
     return;
   }
   await loadFamily();
-}
-
-/**
- * Build the "Cancel Scam Shield" button for one senior. Canceling can't be
- * undone from here, so the first tap only asks "Are you sure?", with a
- * button to go ahead and one to keep it.
- *
- * Input:  senior — one entry from GET /api/family
- * Output: an element with the button (and, after a tap, the question)
- * Example: tap "Cancel Scam Shield" on Rosa  gives you
- *          "Stop protecting Rosa for good? ..." [Yes, cancel] [Keep it]
- */
-function cancelButton(senior) {
-  const wrapper = makeElement("div", "cancel");
-  const button = makeElement("button", "button-small button-outline", t("family.cancel"));
-  button.type = "button";
-  wrapper.appendChild(button);
-
-  const question = makeElement("div", "cancel-question");
-  question.hidden = true;
-  question.appendChild(makeElement("p", "hint", t("family.cancelAsk", { name: senior.senior_name })));
-  const yes = makeElement("button", "button-small", t("family.cancelYes"));
-  yes.type = "button";
-  const keep = makeElement("button", "button-small button-outline", t("family.cancelKeep"));
-  keep.type = "button";
-  question.append(yes, " ", keep);
-  wrapper.appendChild(question);
-
-  button.addEventListener("click", () => {
-    button.hidden = true;
-    question.hidden = false;
-  });
-  keep.addEventListener("click", () => {
-    question.hidden = true;
-    button.hidden = false;
-  });
-  yes.addEventListener("click", () => cancelProtection(senior, yes));
-  return wrapper;
-}
-
-/**
- * Cancel Scam Shield for a senior, then refresh the list.
- *
- * Input:  senior — one entry from GET /api/family; button — the one they tapped
- * Output: nothing; it updates the page.
- * Example: tap "Yes, cancel" on Rosa  gives you  Rosa · Canceled
- */
-async function cancelProtection(senior, button) {
-  // Stops a double tap from sending it twice.
-  setBusy(button, t("family.busyCancel"));
-  const { ok, data } = await sendRequest(`/api/enrollments/${senior.id}/cancel`, { method: "POST" });
-  if (!ok) {
-    document.getElementById("family-error").textContent = data.error;
-    setReady(button);
-    return;
-  }
-  await loadFamily();
-}
-
-/**
- * What to tell the family once Scam Shield is canceled: we've stopped
- * listening, and how to stop the senior's calls coming through us at all.
- *
- * Input:  senior — one entry from GET /api/family, with status "canceled"
- * Output: the line of text
- * Example: a cell phone  gives you  "Scam Shield is off for Rosa. ... dial ##21# ..."
- */
-function canceledNote(senior) {
-  const key = senior.phone_type === "landline" ? "family.canceledLandline" : "family.canceledCell";
-  return t(key, { name: senior.senior_name });
 }
 
 /**
