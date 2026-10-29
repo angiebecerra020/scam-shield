@@ -367,7 +367,9 @@ def call_senior_for_consent(enrollment: dict) -> None:
     settings = get_settings()
     url = public_url(f"/twilio/consent-call?enrollment_id={enrollment['id']}")
 
-    if settings.demo_mode:
+    # REAL_CONSENT_CALLS lets the live demo site place this one real call
+    # (texts need carrier sign-up, calls don't), while everything else stays demo.
+    if settings.demo_mode and not settings.real_consent_calls:
         DEMO_CALL_LOG.append(
             {"to": enrollment["senior_phone"], "who": "consent", "conference": None}
         )

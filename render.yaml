@@ -29,6 +29,9 @@ services:
       # Judges always get the demo: a made up family, no real texts or calls
       - key: DEMO_MODE
         value: "true"
+      # ...except the senior's "press 1 to say YES" call, which is real
+      - key: REAL_CONSENT_CALLS
+        value: "true"
       # The database goes on the disk below, so it survives restarts
       - key: DATABASE_PATH
         value: /var/data/scam_shield.db
