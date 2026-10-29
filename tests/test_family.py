@@ -436,6 +436,83 @@ def test_cant_sign_up_a_paused_senior_again():
     assert "paused" in again.json()["error"]
 
 
+# Who they are to you: Mom, Grandma... or Other
+
+
+def test_the_sign_up_saves_who_they_are_to_you():
+    """Ana picks Grandma on the form, and Rosa shows up as her grandma."""
+    client.post(
+        "/api/enrollments",
+        json={
+            "senior_name": "Rosa",
+            "senior_phone": SENIOR_PHONE,
+            "relationship": "Grandma",
+            "family_name": "Ana",
+            "family_phone": FAMILY_PHONE,
+        },
+    )
+
+    seniors = client.get("/api/family").json()["seniors"]
+
+    assert seniors[0]["relationship"] == "grandma"
+
+
+def test_left_out_means_other():
+    """A sign-up that doesn't say who they are (like an older one) is Other."""
+    sign_up_rosa()
+
+    assert client.get("/api/family").json()["seniors"][0]["relationship"] == "other"
+
+
+def test_only_the_list_is_allowed():
+    """Anything not on the list is turned away, so the dashboard groups stay tidy."""
+    response = client.post(
+        "/api/enrollments",
+        json={
+            "senior_name": "Rosa",
+            "senior_phone": SENIOR_PHONE,
+            "relationship": "boss",
+            "family_name": "Ana",
+            "family_phone": FAMILY_PHONE,
+        },
+    )
+
+    assert response.status_code == 400
+    assert storage.find_enrollments_for_senior(SENIOR_PHONE) == []
+
+
+def test_the_family_can_change_who_they_are():
+    """Rosa was Other. Ana picks Mom on her card, and it sticks."""
+    rosa = sign_up_rosa()
+
+    changed = client.post(f"/api/enrollments/{rosa}/relationship", json={"relationship": "mom"})
+
+    assert changed.json()["relationship"] == "mom"
+    assert client.get("/api/family").json()["seniors"][0]["relationship"] == "mom"
+
+
+def test_changing_to_something_not_on_the_list_is_an_error():
+    """Picking something that isn't on the list gives a 400 and changes nothing."""
+    rosa = sign_up_rosa()
+
+    response = client.post(f"/api/enrollments/{rosa}/relationship", json={"relationship": "boss"})
+
+    assert response.status_code == 400
+    assert storage.get_enrollment(rosa)["relationship"] == "other"
+
+
+def test_other_families_cant_change_who_your_senior_is(login_on):
+    """Bob can't relabel Rosa, even with her ID."""
+    rosa = sign_up_rosa(as_user("ana-token"))
+
+    response = client.post(
+        f"/api/enrollments/{rosa}/relationship", json={"relationship": "dad"}, headers=as_user("bob-token")
+    )
+
+    assert response.status_code == 404
+    assert storage.get_enrollment(rosa)["relationship"] == "other"
+
+
 # Older databases
 
 

@@ -203,6 +203,24 @@ const STRINGS = {
     "setup.landlineOff": "Plug the phone back into the wall and dial *73.",
     "setup.offTitle": "To turn it off later",
 
+    "dash.whoToYou": "Who are they to you?",
+    "dash.chooseOne": "Choose one",
+
+    // Who the senior is to the family (the sign-up form and family.js)
+    "relationship.mom": "Mom",
+    "relationship.dad": "Dad",
+    "relationship.grandma": "Grandma",
+    "relationship.grandpa": "Grandpa",
+    "relationship.wife": "Wife",
+    "relationship.husband": "Husband",
+    "relationship.daughter": "Daughter",
+    "relationship.son": "Son",
+    "relationship.sister": "Sister",
+    "relationship.brother": "Brother",
+    "relationship.aunt": "Aunt",
+    "relationship.uncle": "Uncle",
+    "relationship.other": "Other",
+
     // Your family (family.js)
     "family.title": "Your family",
     "family.protectSomeoneElse": "Protect someone else",
@@ -505,6 +523,24 @@ const STRINGS = {
     "setup.landlineOff": "Vuelva a conectar el teléfono a la pared y marque *73.",
     "setup.offTitle": "Para apagarlo más adelante",
 
+    "dash.whoToYou": "¿Quién es para usted?",
+    "dash.chooseOne": "Elija una opción",
+
+    // Who the senior is to the family (the sign-up form and family.js)
+    "relationship.mom": "Mamá",
+    "relationship.dad": "Papá",
+    "relationship.grandma": "Abuela",
+    "relationship.grandpa": "Abuelo",
+    "relationship.wife": "Esposa",
+    "relationship.husband": "Esposo",
+    "relationship.daughter": "Hija",
+    "relationship.son": "Hijo",
+    "relationship.sister": "Hermana",
+    "relationship.brother": "Hermano",
+    "relationship.aunt": "Tía",
+    "relationship.uncle": "Tío",
+    "relationship.other": "Otro",
+
     "family.title": "Su familia",
     "family.protectSomeoneElse": "Proteger a otra persona",
     "family.loading": "Cargando su familia…",
@@ -662,6 +698,7 @@ const SERVER_MESSAGES_ES = {
   "Your name is required.": "Su nombre es obligatorio.",
   "That email doesn't look right. Check it, or leave it blank.":
     "Ese correo no se ve bien. Revíselo, o déjelo en blanco.",
+  "Please pick who they are to you from the list.": "Por favor elija de la lista quién es para usted.",
   "No senior has said YES yet. Sign someone up first.":
     "Nadie ha dicho que SÍ todavía. Primero registre a alguien.",
 };

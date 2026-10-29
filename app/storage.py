@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
     senior_phone  TEXT NOT NULL,     -- E.164, e.g. +13055550100
     family_name   TEXT NOT NULL,
     family_phone  TEXT NOT NULL,
+    relationship  TEXT,              -- who the senior is to the family: "mom", "grandma"... or "other"
     phone_type    TEXT NOT NULL,     -- "cell" or "landline"
     ask_by        TEXT,              -- "text" or "call": how we asked for their YES
     family_email  TEXT,              -- where the family gets alerts by email (optional)
@@ -92,7 +93,12 @@ CREATE TABLE IF NOT EXISTS profiles (
 # EXISTS skips tables that are already there, so a database made before these
 # columns existed wouldn't get them. add_missing_columns() adds them.
 NEWER_COLUMNS = {
-    "enrollments": {"owner_id": "TEXT", "ask_by": "TEXT", "family_email": "TEXT"},
+    "enrollments": {
+        "owner_id": "TEXT",
+        "ask_by": "TEXT",
+        "family_email": "TEXT",
+        "relationship": "TEXT",
+    },
     "calls": {
         "risk_score": "INTEGER",
         "verdict": "TEXT",
@@ -193,7 +199,8 @@ def save_enrollment(enrollment: dict) -> None:
 
     Input:  enrollment — a dict with every column of the enrollments table
                          (owner_id can be left out, it means nobody's login owns it;
-                         ask_by can be left out, see consent.how_we_asked())
+                         ask_by can be left out, see consent.how_we_asked();
+                         relationship can be left out, it means "other")
     Output: nothing
 
     Example:
@@ -201,18 +208,18 @@ def save_enrollment(enrollment: dict) -> None:
     """
     # Code written before logins (like the demo) doesn't set owner_id or
     # ask_by, so we fill in "no owner" and "not saved" for them.
-    row = {"owner_id": None, "ask_by": None, "family_email": None, **enrollment}
+    row = {"owner_id": None, "ask_by": None, "family_email": None, "relationship": "other", **enrollment}
     with connect() as db:
         db.execute(
             """
             INSERT INTO enrollments (id, senior_name, senior_phone, family_name,
                 family_phone, phone_type, ask_by, device_id, device_key,
                 senior_language, family_language, status, created_at, answered_at,
-                owner_id, family_email)
+                owner_id, family_email, relationship)
             VALUES (:id, :senior_name, :senior_phone, :family_name,
                 :family_phone, :phone_type, :ask_by, :device_id, :device_key,
                 :senior_language, :family_language, :status, :created_at, :answered_at,
-                :owner_id, :family_email)
+                :owner_id, :family_email, :relationship)
             """,
             row,
         )
@@ -361,6 +368,24 @@ def set_enrollment_status(enrollment_id: str, status: str, answered: bool) -> No
                 "UPDATE enrollments SET status = ? WHERE id = ?",
                 (status, enrollment_id),
             )
+
+
+def set_enrollment_relationship(enrollment_id: str, relationship: str) -> None:
+    """
+    Change who the senior is to the family, like from "other" to "grandma".
+
+    Input:  enrollment_id — which enrollment
+            relationship  — already checked by consent.clean_relationship()
+    Output: nothing
+
+    Example:
+        set_enrollment_relationship("abc", "grandma")
+    """
+    with connect() as db:
+        db.execute(
+            "UPDATE enrollments SET relationship = ? WHERE id = ?",
+            (relationship, enrollment_id),
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -38,6 +38,7 @@ Routes:
     POST /api/calls/{id}/scam-list -> [login] if this number calls again: warn, block, or none
     POST /api/enrollments/{id}/pause  -> [login] stop listening for now
     POST /api/enrollments/{id}/resume -> [login] turn protection back on
+    POST /api/enrollments/{id}/relationship -> [login] who they are to you: mom, grandma... other
 
   The senior's device (devices.py): how we ring them without a loop
     GET  /phone/{key}             -> the calling app for a cell phone
@@ -244,6 +245,7 @@ class EnrollmentForm(BaseModel):
 
     Example:
         {"senior_name": "Rosa", "senior_phone": "305-555-0100",
+         "relationship": "grandma",
          "family_name": "Ana", "family_phone": "305-555-0101",
          "senior_language": "es", "family_language": "en",
          "phone_type": "landline", "ask_by": "call"}
@@ -254,6 +256,8 @@ class EnrollmentForm(BaseModel):
 
     senior_name: str
     senior_phone: str
+    # Who they are to the family member, like "grandma". Left out: "other".
+    relationship: str | None = None
     family_name: str = ""
     family_phone: str = ""
     senior_language: str = "en"
@@ -381,6 +385,34 @@ def set_scam_list(call_id: str, body: ScamListChoice, user: dict | None = Depend
     """
     try:
         return family.set_scam_list(call_id, body.choice, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
+
+
+class RelationshipChoice(BaseModel):
+    """
+    Who the senior is to the family, picked on their card in "Your family".
+
+    Example:
+        {"relationship": "grandma"}
+    """
+
+    relationship: str
+
+
+@app.post("/api/enrollments/{enrollment_id}/relationship")
+def change_relationship(
+    enrollment_id: str, body: RelationshipChoice, user: dict | None = Depends(require_login)
+):
+    """
+    Change who the senior is to the family, like from "Other" to "Grandma".
+
+    Example:
+        POST /api/enrollments/abc/relationship {"relationship": "grandma"}
+        gives you {"relationship": "grandma", ...}
+    """
+    try:
+        return family.set_relationship(enrollment_id, body.relationship, user)
     except family.FamilyError as problem:
         return error(problem.text, problem.status_code)
 

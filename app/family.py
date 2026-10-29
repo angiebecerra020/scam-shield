@@ -10,7 +10,8 @@ dashboard's questions:
   1. who am I protecting, and are they protected right now?
   2. what calls did they get, and how risky was each one? (call_monitor.py
      saves the score, reasons and Tavily links as each call happens)
-  3. pause protection, and turn it back on
+  3. pause protection, and turn it back on, and change who each senior is
+     to you ("Mom", "Grandma"... or "Other"), which the dashboard groups by
   4. "Was this a scam?": the family tells us if we got a call right. We save
      the answer with the call, so we can see where the detector is wrong and
      make it smarter (see "Learning from the family's answers" in the README)
@@ -279,6 +280,29 @@ def resume_protection(enrollment_id: str, user: dict | None) -> dict:
         raise FamilyError("Protection isn't paused, so there's nothing to turn back on.", 409)
     storage.set_enrollment_status(enrollment_id, "active", answered=False)
     enrollment["status"] = "active"
+    return consent.public_view(enrollment)
+
+
+def set_relationship(enrollment_id: str, relationship: str, user: dict | None) -> dict:
+    """
+    Changes who the senior is to the family, like from "other" to "grandma".
+
+    Input:  enrollment_id, which senior
+            relationship, one of consent.RELATIONSHIPS
+            user, the same as owns()
+    Output: the senior, as consent.public_view() shows it
+    Raises: FamilyError (404) if it isn't theirs, (400) if it isn't on the list
+
+    Example:
+        set_relationship("abc", "grandma", {"id": "user-ana"}) gives you {"relationship": "grandma", ...}
+    """
+    enrollment = find_my_enrollment(enrollment_id, user)
+    try:
+        clean = consent.clean_relationship(relationship)
+    except consent.EnrollmentError as problem:
+        raise FamilyError(problem.text, problem.status_code)
+    storage.set_enrollment_relationship(enrollment_id, clean)
+    enrollment["relationship"] = clean
     return consent.public_view(enrollment)
 
 

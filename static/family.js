@@ -4,7 +4,10 @@
   How it fits in: index.html loads this file before app.js. Once app.js has
   checked the login, it calls loadFamily(), which asks our server for
   everyone this family protects (GET /api/family, see app/family.py) and
-  shows, for each senior:
+  shows everyone grouped by who they are to you (Mom, Dad, Grandma... and
+  Other for everyone else), and for each senior:
+    - who they are to you, which they can change right on the card
+      (POST /api/enrollments/{id}/relationship)
     - whether they're protected right now, with a Pause / Turn back on button
       (POST /api/enrollments/{id}/pause and /resume)
     - who gets the alerts
@@ -33,6 +36,25 @@ const FAMILY_STATUS_LABELS = {
   expired: "family.statusExpired",
   revoked: "family.statusRevoked",
 };
+
+// Who a senior can be to the family, in the order "Your family" shows
+// them (the same list as consent.RELATIONSHIPS). The words are
+// "relationship.mom" and so on in strings.js.
+const RELATIONSHIPS = [
+  "mom",
+  "dad",
+  "grandma",
+  "grandpa",
+  "wife",
+  "husband",
+  "daughter",
+  "son",
+  "sister",
+  "brother",
+  "aunt",
+  "uncle",
+  "other",
+];
 
 // What each verdict means, for the call history.
 const VERDICT_LABELS = {
@@ -153,13 +175,80 @@ async function loadFamily() {
   }
 
   list.replaceChildren();
-  for (const senior of seniors) {
-    list.appendChild(seniorCard(senior));
+  for (const [relationship, group] of groupByRelationship(seniors)) {
+    list.appendChild(makeElement("h3", "family-group", t(`relationship.${relationship}`)));
+    for (const senior of group) {
+      list.appendChild(seniorCard(senior));
+    }
   }
 }
 
 /**
- * Build one senior's card: name, status, the pause button, and their calls.
+ * Put the seniors into groups by who they are to the family, in the
+ * RELATIONSHIPS order, with Other last. Inside a group, the newest sign-up
+ * stays first.
+ *
+ * Input:  seniors — the list from GET /api/family
+ * Output: [relationship, [seniors]] pairs, only for groups that have someone
+ * Example: groupByRelationship([rosa (grandma), luis (other), maria (mom)])
+ *          gives you  [["mom", [maria]], ["grandma", [rosa]], ["other", [luis]]]
+ */
+function groupByRelationship(seniors) {
+  const groups = [];
+  for (const relationship of RELATIONSHIPS) {
+    // Anything we don't know goes under Other.
+    const group = seniors.filter(
+      (senior) => (RELATIONSHIPS.includes(senior.relationship) ? senior.relationship : "other") === relationship
+    );
+    if (group.length > 0) {
+      groups.push([relationship, group]);
+    }
+  }
+  return groups;
+}
+
+/**
+ * The "Who are they to you?" list on a senior's card. Picking a new answer
+ * saves it, and the card moves to its new group.
+ *
+ * Input:  senior — one entry from GET /api/family
+ * Output: the label with the list inside
+ * Example: Rosa, saved as Other  gives you  "Who are they to you? [Other]";
+ *          pick Grandma and she moves under "Grandma"
+ */
+function relationshipPicker(senior) {
+  const label = makeElement("label", "relationship-picker");
+  label.appendChild(makeElement("span", "", t("dash.whoToYou")));
+  const select = document.createElement("select");
+  for (const relationship of RELATIONSHIPS) {
+    const option = makeElement("option", "", t(`relationship.${relationship}`));
+    option.value = relationship;
+    select.appendChild(option);
+  }
+  select.value = RELATIONSHIPS.includes(senior.relationship) ? senior.relationship : "other";
+  select.addEventListener("change", async () => {
+    // Stops a second change while this one is still saving.
+    select.disabled = true;
+    const { ok, data } = await sendRequest(`/api/enrollments/${senior.id}/relationship`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ relationship: select.value }),
+    });
+    if (!ok) {
+      document.getElementById("family-error").textContent = data.error;
+      select.value = senior.relationship;
+      select.disabled = false;
+      return;
+    }
+    await loadFamily();
+  });
+  label.appendChild(select);
+  return label;
+}
+
+/**
+ * Build one senior's card: name, status, who they are to you, the pause
+ * button, and their calls.
  *
  * Input:  senior — one entry from GET /api/family
  * Output: the card element
@@ -183,6 +272,7 @@ function seniorCard(senior) {
   card.appendChild(
     makeElement("p", "hint", t("family.alertsGoTo", { name: senior.family_name, phone: senior.family_phone }))
   );
+  card.appendChild(relationshipPicker(senior));
 
   // Only seniors who said YES can be paused or turned back on, and only
   // they have phone setup steps (setup.html).

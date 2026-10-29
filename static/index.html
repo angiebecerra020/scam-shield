@@ -71,6 +71,25 @@
       <fieldset>
         <legend data-text="dash.whoProtecting">Who are we protecting?</legend>
         <label><span data-text="dash.theirName">Their name</span> <input name="senior_name" required maxlength="40" autocomplete="off"></label>
+        <!-- Groups them in "Your family" (family.js). Anyone not on the list is Other. -->
+        <label><span data-text="dash.whoToYou">Who are they to you?</span>
+          <select name="relationship" required>
+            <option value="" data-text="dash.chooseOne">Choose one</option>
+            <option value="mom" data-text="relationship.mom">Mom</option>
+            <option value="dad" data-text="relationship.dad">Dad</option>
+            <option value="grandma" data-text="relationship.grandma">Grandma</option>
+            <option value="grandpa" data-text="relationship.grandpa">Grandpa</option>
+            <option value="wife" data-text="relationship.wife">Wife</option>
+            <option value="husband" data-text="relationship.husband">Husband</option>
+            <option value="daughter" data-text="relationship.daughter">Daughter</option>
+            <option value="son" data-text="relationship.son">Son</option>
+            <option value="sister" data-text="relationship.sister">Sister</option>
+            <option value="brother" data-text="relationship.brother">Brother</option>
+            <option value="aunt" data-text="relationship.aunt">Aunt</option>
+            <option value="uncle" data-text="relationship.uncle">Uncle</option>
+            <option value="other" data-text="relationship.other">Other</option>
+          </select>
+        </label>
         <label><span data-text="dash.theirPhone">Their phone</span> <input name="senior_phone" type="tel" required autocomplete="off" placeholder="305-555-0100" aria-describedby="senior-phone-hint"></label>
         <p id="senior-phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code: all 10 digits.</p>
         <label><span data-text="dash.phoneKind">What kind of phone is it?</span>

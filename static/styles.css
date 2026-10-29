@@ -592,6 +592,33 @@ h3 {
 
 /* ----- Your family: each senior and their past calls (family.js) ----- */
 
+/* The heading over each group: Mom, Grandma... Other. */
+.family-group {
+  margin: 24px 0 8px;
+  color: var(--color-gold);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.family-group:first-child {
+  margin-top: 0;
+}
+
+/* "Who are they to you?" on each card. */
+.relationship-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.relationship-picker select {
+  width: auto;
+  margin-top: 0;
+}
+
 .senior {
   margin: 0 0 16px;
   padding: 16px;

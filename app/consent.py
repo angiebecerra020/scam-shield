@@ -55,6 +55,24 @@ from app.languages import message, pick_language, spoken_language
 from app.phone_numbers import mask_phone, missing_area_code, normalize_phone
 
 PHONE_TYPES = ("cell", "landline")
+# Who the senior can be to the family member, for the "Who are they to you?"
+# list on the sign-up form. Anyone else is "other". The dashboard groups
+# "Your family" in this order (family.js).
+RELATIONSHIPS = (
+    "mom",
+    "dad",
+    "grandma",
+    "grandpa",
+    "wife",
+    "husband",
+    "daughter",
+    "son",
+    "sister",
+    "brother",
+    "aunt",
+    "uncle",
+    "other",
+)
 # The ways we can ask the senior for their YES. Only a call for now: see the
 # note at the top of this file.
 ASK_WAYS = ("call",)
@@ -223,6 +241,7 @@ def start_enrollment(
     ask_by: str | None = None,
     owner_id: str | None = None,
     family_email: str | None = None,
+    relationship: str | None = None,
 ) -> dict:
     """
     Sign a senior up for Scam Shield and call them to ask for their YES.
@@ -236,6 +255,7 @@ def start_enrollment(
             ask_by — "call", or left out (we always call now)
             owner_id — the logged in family member's Supabase user ID, so only
                        they see this senior on their dashboard (None when login is off)
+            relationship — who the senior is to them, like "grandma" (left out: "other")
     Output: the new enrollment (as public_view() shows it)
     Raises: EnrollmentError if something in the form is wrong, or if we
             aren't allowed to ask this senior right now
@@ -268,6 +288,7 @@ def start_enrollment(
         "answered_at": None,
         "owner_id": owner_id,
         "family_email": clean_email(family_email),
+        "relationship": clean_relationship(relationship),
     }
 
     if enrollment["senior_phone"] == enrollment["family_phone"]:
@@ -294,6 +315,23 @@ def clean_email(raw: str | None) -> str | None:
     if not is_email(email):
         raise EnrollmentError("That email doesn't look right. Check it, or leave it blank.", 400)
     return email
+
+
+def clean_relationship(raw: str | None) -> str:
+    """
+    Check the "Who are they to you?" answer. Left blank means "other".
+
+    Examples:
+        clean_relationship("Grandma")  ->  "grandma"
+        clean_relationship("")         ->  "other"
+        clean_relationship("boss")     ->  EnrollmentError
+    """
+    relationship = (raw or "").strip().lower()
+    if not relationship:
+        return "other"
+    if relationship not in RELATIONSHIPS:
+        raise EnrollmentError("Please pick who they are to you from the list.", 400)
+    return relationship
 
 
 def clean_phone_type(raw: str) -> str:
@@ -750,7 +788,8 @@ def public_view(enrollment: dict) -> dict:
 
     Example:
         public_view(rosa)  ->  {"id": "abc", "senior_name": "Rosa",
-                                "senior_phone": "•••-•••-0100", "status": "pending",
+                                "senior_phone": "•••-•••-0100", "relationship": "grandma",
+                                "status": "pending",
                                 "phone_type": "cell", "ask_by": "text", "setup": {...}}
     """
     return {
@@ -759,6 +798,8 @@ def public_view(enrollment: dict) -> dict:
         "senior_phone": mask_phone(enrollment["senior_phone"]),
         "family_name": enrollment["family_name"],
         "family_phone": mask_phone(enrollment["family_phone"]),
+        # Sign-ups from before we asked have no relationship saved.
+        "relationship": enrollment.get("relationship") or "other",
         "status": enrollment["status"],
         "phone_type": enrollment["phone_type"],
         "ask_by": how_we_asked(enrollment),
