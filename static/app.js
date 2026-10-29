@@ -13,7 +13,6 @@
     - checks every few seconds whether the senior said YES
       (GET /api/enrollments/{id})
     - once they do, links to the steps to finish setting up their phone
-    - in demo mode, shows buttons that pretend to be the senior's phone
   Later it will show the live risk meter.
 
   The words come from strings.js, in English or Spanish (see i18n.js). When
@@ -27,12 +26,10 @@ const CHECK_EVERY_MS = 3000;
 const KNOWN_STATUSES = ["pending", "pendingCall", "active", "declined", "expired", "revoked"];
 
 // Remembered while the page is open.
-let demoMode = false;
 // "checking", "online" or "offline", for the "Server status" line.
 let serverState = "checking";
 // The last sign-up we showed, so we can redraw it in a new language.
 let lastEnrollment = null;
-let seniorPhone = "";
 let enrollmentId = "";
 let phoneType = "cell";
 // How we asked them for their YES. New sign-ups are always "call"; older
@@ -45,14 +42,15 @@ let statusTimer = null;
  *
  * Input:  nothing (it calls GET /health on our own server)
  * Output: nothing is returned; it updates the "Server status" text.
- * Example: server running in demo mode -> "Server status: online (demo mode)"
+ * Example: server running -> "Server status: online"
  */
 async function showServerStatus() {
   drawServerStatus();
   try {
     const response = await fetch("/health");
-    const data = await response.json();
-    demoMode = data.demo_mode;
+    if (!response.ok) {
+      throw new Error(`The server answered ${response.status}`);
+    }
     serverState = "online";
   } catch (error) {
     // If the server can't be reached, say so plainly instead of
@@ -65,7 +63,7 @@ async function showServerStatus() {
 /**
  * Write the "Server status" line, in the current language.
  *
- * Example: online in demo mode  gives you  "online (demo mode)"
+ * Example: online  gives you  "online"
  */
 function drawServerStatus() {
   const statusElement = document.getElementById("server-status");
@@ -74,10 +72,7 @@ function drawServerStatus() {
   } else if (serverState === "offline") {
     statusElement.textContent = t("dash.offline");
   } else {
-    // Always say whether we're in demo mode, so nobody mistakes a
-    // scripted demo call for a real one.
-    const mode = demoMode ? t("dash.demoMode") : t("dash.liveMode");
-    statusElement.textContent = t("dash.online", { mode });
+    statusElement.textContent = t("dash.online");
     statusElement.classList.add("status-ok");
   }
 }
@@ -90,8 +85,8 @@ function drawServerStatus() {
  * Input:  url, options — the same as fetch()
  * Output: {ok, data}: ok is true for a successful answer; data is the JSON
  *         (or {} if the answer had no JSON, like Twilio-style XML)
- * Example: await sendRequest("/api/demo/scam-call", {method: "POST"})
- *          -> {ok: true, data: {call_id: "...", join_link: "..."}}
+ * Example: await sendRequest("/api/family")
+ *          -> {ok: true, data: {seniors: [...]}}
  */
 async function sendRequest(url, options = {}) {
   let headers = { ...options.headers };
@@ -152,15 +147,12 @@ async function submitSignup(event) {
     return;
   }
 
-  // Kept only so the demo button can pretend to be this phone.
-  seniorPhone = fields.senior_phone;
   enrollmentId = data.id;
   phoneType = data.phone_type;
   askBy = data.ask_by;
   form.hidden = true;
   document.getElementById("consent-status").hidden = false;
   document.getElementById("senior-name").textContent = data.senior_name;
-  document.getElementById("demo-tools").hidden = !demoMode;
   showConsentStatus(data);
   // Add them to "Your family" right away, as "Waiting for their YES".
   loadFamily();
@@ -239,11 +231,10 @@ async function checkConsent(enrollmentId) {
 
 /**
  * Show the message for an enrollment's status, the link to the setup steps once they
- * said YES, and the right demo buttons.
+ * said YES, and the "Call them again" button while we wait.
  *
  * Input:  enrollment — what the server sent, e.g. {status: "active", setup: {...}}
- * Example: status "active" -> "They said YES…", the "Show me the steps" link, and the
- *          "Pretend a scam call starts" button (in demo mode)
+ * Example: status "active" -> "They said YES…" and the "Show me the steps" link
  */
 function showConsentStatus(enrollment) {
   lastEnrollment = enrollment;
@@ -252,8 +243,6 @@ function showConsentStatus(enrollment) {
   document.getElementById("consent-message").textContent = KNOWN_STATUSES.includes(messageKey)
     ? t(`status.${messageKey}`)
     : status;
-  document.getElementById("demo-reply-yes").hidden = status !== "pending";
-  document.getElementById("demo-scam-call").hidden = status !== "active";
   // "Call them again" only makes sense while we're still waiting on a call.
   document.getElementById("call-again").hidden = !(status === "pending" && askBy === "call");
 
@@ -276,62 +265,6 @@ async function callAgain() {
   const answer = await sendRequest(`/api/enrollments/${enrollmentId}/call-again`, { method: "POST" });
   setReady(button);
   result.textContent = answer.ok ? t("dash.calledAgain") : answer.data.error;
-}
-
-/**
- * Demo mode: pretend the senior said YES, the way Twilio would tell us:
- * a YES text, or pressing 1 on the consent call, depending on how we asked.
- *
- * Example: tap the button -> a few seconds later the page says "They said YES…"
- */
-async function demoReplyYes() {
-  const button = document.getElementById("demo-reply-yes");
-  const result = document.getElementById("demo-result");
-  setBusy(button, t("dash.busyYes"));
-
-  let answer;
-  if (askBy === "call") {
-    answer = await sendRequest(`/twilio/consent-answer?enrollment_id=${enrollmentId}`, {
-      method: "POST",
-      body: new URLSearchParams({ To: seniorPhone, Digits: "1" }),
-    });
-  } else {
-    answer = await sendRequest("/twilio/sms", {
-      method: "POST",
-      body: new URLSearchParams({ From: seniorPhone, Body: "YES" }),
-    });
-  }
-  setReady(button);
-
-  if (!answer.ok) {
-    result.textContent = answer.data.error;
-    return;
-  }
-  result.textContent = askBy === "call" ? t("dash.demoPressed1") : t("dash.demoSentYes");
-}
-
-/**
- * Demo mode: pretend a scam call started, which sends the family alert.
- * We show the "Join call" link from the alert so it can be opened right here.
- *
- * Example: tap the button -> "Family alert sent. Open the Join call link"
- */
-async function demoScamCall() {
-  const button = document.getElementById("demo-scam-call");
-  const result = document.getElementById("demo-result");
-  setBusy(button, t("dash.busyScam"));
-  const { ok, data } = await sendRequest("/api/demo/scam-call", { method: "POST" });
-  setReady(button);
-  if (!ok) {
-    result.textContent = data.error;
-    return;
-  }
-  result.textContent = `${t("dash.demoAlertSent")} `;
-  const link = document.createElement("a");
-  link.href = data.join_link;
-  link.target = "_blank";
-  link.textContent = t("dash.demoOpenJoin");
-  result.appendChild(link);
 }
 
 /**
@@ -383,9 +316,7 @@ document.getElementById("signup-form").addEventListener("change", checkSignupFor
 // "Protect someone else" empties the form (family.js). The browser puts the
 // old values back only after the "reset" event, so we check right after it.
 document.getElementById("signup-form").addEventListener("reset", () => setTimeout(checkSignupForm));
-document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
 document.getElementById("call-again").addEventListener("click", callAgain);
-document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);
 // When they flip the language switch, redraw the words this file made.
 // (i18n.js already translated everything marked with data-text.)
 document.addEventListener("language-switched", () => {

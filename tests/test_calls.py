@@ -56,6 +56,17 @@ def call_comes_in(**extra):
     return client.post("/twilio/voice", data=form)
 
 
+def scam_call_starts() -> dict:
+    """
+    Pretend a scam call just came in for Rosa, and send Ana the alert with
+    its "Join call" link. Returns {"call_id": ..., "join_link": ...}.
+    """
+    rosa = storage.find_active_enrollments()[0]
+    call = calls.start_protected_call(rosa, caller=SCAMMER_PHONE, call_sid="test")
+    calls.send_family_alert(call)
+    return {"call_id": call["id"], "join_link": calls.join_link(call)}
+
+
 def token_from_alert() -> str:
     """Pull the secret token out of the "Join call" link in the family's text."""
     return DEMO_OUTBOX[-1]["body"].rsplit("/join/", 1)[1]
@@ -148,7 +159,7 @@ def test_unknown_number_hears_a_message_and_hangs_up():
 
 def test_family_alert_has_a_join_link_that_rings_the_familys_phone():
     sign_up_senior()
-    started = client.post("/api/demo/scam-call").json()
+    started = scam_call_starts()
     assert DEMO_OUTBOX[-1]["to"] == FAMILY_PHONE
     assert started["join_link"] in DEMO_OUTBOX[-1]["body"]
     token = token_from_alert()
@@ -174,7 +185,7 @@ def test_join_page_loads():
 
 def test_tapping_join_twice_quickly_rings_only_once():
     sign_up_senior()
-    client.post("/api/demo/scam-call")
+    scam_call_starts()
     token = token_from_alert()
 
     client.post(f"/api/join/{token}")
@@ -186,7 +197,7 @@ def test_tapping_join_twice_quickly_rings_only_once():
 
 def test_link_stops_working_when_the_call_ends():
     sign_up_senior()
-    started = client.post("/api/demo/scam-call").json()
+    started = scam_call_starts()
     token = token_from_alert()
     call = storage.get_call(started["call_id"])
 
@@ -200,7 +211,7 @@ def test_link_stops_working_when_the_call_ends():
 
 def test_link_stops_working_if_senior_turns_scam_shield_off():
     sign_up_senior()
-    client.post("/api/demo/scam-call")
+    scam_call_starts()
     token = token_from_alert()
 
     client.post("/twilio/sms", data={"From": SENIOR_PHONE, "Body": "STOP"})
@@ -210,7 +221,7 @@ def test_link_stops_working_if_senior_turns_scam_shield_off():
 
 def test_senior_not_answering_ends_the_call():
     sign_up_senior()
-    started = client.post("/api/demo/scam-call").json()
+    started = scam_call_starts()
 
     client.post(
         f"/twilio/senior-status?call_id={started['call_id']}",
@@ -222,10 +233,3 @@ def test_senior_not_answering_ends_the_call():
 
 def test_wrong_link_is_rejected():
     assert client.post("/api/join/not-a-real-token").status_code == 404
-
-
-def test_demo_routes_are_off_in_live_mode(monkeypatch):
-    monkeypatch.setenv("DEMO_MODE", "false")
-
-    assert client.post("/api/demo/scam-call").status_code == 404
-    assert client.get("/api/demo/outbox").status_code == 404

@@ -185,8 +185,14 @@ pytest
 
 **On the live site:** open <https://scam-shield-ity3.onrender.com>, tap **Log in** in the header (on a phone it's under **Menu**), and make an account. Then follow the steps below from "sign someone up". We host on Render because the live demo and the phone line need one always-on server that remembers each call (and a disk, so the database doesn't reset).
 
-- **Try the consent check and "Join call" now (no phone needed):** with `DEMO_MODE=true`, open <http://localhost:8000/dashboard>, sign someone up (pick cell phone or landline), then use the dashed **Demo mode** buttons to pretend the senior said YES and a scam call started. The dashboard then shows the setup steps for that kind of phone. Open the "Join call" link to see the family's side. Texts and calls that would have gone out are listed at <http://localhost:8000/api/demo/outbox>. Back on the dashboard, **Your family** lists everyone you protect, with their past calls: tap a call to see its score, the reasons and the Tavily links. **Pause protection** turns listening off (calls still ring like normal) until you turn it back on.
-- **Demo player** (`/demo`): pick one of our sample calls and watch it play line by line as if it were live: the risk score climbs, the family alert goes out, Danny gets "Is it really you?", and Grandma hears a spoken warning.
+- **Demo page** (`/demo`): every demo lives here, in tabs at the top. Nothing else on the site pretends.
+  - **A scam call:** pick one of our sample calls and watch it play line by line as if it were live: the risk score climbs, the family alert goes out, Danny gets "Is it really you?", and Grandma hears a spoken warning.
+  - **Add someone** (`/demo#add`): Ana signs Rosa up, Scam Shield calls Rosa, Rosa presses 1, and Ana sets up her phone.
+  - **Pause protection** (`/demo#pause`): Ana pauses Scam Shield and turns it back on.
+  - **Remove someone** (`/demo#remove`): Ana removes Rosa, then turns off call forwarding on Rosa's phone.
+  - **They turn it off** (`/demo#optout`): Rosa calls the Scam Shield number and presses 2, and Ana gets a text.
+  These walkthroughs are step by step pictures of the real screens and calls (static/demo-walkthroughs.js), with no server or phone involved.
+- **The dashboard** (`/dashboard`) is always the real thing: sign someone up and we really call them. **Your family** lists everyone you protect, with their past calls: tap a call to see its score, the reasons and the Tavily links.
 - **Call it yourself** (`/try`): get a code, call the number on the page, type the code, and play a scammer calling Grandma Rosa. You watch the transcript and the score on the page while you talk, Scam Shield says the warning out loud on the call, and if you type your email you get Ana's alert. Calls last up to 5 minutes, and we never save the audio or your phone number. To run it yourself, point your Twilio number's **A call comes in** webhook at `https://<your site>/twilio/line/incoming` (POST), and add `GMAIL_ADDRESS` and `GMAIL_APP_PASSWORD` to `.env` for the emails.
 - **Live demo:** a teammate calls the Scam Shield number and acts out a scam script. Another teammate plays the senior with the calling app open in a browser, so no forwarding or adapter is needed on stage.
 

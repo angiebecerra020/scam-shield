@@ -610,30 +610,3 @@ def join_call(join_token: str) -> dict:
     )
     storage.mark_family_called(call["id"])
     return {"status": "calling", "senior_name": enrollment["senior_name"]}
-
-
-# ---------------------------------------------------------------------------
-# Demo mode
-# ---------------------------------------------------------------------------
-
-
-def start_demo_call() -> dict:
-    """
-    Pretend a scam call just came in for the senior who said YES, and send
-    the family alert, so we can show the "Join call" flow with no real phones.
-
-    Only works in demo mode (main.py checks that).
-
-    Output: {"call_id": ..., "join_link": ...}
-    Raises: JoinError if no senior has said YES yet
-
-    Example:
-        start_demo_call()  ->  {"call_id": "abc", "join_link": "http://localhost:8000/join/Xy7..."}
-    """
-    active = storage.find_active_enrollments()
-    if not active:
-        raise JoinError("No senior has said YES yet. Sign someone up first.", 409)
-
-    call = start_protected_call(active[0], caller="+15555550199", call_sid="demo")
-    send_family_alert(call)
-    return {"call_id": call["id"], "join_link": join_link(call)}

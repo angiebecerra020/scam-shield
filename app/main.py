@@ -47,10 +47,6 @@ Routes:
     GET  /join/{token}            -> the "Join call" page from the family alert
     GET  /api/join/{token}        -> who the call is for, and is it still live?
     POST /api/join/{token}        -> ring the family member into the call
-
-  Demo mode only
-    POST /api/demo/scam-call      -> [login] pretend a scam call came in; send the alert
-    GET  /api/demo/outbox         -> [login] the texts and calls we would have sent
 """
 
 from pathlib import Path
@@ -62,7 +58,6 @@ from pydantic import BaseModel
 from twilio.twiml.messaging_response import MessagingResponse
 
 from app import calls, consent, devices, family
-from app.alerts import DEMO_OUTBOX
 from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
@@ -651,41 +646,3 @@ def join_call(join_token: str):
     except calls.JoinError as problem:
         return error(problem.text, problem.status_code)
 
-
-# ---------------------------------------------------------------------------
-# Demo mode only
-# ---------------------------------------------------------------------------
-
-
-@app.post("/api/demo/scam-call", dependencies=[Depends(require_login)])
-def start_demo_scam_call():
-    """
-    Pretend a scam call came in for the senior who said YES, and send the
-    family alert with its "Join call" link. Turned off outside demo mode.
-
-    Example:
-        POST /api/demo/scam-call  ->  {"call_id": "abc", "join_link": "http://.../join/Xy7..."}
-    """
-    if not get_settings().demo_mode:
-        return error("Demo calls only work with DEMO_MODE=true.", 404)
-    try:
-        return calls.start_demo_call()
-    except calls.JoinError as problem:
-        return error(problem.text, problem.status_code)
-
-
-@app.get("/api/demo/outbox", dependencies=[Depends(require_login)])
-def show_demo_outbox():
-    """
-    Show the texts and calls we would have sent, newest first. Demo mode only,
-    because it shows whole phone numbers and message text.
-
-    Example:
-        GET /api/demo/outbox  ->  {"texts": [{"to": "...", "body": "..."}], "calls": [...]}
-    """
-    if not get_settings().demo_mode:
-        return error("The outbox only exists with DEMO_MODE=true.", 404)
-    return {
-        "texts": list(reversed(DEMO_OUTBOX)),
-        "calls": list(reversed(calls.DEMO_CALL_LOG)),
-    }

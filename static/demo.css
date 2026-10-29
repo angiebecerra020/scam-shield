@@ -912,6 +912,134 @@ input:focus-visible {
   color: var(--gold);
 }
 
+/* The tabs that pick a demo (demo-walkthroughs.js) */
+
+.scene-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 26px;
+}
+
+.scene-tab {
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.scene-tab:hover {
+  border-color: var(--gold);
+  color: var(--ivory);
+}
+
+.scene-tab[aria-selected="true"] {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+/* The walkthroughs: both phones scroll, like the call transcript */
+
+.flow-feed {
+  min-height: 300px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Who sent a text, above it */
+.flow-who {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant: all-small-caps;
+  letter-spacing: 0.08em;
+}
+
+/* A screen of Ana's dashboard */
+.texts .flow-screen {
+  align-self: stretch;
+  max-width: none;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--black);
+}
+
+.flow-screen p {
+  margin: 6px 0;
+}
+
+.flow-screen-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.flow-screen .flow-screen-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+
+.flow-pill {
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.flow-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Looks like a button (with .primary, .secondary or .danger for the
+   colors), but it's only a picture of one: Next step taps it */
+.flow-button {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* A code or number someone dials */
+.flow-code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold);
+  overflow-wrap: anywhere;
+}
+
+/* What's happening: every step, with the one we're on in gold */
+.flow-notes {
+  margin: 18px 0 0;
+  padding-left: 1.4em;
+  color: var(--muted);
+}
+
+.flow-notes li {
+  margin-bottom: 12px;
+  transition: color 0.3s;
+}
+
+.flow-notes .done {
+  color: var(--ivory);
+}
+
+.flow-notes .now {
+  color: var(--gold);
+  font-weight: 600;
+}
+
 /* Make sure the "hidden" attribute always wins over the display rules above */
 [hidden] {
   display: none !important;

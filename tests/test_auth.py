@@ -85,14 +85,13 @@ def test_family_routes_need_a_login(login_on):
     """With login on, family routes answer 401 when there's no token."""
     assert client.post("/api/enrollments", json=SIGNUP_FORM).status_code == 401
     assert client.get("/api/enrollments/abc").status_code == 401
-    assert client.post("/api/demo/scam-call").status_code == 401
-    assert client.get("/api/demo/outbox").status_code == 401
+    assert client.get("/api/family").status_code == 401
 
 
 def test_a_fake_token_is_turned_away(login_on):
     """A token Supabase doesn't know gets a 401."""
     response = client.get(
-        "/api/demo/outbox", headers={"Authorization": "Bearer made-up-token"}
+        "/api/family", headers={"Authorization": "Bearer made-up-token"}
     )
 
     assert response.status_code == 401
@@ -131,7 +130,7 @@ def test_good_tokens_are_remembered_for_a_bit(login_on, monkeypatch):
     monkeypatch.setattr(auth, "ask_supabase_who", counting_supabase)
     headers = {"Authorization": f"Bearer {GOOD_TOKEN}"}
 
-    client.get("/api/demo/outbox", headers=headers)
-    client.get("/api/demo/outbox", headers=headers)
+    client.get("/api/family", headers=headers)
+    client.get("/api/family", headers=headers)
 
     assert asked == [GOOD_TOKEN]

@@ -108,6 +108,28 @@ def test_demo_page_loads():
     assert "Watch a scam get caught" in response.text
 
 
+def test_demo_page_has_every_demo_in_tabs():
+    """The scam call and the walkthroughs (add, pause, remove, turn off) are all on /demo."""
+    page = client.get("/demo").text
+    script = client.get("/static/demo-walkthroughs.js").text
+
+    for scene in ("call", "add", "pause", "remove", "optout"):
+        assert f'data-scene="{scene}"' in page
+    for scene in ("add", "pause", "remove", "optout"):
+        assert f"\n  {scene}: {{" in script
+    assert page.index("/static/demo.js") < page.index("/static/demo-walkthroughs.js")
+
+
+def test_the_dashboard_has_no_demo_buttons():
+    """Demos only live on /demo, so the real dashboard never pretends anything."""
+    page = client.get("/dashboard").text
+    script = client.get("/static/app.js").text
+
+    assert "demo-tools" not in page
+    assert "Pretend" not in page
+    assert "/api/demo/" not in script
+
+
 def test_lists_all_our_test_calls():
     """The picker gets all 20 test calls."""
     calls = client.get("/api/demo/calls").json()

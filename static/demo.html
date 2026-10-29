@@ -2,13 +2,16 @@
   demo.html
 
   The demo player. This is the page judges use to watch Scam Shield catch a
-  scam live, with no real phone call.
+  scam live, with no real phone call. It's also the ONLY place with demos:
+  tabs at the top switch between the scam call and short walkthroughs of
+  adding someone, pausing, removing them, and the senior turning it off.
 
   How it fits in: app/demo_api.py sends this page at /demo. It loads demo.css
   (the look) and demo.js (the behavior), plus nav.js and header.css for the
   tabs at the top that every page shares. The page has the call on Rosa's
   phone, what Nemotron sees in the middle, and the phones of Ana (her
-  daughter) and Danny (her grandson) on the side.
+  daughter) and Danny (her grandson) on the side. The walkthroughs
+  (demo-walkthroughs.js) show Ana's phone, what's happening, and Rosa's phone.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -44,38 +47,63 @@
   <main>
     <section class="intro">
       <p class="eyebrow">Live demo</p>
-      <h1>Watch a scam get caught, as it happens.</h1>
-      <p class="lead">
-        Pick a call and press Play. Every line goes to NVIDIA Nemotron while the call is still going,
-        and the family gets warned the moment it looks like a scam. These are scripted calls with
-        made up people, so no real phone is involved.
-      </p>
 
-      <div class="controls">
-        <label class="field">
-          <span>The call</span>
-          <select id="call-picker"></select>
-        </label>
-        <label class="field field-small">
-          <span>Ana reads</span>
-          <select id="family-language">
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
-        </label>
+      <!-- Which demo to show. demo-walkthroughs.js switches between them,
+           and /demo#add (and so on) opens one straight away. -->
+      <div class="scene-tabs" role="tablist" aria-label="Pick a demo">
+        <button type="button" role="tab" class="scene-tab" data-scene="call" aria-selected="true">A scam call</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="add" aria-selected="false">Add someone</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="pause" aria-selected="false">Pause protection</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="remove" aria-selected="false">Remove someone</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="optout" aria-selected="false">They turn it off</button>
+      </div>
+
+      <!-- The scam call (demo.js) -->
+      <div id="call-intro">
+        <h1>Watch a scam get caught, as it happens.</h1>
+        <p class="lead">
+          Pick a call and press Play. Every line goes to NVIDIA Nemotron while the call is still going,
+          and the family gets warned the moment it looks like a scam. These are scripted calls with
+          made up people, so no real phone is involved.
+        </p>
+
+        <div class="controls">
+          <label class="field">
+            <span>The call</span>
+            <select id="call-picker"></select>
+          </label>
+          <label class="field field-small">
+            <span>Ana reads</span>
+            <select id="family-language">
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
+          <div class="buttons">
+            <button type="button" id="play" class="primary"><i data-lucide="play" aria-hidden="true"></i> <span>Play</span></button>
+            <button type="button" id="step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span>Next line</span></button>
+            <button type="button" id="restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span>Start over</span></button>
+            <button type="button" id="sound" class="icon-button" aria-pressed="true" aria-label="Spoken warnings are on. Turn them off.">
+              <i data-lucide="volume-2" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+        <p id="demo-error" class="error" role="alert"></p>
+      </div>
+
+      <!-- A walkthrough (demo-walkthroughs.js fills in the words) -->
+      <div id="flow-intro" hidden>
+        <h1 id="flow-title"></h1>
+        <p id="flow-lead" class="lead"></p>
         <div class="buttons">
-          <button type="button" id="play" class="primary"><i data-lucide="play" aria-hidden="true"></i> <span>Play</span></button>
-          <button type="button" id="step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span>Next line</span></button>
-          <button type="button" id="restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span>Start over</span></button>
-          <button type="button" id="sound" class="icon-button" aria-pressed="true" aria-label="Spoken warnings are on. Turn them off.">
-            <i data-lucide="volume-2" aria-hidden="true"></i>
-          </button>
+          <button type="button" id="flow-play" class="primary"><i data-lucide="play" aria-hidden="true"></i> <span>Play</span></button>
+          <button type="button" id="flow-step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span>Next step</span></button>
+          <button type="button" id="flow-restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span>Start over</span></button>
         </div>
       </div>
-      <p id="demo-error" class="error" role="alert"></p>
     </section>
 
-    <div class="stage">
+    <div class="stage" id="call-stage">
       <!-- Rosa's phone: the call itself, line by line, and her warning -->
       <section class="phone" aria-labelledby="rosa-title">
         <header class="phone-header">
@@ -153,6 +181,31 @@
         </section>
       </div>
     </div>
+
+    <!-- A walkthrough: Ana's phone, what's happening, and Rosa's phone -->
+    <div class="stage" id="flow-stage" hidden>
+      <section class="phone" aria-labelledby="flow-ana-title">
+        <header class="phone-header">
+          <p class="phone-owner" id="flow-ana-title">Ana's phone <span>daughter</span></p>
+          <i data-lucide="layout-dashboard" aria-hidden="true"></i>
+        </header>
+        <ol id="flow-ana" class="texts flow-feed" aria-live="polite" aria-label="What Ana sees"></ol>
+      </section>
+
+      <section class="ai flow-story" aria-labelledby="flow-story-title">
+        <p class="eyebrow">What's happening</p>
+        <h2 id="flow-story-title">Step by step</h2>
+        <ol id="flow-notes" class="flow-notes"></ol>
+      </section>
+
+      <section class="phone" aria-labelledby="flow-rosa-title">
+        <header class="phone-header">
+          <p class="phone-owner" id="flow-rosa-title">Rosa's phone <span>grandma</span></p>
+          <p class="call-status" id="flow-rosa-status">Waiting</p>
+        </header>
+        <ol id="flow-rosa" class="transcript flow-feed" aria-live="polite" aria-label="What Rosa hears and does"></ol>
+      </section>
+    </div>
   </main>
 
   <footer class="footer">
@@ -170,5 +223,6 @@
   <script src="/static/nav.js"></script>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script src="/static/demo.js"></script>
+  <script src="/static/demo-walkthroughs.js"></script>
 </body>
 </html>

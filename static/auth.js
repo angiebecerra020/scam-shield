@@ -80,7 +80,7 @@ async function getSession() {
  * Input:  nothing
  * Output: {Authorization: "Bearer ..."}, or {} when nobody is logged in or
  *         login is off.
- * Example: fetch("/api/demo/outbox", {headers: await loginHeaders()})
+ * Example: fetch("/api/family", {headers: await loginHeaders()})
  */
 async function loginHeaders() {
   const session = await getSession();
