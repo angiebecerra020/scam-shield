@@ -192,6 +192,17 @@ const STRINGS = {
     "family.pauseNote": "Calls still ring like normal, but we won't listen or send alerts.",
     "family.statusActive": "Protected",
     "family.statusPaused": "Paused",
+    "family.statusCanceled": "Canceled",
+    "family.cancel": "Cancel Scam Shield",
+    "family.cancelAsk":
+      "Stop protecting {name} for good? We'll stop listening to their calls. To protect them again, they'll have to say YES again.",
+    "family.cancelYes": "Yes, cancel",
+    "family.cancelKeep": "Keep it",
+    "family.busyCancel": "Canceling…",
+    "family.canceledCell":
+      "Scam Shield is off for {name}, and we aren't listening. Their calls still ring like normal. To stop calls going through Scam Shield at all, turn off call forwarding on their phone: dial ##21# (Verizon: *73).",
+    "family.canceledLandline":
+      "Scam Shield is off for {name}, and we aren't listening. Please tell them. To finish, plug their phone back into the wall and dial *73 to turn off call forwarding.",
     "family.statusPending": "Waiting for their YES",
     "family.statusDeclined": "Said no",
     "family.statusExpired": "Didn't answer",
@@ -469,6 +480,17 @@ const STRINGS = {
     "family.pauseNote": "Las llamadas siguen sonando como siempre, pero no escucharemos ni enviaremos alertas.",
     "family.statusActive": "Protegido",
     "family.statusPaused": "En pausa",
+    "family.statusCanceled": "Cancelado",
+    "family.cancel": "Cancelar Scam Shield",
+    "family.cancelAsk":
+      "¿Dejar de proteger a {name} para siempre? Dejaremos de escuchar sus llamadas. Para volver a protegerle, tendrá que decir que SÍ otra vez.",
+    "family.cancelYes": "Sí, cancelar",
+    "family.cancelKeep": "Mantenerlo",
+    "family.busyCancel": "Cancelando…",
+    "family.canceledCell":
+      "Scam Shield está apagado para {name} y no estamos escuchando. Sus llamadas siguen sonando como siempre. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
+    "family.canceledLandline":
+      "Scam Shield está apagado para {name} y no estamos escuchando. Por favor avísele. Para terminar, vuelva a conectar su teléfono a la pared y marque *73 para desactivar el desvío de llamadas.",
     "family.statusPending": "Esperando su SÍ",
     "family.statusDeclined": "Dijo que no",
     "family.statusExpired": "No respondió",
@@ -598,6 +620,7 @@ const SERVER_MESSAGES_ES = {
     "Por ahora el criollo haitiano solo funciona con celulares, porque les enviamos mensajes de texto. Para un teléfono de casa, elija inglés o español.",
   "We couldn't find that sign-up.": "No encontramos ese registro.",
   "We couldn't find that call.": "No encontramos esa llamada.",
+  "Scam Shield is already off for this person.": "Scam Shield ya está apagado para esta persona.",
   "Protection isn't on right now, so there's nothing to pause.":
     "La protección no está activa en este momento, así que no hay nada que pausar.",
   "Protection isn't paused, so there's nothing to turn back on.":

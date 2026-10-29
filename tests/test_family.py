@@ -288,6 +288,91 @@ def test_cant_pause_someone_who_never_said_yes():
     assert client.post(f"/api/enrollments/{rosa}/resume").status_code == 409
 
 
+# ----- Canceling Scam Shield for good -----
+
+
+def test_canceling_stops_listening_and_tells_the_senior():
+    rosa = sign_up_rosa()
+
+    response = client.post(f"/api/enrollments/{rosa}/cancel")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "canceled"
+    to_rosa = [text["body"] for text in alerts.DEMO_OUTBOX if text["to"] == SENIOR_PHONE]
+    assert "Ana canceled Scam Shield" in to_rosa[-1]
+
+
+def test_canceled_calls_ring_like_normal_without_listening():
+    """Her phone may still forward to us, so her calls must still get through."""
+    rosa = sign_up_rosa()
+    client.post(f"/api/enrollments/{rosa}/cancel")
+
+    xml = calls.handle_incoming_call(SCAMMER_PHONE, "CA123", SENIOR_PHONE)
+
+    assert "<Conference" not in xml
+    assert "<Dial" in xml
+
+
+def test_canceled_senior_still_found_when_the_carrier_hides_whose_phone_it_is():
+    rosa = sign_up_rosa()
+    client.post(f"/api/enrollments/{rosa}/cancel")
+
+    assert calls.find_senior_for_call(None)["id"] == rosa
+
+
+def test_cancel_cant_be_undone_from_the_dashboard():
+    rosa = sign_up_rosa()
+    client.post(f"/api/enrollments/{rosa}/cancel")
+
+    assert client.post(f"/api/enrollments/{rosa}/resume").status_code == 409
+    assert client.post(f"/api/enrollments/{rosa}/cancel").status_code == 409
+
+
+def test_canceling_a_paused_senior_works():
+    rosa = sign_up_rosa()
+    client.post(f"/api/enrollments/{rosa}/pause")
+
+    assert client.post(f"/api/enrollments/{rosa}/cancel").json()["status"] == "canceled"
+
+
+def test_canceling_before_they_answer_means_their_yes_no_longer_counts():
+    response = client.post(
+        "/api/enrollments",
+        json={"senior_name": "Rosa", "senior_phone": SENIOR_PHONE, "family_name": "Ana", "family_phone": FAMILY_PHONE},
+    )
+    rosa = response.json()["id"]
+    client.post(f"/api/enrollments/{rosa}/cancel")
+    texts_before = len(alerts.DEMO_OUTBOX)
+
+    client.post("/twilio/sms", data={"From": SENIOR_PHONE, "Body": "YES"})
+
+    assert storage.get_enrollment(rosa)["status"] == "canceled"
+    # Rosa never said YES, so she doesn't get a "canceled" text, and her late YES gets no answer
+    assert len(alerts.DEMO_OUTBOX) == texts_before
+
+
+def test_family_can_sign_them_up_again_after_canceling():
+    """A new sign-up asks Rosa again, and her new YES turns protection on."""
+    rosa = sign_up_rosa()
+    client.post(f"/api/enrollments/{rosa}/cancel")
+
+    again = sign_up_rosa()
+
+    assert again != rosa
+    assert storage.get_enrollment(again)["status"] == "active"
+    # Rosa now has two sign-ups (one canceled), and her calls still find the active one
+    assert calls.find_senior_for_call(None)["id"] == again
+
+
+def test_other_families_cant_cancel_your_senior(login_on):
+    rosa = sign_up_rosa({"Authorization": "Bearer ana-token"})
+
+    response = client.post(f"/api/enrollments/{rosa}/cancel", headers={"Authorization": "Bearer bob-token"})
+
+    assert response.status_code == 404
+    assert storage.get_enrollment(rosa)["status"] == "active"
+
+
 def test_stop_still_works_while_paused():
     """Rosa can text STOP while paused, and then resume can't turn her back on."""
     rosa = sign_up_rosa()

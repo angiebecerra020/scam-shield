@@ -23,7 +23,8 @@ The steps:
   3. No answer within 24 hours -> "expired"; the family can ask again.
 
 After a YES, the family can pause protection from the dashboard ("paused")
-and turn it back on later (family.py). Pausing doesn't need the senior's OK,
+and turn it back on later (family.py). They can also cancel it for good
+("canceled"); to protect that senior again, we ask for a new YES. Pausing doesn't need the senior's OK,
 since it means we listen LESS. Turning it back on only works if they already
 said YES.
 
