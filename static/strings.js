@@ -122,7 +122,6 @@ const STRINGS = {
     "dash.yourName": "Your name",
     "dash.yourPhone": "Your phone",
     "dash.yourLanguage": "Your language",
-    "dash.creoleCall": "We can't ask in Haitian Creole on our call yet. Please pick English or Spanish.",
     "dash.areaCodeHint": "Include the area code: all 10 digits.",
     "dash.areaCodeMissing": "{field} is missing the area code. Please type all 10 digits, like 305-555-0100.",
     "dash.askButton": "Ask them for their OK",
@@ -411,7 +410,6 @@ const STRINGS = {
     "dash.yourName": "Su nombre",
     "dash.yourPhone": "Su teléfono",
     "dash.yourLanguage": "Su idioma",
-    "dash.creoleCall": "Todavía no podemos pedir permiso en criollo haitiano en nuestra llamada. Elija inglés o español.",
     "dash.areaCodeHint": "Incluya el código de área: los 10 dígitos.",
     "dash.areaCodeMissing": "Falta el código de área en «{field}». Escriba los 10 dígitos, por ejemplo 305-555-0100.",
     "dash.askButton": "Pedirle su permiso",
@@ -616,8 +614,6 @@ const SERVER_MESSAGES_ES = {
   "This person said no recently, so we won't ask them again yet.":
     "Esta persona dijo que no hace poco, así que todavía no le volveremos a preguntar.",
   "We ask by phone call only for now.": "Por ahora solo pedimos permiso con una llamada.",
-  "We can't ask by phone call in Haitian Creole yet. Please pick English or Spanish.":
-    "Todavía no podemos pedir permiso por llamada en criollo haitiano. Elija inglés o español.",
   "Senior's phone is missing the area code. Please type all 10 digits, like 305-555-0100.":
     "Falta el código de área en el teléfono de la persona protegida. Escriba los 10 dígitos, por ejemplo 305-555-0100.",
   "Your phone is missing the area code. Please type all 10 digits, like 305-555-0100.":

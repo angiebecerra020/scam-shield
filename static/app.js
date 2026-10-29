@@ -186,19 +186,15 @@ function findPhoneMissingAreaCode(form) {
 /**
  * Show notes on the sign-up form as they fill it in.
  *
- * Our phone voices can't speak Haitian Creole yet (see app/languages.py), so
- * picking Creole for the senior gets a note. And as soon as they leave a
- * phone box that's missing its area code, they get a reminder to add it.
+ * As soon as they leave a phone box that's missing its area code, they get
+ * a reminder to add it.
  *
  * Input:  nothing (it reads the form)
  * Output: nothing; it updates the form.
- * Example: pick Kreyòl ayisyen  gives you  "We can't ask in Haitian Creole on our call yet..."
- *          type 555-0100 as their phone  gives you  "Their phone is missing the area code..."
+ * Example: type 555-0100 as their phone  gives you  "Their phone is missing the area code..."
  */
 function checkSignupForm() {
   const form = document.getElementById("signup-form");
-  document.getElementById("creole-call-note").hidden = form.senior_language.value !== "ht";
-
   const short = findPhoneMissingAreaCode(form);
   document.getElementById("signup-error").textContent = short
     ? t("dash.areaCodeMissing", { field: short.label })

@@ -1,16 +1,13 @@
 """
 test_languages.py
 
-Day one check for tracker task T6. Can Nemotron catch a scam call in Spanish
-and in Haitian Creole, and explain it in that same language?
+Day one check for tracker task T6. Can Nemotron catch a scam call in Spanish,
+and explain it in Spanish?
 
-How it fits in: lots of older adults in Florida speak Spanish or Haitian
-Creole, so Scam Shield has to work for them too. This sends the same kind of
-scam (a fake grandson who needs bail money in gift cards) in each language to
-the detector (app/detector.py) and prints what comes back.
-
-If you can, ask someone who speaks Haitian Creole to double check the reasons
-and the alert before we show them to judges.
+How it fits in: lots of older adults in Florida speak Spanish, so Scam Shield
+has to work for them too. This sends a scam (a fake grandson who needs bail
+money in gift cards) to the detector (app/detector.py) and prints what comes
+back.
 
 Run it from the project folder:
     python scripts/test_languages.py
@@ -39,15 +36,6 @@ SCAM_CALLS = {
         "Caller: Por favor no le digas nada a mi mamá. ¿Puedes comprar 2,000 dólares "
         "en tarjetas de regalo y leerme los números?",
     ),
-    "Haitian Creole": (
-        "ht",
-        "Caller: Alo, grann? Se mwen, Danny, pitit pitit ou.\n"
-        "Senior: Danny? Vwa ou sanble diferan.\n"
-        "Caller: Mwen gen yon gwo grip. Grann, mwen nan pwoblèm. Mwen te fè yon aksidan "
-        "e lapolis arete m. Mwen bezwen lajan pou kosyon jodi a.\n"
-        "Caller: Tanpri, pa di manman m anyen. Èske ou ka achte 2,000 dola kat kado "
-        "epi li nimewo yo ban mwen?",
-    ),
 }
 
 
@@ -75,8 +63,8 @@ def check_language(name: str, code: str, call: str) -> bool:
     """
     Sends one scam call to the detector and prints what it says.
 
-    Input:  name, the language's name, like "Haitian Creole"
-            code, the language code, like "ht"
+    Input:  name, the language's name, like "Spanish"
+            code, the language code, like "es"
             call, the scam call written in that language
     Output: True if Nemotron called it a likely scam
 
@@ -110,9 +98,9 @@ def main() -> int:
 
     Example:
         Running python scripts/test_languages.py ends with
-        "RESULT: PASS. Nemotron catches scams in Spanish and Haitian Creole."
+        "RESULT: PASS. Nemotron catches scams in Spanish."
     """
-    print("Day one check T6: scam calls in Spanish and Haitian Creole\n")
+    print("Day one check T6: scam calls in Spanish\n")
     missing = find_missing_settings(get_settings(), ["NEBIUS_API_KEY"])
     if missing:
         report(False, "Nebius key in .env")
@@ -125,7 +113,7 @@ def main() -> int:
             all_passed = False
 
     if all_passed:
-        print("RESULT: PASS. Nemotron catches scams in Spanish and Haitian Creole.")
+        print("RESULT: PASS. Nemotron catches scams in Spanish.")
         return 0
     print("RESULT: FAIL. Check the lines above.")
     return 1

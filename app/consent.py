@@ -51,7 +51,7 @@ from app.alerts import send_sms, twilio_client
 from app.email_alerts import is_email
 from app.calls import DEMO_CALL_LOG, public_url
 from app.config import get_settings
-from app.languages import SPOKEN_LANGUAGES, message, pick_language, spoken_language
+from app.languages import message, pick_language, spoken_language
 from app.phone_numbers import mask_phone, missing_area_code, normalize_phone
 
 PHONE_TYPES = ("cell", "landline")
@@ -66,9 +66,8 @@ ASK_AGAIN_AFTER_NO = timedelta(days=30)
 
 # Words we accept as an answer. Replies are cleaned up first (see clean_reply),
 # so "Yes!", "  yes " and "Sí" all match.
-# "wi" and "non" are YES and NO in Haitian Creole.
-YES_WORDS = {"yes", "y", "yeah", "yep", "ok", "okay", "si", "s", "wi"}
-NO_WORDS = {"no", "n", "nope", "non"}
+YES_WORDS = {"yes", "y", "yeah", "yep", "ok", "okay", "si", "s"}
+NO_WORDS = {"no", "n", "nope"}
 # STOP and friends are the standard US words for "stop texting me". Twilio
 # also handles them itself, but we use them to turn protection off.
 STOP_WORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "parar", "alto"}
@@ -273,13 +272,6 @@ def start_enrollment(
 
     if enrollment["senior_phone"] == enrollment["family_phone"]:
         raise EnrollmentError("The senior's phone and your phone must be different.", 400)
-
-    # The consent call is SPOKEN, and Twilio can't speak Haitian Creole yet.
-    if enrollment["senior_language"] not in SPOKEN_LANGUAGES:
-        raise EnrollmentError(
-            "We can't ask by phone call in Haitian Creole yet. Please pick English or Spanish.",
-            400,
-        )
 
     check_allowed_to_ask(enrollment["senior_phone"])
     storage.save_enrollment(enrollment)

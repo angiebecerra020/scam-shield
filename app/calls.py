@@ -51,7 +51,7 @@ from app import storage
 from app.alerts import twilio_client
 from app.config import get_settings
 from app.devices import device_address, dial_device
-from app.languages import SPOKEN_LANGUAGES, message, spoken_language
+from app.languages import message, pick_language, spoken_language
 from app.phone_numbers import normalize_phone
 
 # Calls we "placed" while DEMO_MODE=true. Each one is a dict like
@@ -432,14 +432,12 @@ def join_link(call: dict) -> str:
 
 def alert_call_language(enrollment: dict) -> str:
     """
-    The language we SPEAK on the alert call: the family's, if Twilio can
-    speak it, otherwise English (Twilio has no Creole voice).
+    The language we SPEAK on the alert call: the family's.
 
     Example:
-        alert_call_language({"family_language": "ht", ...})  ->  "en"
+        alert_call_language({"family_language": "es", ...})  ->  "es"
     """
-    language = enrollment["family_language"]
-    return language if language in SPOKEN_LANGUAGES else "en"
+    return pick_language(enrollment["family_language"])
 
 
 def alert_call_words(call: dict, enrollment: dict) -> str:
@@ -463,9 +461,7 @@ def alert_call_words(call: dict, enrollment: dict) -> str:
         words.append(message("alert_call_reported", language, senior_name=name))
     else:
         reasons = json.loads(call.get("reasons") or "[]")[:ALERT_CALL_REASONS]
-        # The reasons are written in the family's language, so we only read
-        # them out if that's the language we're speaking.
-        if reasons and language == enrollment["family_language"]:
+        if reasons:
             words.append(message("alert_call_why", language, reasons="; ".join(reasons)))
     return " ".join(words)
 

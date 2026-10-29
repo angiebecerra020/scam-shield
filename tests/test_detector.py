@@ -190,28 +190,15 @@ def test_request_asks_for_the_right_language_and_marks_the_transcript():
     assert fake.requests[0]["extra_body"]["chat_template_kwargs"]["enable_thinking"] is False
 
 
-def test_haitian_creole_uses_the_smart_model(monkeypatch):
-    """Haitian Creole calls go to the bigger Nemotron, everything else to the fast one."""
+def test_every_language_uses_nemotron_model(monkeypatch):
+    """English and Spanish calls both go to NEMOTRON_MODEL from .env."""
     monkeypatch.setenv("NEMOTRON_MODEL", "fast-model")
-    monkeypatch.setenv("NEMOTRON_SMART_MODEL", "smart-model")
     fake = FakeNemotron([GOOD_SCAM_ANSWER, GOOD_SCAM_ANSWER])
 
-    detector.score_call(SCAM_CALL, language="ht", client=fake)
+    detector.score_call(SCAM_CALL, language="en", client=fake)
     detector.score_call(SCAM_CALL, language="es", client=fake)
 
-    assert fake.requests[0]["model"] == "smart-model"
-    assert fake.requests[1]["model"] == "fast-model"
-
-
-def test_without_a_smart_model_everything_uses_the_fast_one(monkeypatch):
-    """If NEMOTRON_SMART_MODEL is blank, even Haitian Creole uses the fast model."""
-    monkeypatch.setenv("NEMOTRON_MODEL", "fast-model")
-    monkeypatch.setenv("NEMOTRON_SMART_MODEL", "")
-    fake = FakeNemotron([GOOD_SCAM_ANSWER])
-
-    detector.score_call(SCAM_CALL, language="ht", client=fake)
-
-    assert fake.requests[0]["model"] == "fast-model"
+    assert [request["model"] for request in fake.requests] == ["fast-model", "fast-model"]
 
 
 def test_sample_scripts_load_and_turn_into_transcripts():

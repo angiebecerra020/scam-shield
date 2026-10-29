@@ -586,7 +586,7 @@ def check_once(ticket: dict) -> None:
     ticket["latest"] = {
         "line": count,
         "result": outcome["result"],
-        "model": detector.pick_model(enrollment["family_language"], get_settings()),
+        "model": get_settings().nemotron_model,
         "seconds": round(seconds, 2),
         "research": outcome["research"],
         "alert_sent": outcome["alert_sent"],

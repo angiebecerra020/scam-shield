@@ -205,8 +205,6 @@ def test_reply_words_are_understood():
     assert read_answer(" sí, claro ") == "yes"
     assert read_answer("No thanks") == "no"
     assert read_answer("Stop") == "stop"
-    assert read_answer("Wi") == "yes"  # Haitian Creole
-    assert read_answer("Non") == "no"
     assert read_answer("") == "unclear"
 
 
@@ -223,35 +221,16 @@ def test_fake_twilio_requests_are_refused_in_live_mode(monkeypatch):
     assert status_of(enrollment_id) == "pending"
 
 
-# Haitian Creole: our phone voices can't speak it yet, so a Creole-speaking
-# senior can't be asked on our call. Creole-reading family members are fine.
+# We only speak English and Spanish. Anything else becomes English.
 
 
-def test_creole_speaking_family_gets_creole_updates():
-    """Ana reads Creole, so "Rosa said YES" comes to her in Creole."""
-    sign_up(family_language="ht")
-
-    senior_texts("YES")
-
-    assert "di WI" in DEMO_OUTBOX[-1]["body"]
-
-
-def test_creole_speaking_senior_is_turned_away_kindly():
-    """We can't speak Creole on the consent call yet, so the form says so."""
-    for phone_type in ("cell", "landline"):
-        response = sign_up(senior_language="ht", phone_type=phone_type)
-
-        assert response.status_code == 400
-        assert "English or Spanish" in response.json()["error"]
-    assert DEMO_CALL_LOG == []
-    assert DEMO_OUTBOX == []
-
-
-def test_creole_family_with_a_landline_senior_is_fine():
-    """Only the SENIOR's language is spoken. A Creole-reading family member is fine with a landline."""
-    response = sign_up(family_language="ht", phone_type="landline")
+def test_other_languages_fall_back_to_english():
+    """A sign-up that asks for a language we don't have (like Creole) gets English."""
+    response = sign_up(senior_language="ht", family_language="ht")
 
     assert response.status_code == 201
+    senior_texts("YES")
+    assert "said YES" in DEMO_OUTBOX[-1]["body"]
 
 
 # ----- We always ask with a phone call -----
@@ -304,8 +283,8 @@ def test_old_sign_ups_without_ask_by_still_show_how_we_asked():
     assert how_we_asked({"ask_by": None, "phone_type": "landline"}) == "call"
 
 
-def test_every_creole_text_matches_english():
-    """Every text message we send has a Creole version, with the same blanks to fill in."""
+def test_every_spanish_message_matches_english():
+    """Every message we send or say has a Spanish version, with the same blanks to fill in."""
     from string import Formatter
 
     from app.languages import MESSAGES, SPOKEN_LANGUAGE
@@ -313,10 +292,6 @@ def test_every_creole_text_matches_english():
     def blanks(text):
         return {name for _, name, _, _ in Formatter().parse(text) if name}
 
-    spoken_keys = {key for key in MESSAGES["en"] if key.startswith(("consent_call_", "alert_call_"))}
+    assert set(MESSAGES) == {"en", "es"} == set(SPOKEN_LANGUAGE)
     for key, english in MESSAGES["en"].items():
-        if key in spoken_keys:
-            assert key not in MESSAGES["ht"]
-            continue
-        assert blanks(MESSAGES["ht"][key]) == blanks(english), key
-    assert "ht" not in SPOKEN_LANGUAGE
+        assert blanks(MESSAGES["es"][key]) == blanks(english), key

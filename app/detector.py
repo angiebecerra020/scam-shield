@@ -51,9 +51,6 @@ ALERT_FROM = LIKELY_SCAM_FROM
 LANGUAGE_NAMES = {
     "en": "English",
     "es": "Spanish (español)",
-    # We add the name Haitian speakers use, Kreyòl ayisyen. It helps the model
-    # actually write in Creole instead of falling back to English.
-    "ht": "Haitian Creole (Kreyòl ayisyen)",
 }
 
 # If Nemotron takes longer than this many seconds, we stop waiting. That way a
@@ -152,39 +149,11 @@ Answer ONLY with JSON in exactly this shape:
                           call your loved one now.">}"""
 
 
-# Languages where we use the bigger Nemotron (NEMOTRON_SMART_MODEL in .env).
-# The fast model catches Haitian Creole scams just fine, but it writes the
-# alert in English. The bigger one writes it in real Creole.
-SMART_MODEL_LANGUAGES = ("ht",)
-
-
-def pick_model(language: str, settings) -> str:
-    """
-    Picks which Nemotron to use for a call.
-
-    We use the fast one (NEMOTRON_MODEL) for most calls. For languages in
-    SMART_MODEL_LANGUAGES we use the bigger one (NEMOTRON_SMART_MODEL), but
-    only if it's filled in, in .env.
-
-    Input:  language, a code like "en", "es" or "ht"
-            settings, from get_settings()
-    Output: the model ID to use
-
-    Examples:
-        pick_model("es", settings) gives you "nvidia/Nemotron-3_5-Lightning"
-        pick_model("ht", settings) gives you "nvidia/Nemotron-3-Ultra-550b-a55b"
-    """
-    wants_smart_model = (language or "").lower() in SMART_MODEL_LANGUAGES
-    if wants_smart_model and settings.nemotron_smart_model:
-        return settings.nemotron_smart_model
-    return settings.nemotron_model
-
-
 def language_name(language: str) -> str:
     """
     Turns a language code into a language name for Nemotron's instructions.
 
-    Input:  language, a code like "en", "es" or "ht"
+    Input:  language, a code like "en" or "es"
     Output: the name of the language. If we don't know the code, you get "English".
 
     Example:
@@ -507,7 +476,7 @@ def score_call(transcript: str, language: str = "en", client=None) -> dict:
     Input:  transcript, the call so far with one line per turn, like
             "Caller: Grandma? It's me, Danny.\\nSenior: Danny?"
             language, the language for the reasons and the family alert:
-            "en" for English, "es" for Spanish or "ht" for Haitian Creole
+            "en" for English or "es" for Spanish
             client, leave this empty in the app (the tests pass a fake one)
     Output: a result (check out the top of this file). If something goes
             wrong, the verdict is "unknown" and the reason tells you what happened.
@@ -530,8 +499,7 @@ def score_call(transcript: str, language: str = "en", client=None) -> dict:
         client = make_client()
 
     try:
-        model = pick_model(language, settings)
-        answer = ask_nemotron(client, model, build_messages(transcript, language))
+        answer = ask_nemotron(client, settings.nemotron_model, build_messages(transcript, language))
     except Exception as error:
         # We catch every error here on purpose. A problem reaching Nemotron
         # should never crash the app while someone's on the phone.

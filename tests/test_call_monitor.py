@@ -215,8 +215,8 @@ def test_unknown_call_id_gives_a_clear_error():
         call_monitor.check_live_call("no-such-call", "Caller: hi")
 
 
-def test_a_creole_family_hears_the_alert_call_in_english(monkeypatch, fake_tavily):
-    """Twilio can't speak Creole, so the alert call is in English (without the Creole reasons)."""
+def test_other_languages_hear_the_alert_call_in_english(monkeypatch, fake_tavily):
+    """A family saved with a language we don't have (like Creole) hears English, reasons and all."""
     pretend_nemotron(monkeypatch, SCAM_RESULT)
     call = make_protected_call(family_language="ht")
 
@@ -224,4 +224,4 @@ def test_a_creole_family_hears_the_alert_call_in_english(monkeypatch, fake_tavil
 
     words = alert_calls_to_family()[0]
     assert words.startswith("Scam Shield alert. Rosa may be on a scam call right now.")
-    assert "Why we're worried" not in words
+    assert "Why we're worried: " in words

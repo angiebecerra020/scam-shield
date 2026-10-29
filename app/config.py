@@ -47,9 +47,6 @@ class Settings:
     demo_mode: bool
     public_base_url: str
     database_path: str
-    # The bigger Nemotron we use when a call needs extra smarts, like writing
-    # alerts in Haitian Creole. It's optional, so it has a default (blank).
-    nemotron_smart_model: str = ""
     # Supabase handles family logins (see auth.py). Both are optional: when
     # they're blank, login is off and the dashboard is open to anyone.
     supabase_url: str = ""
@@ -145,7 +142,6 @@ def get_settings() -> Settings:
         database_path=read_text_setting(
             "DATABASE_PATH", str(PROJECT_ROOT / "data" / "scam_shield.db")
         ),
-        nemotron_smart_model=read_text_setting("NEMOTRON_SMART_MODEL"),
         # rstrip("/") so "https://abc.supabase.co/" and "https://abc.supabase.co"
         # both work when we add "/auth/v1/user" to the end.
         supabase_url=read_text_setting("SUPABASE_URL").rstrip("/"),

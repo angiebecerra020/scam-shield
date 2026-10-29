@@ -382,7 +382,7 @@ def check_demo_line(call_id: str, up_to_line: int) -> dict:
     return {
         "line": up_to_line,
         "result": outcome["result"],
-        "model": detector.pick_model(enrollment["family_language"], get_settings()),
+        "model": get_settings().nemotron_model,
         "seconds": round(seconds, 2),
         "research": outcome["research"],
         "alert_sent_now": outcome["alert_sent_now"],

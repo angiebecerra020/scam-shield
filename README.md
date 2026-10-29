@@ -38,11 +38,11 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 | 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds scam warnings that match the call. It looks at trusted sites first: the FTC, FBI, Social Security, Medicare, AARP and the BBB. | Done |
 | 3 | **AI scam score.** NVIDIA Nemotron scores the risk from 0 to 100 and explains why: gift cards, secrecy, urgency, a fake grandchild, "your Social Security number is suspended". | Done |
 | 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Done in the demo player and the test line (on screen; real texts need US carrier sign-up) |
-| 5 | **Family alert.** A phone call to the family member, in their own language (English for Creole, since our phone voices can't speak it): what's happening, the top red flags, and "To join the call, press 1." Pressing 1 puts them right into the call as a 3-way call. It goes out the first time the AI score hits 70, and the alert email (if they gave one) has a "Join call" link too. | Done (runs on live calls once the live transcript is ready) |
+| 5 | **Family alert.** A phone call to the family member, in their own language (English or Spanish): what's happening, the top red flags, and "To join the call, press 1." Pressing 1 puts them right into the call as a 3-way call. It goes out the first time the AI score hits 70, and the alert email (if they gave one) has a "Join call" link too. | Done (runs on live calls once the live transcript is ready) |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
 | 6 | **Family dashboard.** Everyone you protect, their past calls (score, reasons, who the caller said they were, and Tavily links), a "Was this a scam?" answer for each call, and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
 | 6b | **Report and block.** For a scam call, the dashboard writes up the details ready to paste into the FTC's report form ([reportfraud.ftc.gov](https://reportfraud.ftc.gov/)). The family also picks what happens if that number calls again: **warn us** (the call rings and the family is alerted the moment it starts) or **block it** (a busy signal, and it never rings). Each family has their own list. | Done |
-| 7 | **Languages.** Text alerts in English, Spanish and Haitian Creole. Haitian Creole calls use the bigger Nemotron 3 Ultra so the alert is written in real Creole. Every screen has an **English / Español** switch, and the site remembers the choice (it starts in Spanish if the phone is set to Spanish). | Done. Haitian Creole is in the sign-up menus and texts. It's text only for now (our phone voices can't speak Creole), so a Creole-speaking senior needs a cell phone. The Creole texts are waiting on a check from a native speaker. |
+| 7 | **Languages.** Alerts and phone calls in English and Spanish. Every screen has an **English / Español** switch, and the site remembers the choice (it starts in Spanish if the phone is set to Spanish). | Done. |
 | ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. The demo player replays a scripted call as a live transcript. | Done, with 20 sample calls |
 | ★ | **Test it.** Get a code at `/try`, call our Scam Shield number from your own phone, and play the scammer. Twilio turns your words into text, Nemotron scores every sentence, Scam Shield says Grandma's warning out loud on the call, and Ana's alert can be emailed to you. The same number works as "Add Scam Shield to a call": add it as a 3-way call and type the code. | Done |
 
@@ -85,7 +85,7 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 - **What we get back.** Token Factory's structured output makes Nemotron answer in an exact JSON shape: a risk score from 0 to 100, a verdict, the reasons, who the caller claims to be, and a short alert for the family written in the family's language.
 - **Fast enough for a live call.** We switch off Nemotron's step by step "thinking" mode for live checks. Each check takes about 1 second (our goal was under 3).
 - **Safe by design.** We set the verdict from the score so they never disagree, safe calls never send an alert, and if anything goes wrong we say "couldn't check" instead of guessing "safe". The transcript is treated as evidence, never as instructions, so a scammer who says "ignore your rules" just looks more like a scammer.
-- **The right Nemotron for each job.** Lightning handles the fast live checks. For Haitian Creole calls we switch to **Nemotron 3 Ultra**, which writes the reasons and the family alert in real Creole (score 95, about 2 seconds). Picking the model is one setting in `.env` (`NEMOTRON_SMART_MODEL`).
+- **A fast Nemotron for live calls.** Lightning handles the live checks, in English and Spanish. Picking the model is one setting in `.env` (`NEMOTRON_MODEL`).
 - **From score to alert.** [`app/call_monitor.py`](app/call_monitor.py) checks the call every time a new line comes in. The first time the score hits 70, we phone the family: the call says the top red flags, and pressing 1 joins them into the call (`calls.send_family_alert`). We call instead of texting because the carriers block texts from our unregistered number. It only alerts once per call, and only for seniors who said YES.
 
 **Where Token Factory sped us up:** one API key gave us the whole Nemotron family (Lightning, Super and Ultra), so trying a bigger model is a one line change in `.env`. Because it's OpenAI compatible, we didn't need a special library. And structured output meant we got clean data back on the first try instead of digging through paragraphs.
@@ -101,7 +101,7 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 | 3 tricky normal calls | the real bank checking a charge, the real grandson asking for a ride, a daughter depositing money | 15 | ✅ all safe |
 
 - **Accuracy:** 20 out of 20, about 1 second per check. These are calls we wrote ourselves, so the next step is testing with more people's scripts.
-- **Other languages:** the same grandson scam gets caught in Spanish and in Haitian Creole (score 85 each).
+- **Spanish:** the same grandson scam gets caught in Spanish (score 85).
 - **Caller research:** for the real Social Security, IRS and Medicare numbers (scammers love to fake these on caller ID), Tavily warned about scam calls every time. Scam warnings now come from places like the FBI and AARP instead of random posts.
 - **From score to alert:** playing the fake grandson call line by line, the score went from 30 to 85 and the family alert fired the moment "Danny" said he was arrested and needed bail. It fired only once, and Tavily pulled warnings from AARP, the FCC and the BBB.
 - **Tests:** more than 120 automated tests run on GitHub for every change (that's the green badge at the top).
@@ -163,7 +163,7 @@ Each of these prints PASS or FAIL:
 ```bash
 python scripts/test_nemotron.py     # Nemotron answers fast and catches a scam
 python scripts/test_tavily.py       # Tavily checks phone numbers and finds scam warnings
-python scripts/test_languages.py    # scams get caught in Spanish and Haitian Creole
+python scripts/test_languages.py    # scams get caught in Spanish
 ```
 
 ### 5. Run it
