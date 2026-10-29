@@ -108,7 +108,6 @@ Strong scam signs:
 - Says a Social Security number is "suspended" or an account is "compromised"
 - Asks for Social Security, Medicare, bank, or card numbers, passwords, or one-time codes
 - Asks to install an app or give remote access to a computer
-- Their voice "sounds different" and they have an excuse (a cold, a bad connection)
 
 Normal call signs: no request for money or private numbers, no secrecy, no threats, and details
 a real relative, friend, doctor's office, or business would know. A real relative calling to chat is safe.
