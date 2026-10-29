@@ -284,8 +284,8 @@ With `DEMO_MODE=false`, every webhook must carry Twilio's signature, so nobody c
 
 ## Team
 
-- **Angie**: product, integration, testing
-- **Cass**: builder
+- **Angie**: product, integration
+- **Cass**: builder, testing, database, UI/UX
 
 ## License
 
