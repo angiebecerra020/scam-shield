@@ -12,7 +12,7 @@
       past calls. Tap a call to see its score, reasons and Tavily links.
     - The sign-up form: a family member enters the senior's details, we text
       the senior (cell) or call them (landline), and the page waits for their
-      YES, then shows the steps to finish setup.
+      YES, then links to the steps to finish setup (setup.html).
   The live risk meter is coming in a later step.
 -->
 <!DOCTYPE html>
@@ -118,11 +118,11 @@
       <!-- Shows up if we can't reach the server while waiting for their answer -->
       <p id="consent-trouble" class="error" role="alert"></p>
 
-      <!-- Step 3: once they say YES, how to finish setting up their phone -->
+      <!-- Step 3: once they say YES, a link to the setup steps (setup.html) -->
       <div id="setup-steps" hidden>
         <h2 data-text="dash.finishTitle">Finish setting up their phone</h2>
-        <ol id="setup-list" class="steps"></ol>
-        <p id="setup-note" class="hint"></p>
+        <p class="hint" data-text="dash.finishHint">One last thing: a few quick steps on their phone.</p>
+        <a id="setup-link" class="button" href="/dashboard" data-text="dash.openSetup">Show me the steps</a>
       </div>
 
       <!-- Demo-only buttons, shown when the server is in demo mode -->

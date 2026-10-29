@@ -208,12 +208,79 @@ a {
 }
 
 /* Numbered setup steps: roomy, so each step is easy to follow */
-.steps {
-  padding-left: 1.4em;
+/* ----- Phone setup steps (setup.html) ----- */
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 8px;
 }
 
-.steps li {
-  margin-bottom: 12px;
+.setup-steps {
+  padding-left: 1.4em;
+  text-align: left;
+}
+
+.setup-steps li {
+  margin-bottom: 28px;
+}
+
+.setup-steps li::marker {
+  color: var(--color-gold);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.setup-steps h2 {
+  margin: 0 0 8px;
+  font-size: 1.3rem;
+}
+
+.setup-steps p {
+  margin: 8px 0;
+}
+
+/* A code to dial, big enough to read off one phone while typing on another */
+.dial-code {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--color-black);
+  color: var(--color-gold);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+/* The calling app link: long, so it can break anywhere */
+.setup-link {
+  display: block;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+/* Username and domain for the landline adapter */
+.setup-details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+}
+
+.setup-details dt {
+  color: var(--color-muted);
+}
+
+.setup-details dd {
+  margin: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+/* "Phone setup steps" on a senior's card in "Your family" */
+.setup-card-link {
+  display: inline-block;
+  margin: 8px 0;
 }
 
 /* ----- Calling app (phone.html) ----- */

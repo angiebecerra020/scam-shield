@@ -184,9 +184,13 @@ function seniorCard(senior) {
     makeElement("p", "hint", t("family.alertsGoTo", { name: senior.family_name, phone: senior.family_phone }))
   );
 
-  // Only seniors who said YES can be paused or turned back on.
+  // Only seniors who said YES can be paused or turned back on, and only
+  // they have phone setup steps (setup.html).
   if (senior.status === "active" || senior.status === "paused") {
     card.appendChild(pauseButton(senior));
+    const setup = makeElement("a", "setup-card-link", t("family.setupSteps"));
+    setup.href = `/setup/${senior.id}`;
+    card.appendChild(setup);
   }
   card.appendChild(seniorActions(senior));
 

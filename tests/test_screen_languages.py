@@ -28,6 +28,7 @@ PAGES = {
     "/": "/static/nav.js",
     "/login": "/static/login.js",
     "/dashboard": "/static/app.js",
+    "/setup/some-id": "/static/setup.js",
     "/join/some-token": "/static/join.js",
     "/phone/some-key": "/static/phone.js",
 }

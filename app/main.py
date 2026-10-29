@@ -14,6 +14,7 @@ Routes:
   Family logins (auth.py): routes marked [login] need a logged in family member
     GET  /login                   -> the log in and sign up page
     GET  /dashboard               -> the family dashboard
+    GET  /setup/{id}              -> steps to finish setting up their phone
     GET  /api/auth-config         -> what the browser needs to talk to Supabase
 
   Consent (consent.py): the senior must say YES before we listen
@@ -132,6 +133,19 @@ def show_dashboard() -> FileResponse:
         Open http://localhost:8000/dashboard -> you see the sign-up form.
     """
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/setup/{enrollment_id}")
+def show_setup_page(enrollment_id: str) -> FileResponse:
+    """
+    Send the page with the steps to finish setting up a senior's phone, once
+    they said YES. Its JavaScript (setup.js) reads the ID from the address
+    and asks GET /api/enrollments/{id}, which checks the login.
+
+    Example:
+        Open http://localhost:8000/setup/abc -> "Set up Rosa's phone" and 2 steps
+    """
+    return FileResponse(STATIC_DIR / "setup.html")
 
 
 @app.get("/api/auth-config")

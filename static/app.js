@@ -12,7 +12,7 @@
       (cell phone) or calls them (landline)
     - checks every few seconds whether the senior said YES
       (GET /api/enrollments/{id})
-    - once they do, shows the steps to finish setting up their phone
+    - once they do, links to the steps to finish setting up their phone
     - in demo mode, shows buttons that pretend to be the senior's phone
   Later it will show the live risk meter.
 
@@ -238,11 +238,11 @@ async function checkConsent(enrollmentId) {
 }
 
 /**
- * Show the message for an enrollment's status, the setup steps once they
+ * Show the message for an enrollment's status, the link to the setup steps once they
  * said YES, and the right demo buttons.
  *
  * Input:  enrollment — what the server sent, e.g. {status: "active", setup: {...}}
- * Example: status "active" -> "They said YES…", the setup steps, and the
+ * Example: status "active" -> "They said YES…", the "Show me the steps" link, and the
  *          "Pretend a scam call starts" button (in demo mode)
  */
 function showConsentStatus(enrollment) {
@@ -259,76 +259,8 @@ function showConsentStatus(enrollment) {
 
   const setupSteps = document.getElementById("setup-steps");
   setupSteps.hidden = status !== "active";
-  if (status === "active") {
-    showSetupSteps(enrollment);
-  }
-}
-
-/**
- * Add one numbered step to the setup list. The words come from strings.js,
- * and each {blank} is filled with plain text or a link.
- *
- * Input:  key — the step's words in strings.js
- *         blanks — what goes in each {blank}: text, or {link, label} for a link
- * Example: addStep("setup.cell2", {number: "+15555550150"})
- *          gives you  "Turn on call forwarding to +15555550150. On most phones..."
- */
-function addStep(key, blanks) {
-  const item = document.createElement("li");
-  // Splitting on the blanks keeps their names: "open {appLink}, tap" gives
-  // you ["open ", "appLink", ", tap"], with the names at the odd spots.
-  // We read the raw words, not t(key), because t() fills unknown blanks with
-  // nothing, and then the name, link and number would disappear.
-  const words = STRINGS[currentLanguage][key] ?? STRINGS.en[key] ?? key;
-  const pieces = words.split(/\{(\w+)\}/);
-  pieces.forEach((piece, index) => {
-    if (index % 2 === 0) {
-      item.append(piece);
-      return;
-    }
-    const value = blanks[piece];
-    if (typeof value === "object") {
-      const link = document.createElement("a");
-      link.href = value.link;
-      link.target = "_blank";
-      link.textContent = value.label;
-      item.appendChild(link);
-    } else {
-      item.append(value ?? "");
-    }
-  });
-  document.getElementById("setup-list").appendChild(item);
-}
-
-/**
- * Show the steps to finish setup, which depend on the kind of phone.
- *
- * Every senior's number forwards to the Scam Shield number. Then Scam Shield
- * rings a calling app (cell phone) or a phone adapter (landline), never their
- * number itself, which would just forward back to us.
- *
- * Example: a landline -> "1. Set up the adapter... 2. Dial *72... 3. Plug in..."
- */
-function showSetupSteps(enrollment) {
-  const setup = enrollment.setup;
-  const name = enrollment.senior_name;
-  const number = setup.forward_to || t("setup.yourNumber");
-  document.getElementById("setup-list").replaceChildren();
-
-  if (phoneType === "landline") {
-    addStep("setup.landline1", {
-      username: setup.adapter_username,
-      domain: setup.adapter_domain || t("setup.yourDomain"),
-    });
-    addStep("setup.landline2", { name, number });
-    addStep("setup.landline3", { name });
-    document.getElementById("setup-note").textContent = t("setup.landlineOff");
-  } else {
-    addStep("setup.cell1", { name, appLink: { link: setup.app_link, label: t("setup.cellAppLink") } });
-    addStep("setup.cell2", { name, number });
-    addStep("setup.cell3", {});
-    document.getElementById("setup-note").textContent = t("setup.cellOff");
-  }
+  // The steps themselves are on their own page (setup.html).
+  document.getElementById("setup-link").href = `/setup/${enrollment.id}`;
 }
 
 /**
