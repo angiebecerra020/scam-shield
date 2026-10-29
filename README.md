@@ -9,12 +9,12 @@
 
 **Catches scam phone calls while they're happening, and alerts the family in their own language.**
 
-Scam Shield follows a senior's phone call through a live transcript, checks the caller against the web, and uses **NVIDIA Nemotron** on **Nebius Token Factory** to spot the warning signs of a scam: gift cards, secrecy, urgency, a "grandchild" in trouble. When the risk is high, the family gets an alert right away, in their own language, with a link to join the call.
+Scam Shield follows a senior's phone call through a live transcript, checks the caller against the web, and uses **NVIDIA Nemotron** on **Nebius Token Factory** to spot the warning signs of a scam: gift cards, secrecy, urgency, a "grandchild" in trouble. When the risk is high, Scam Shield phones the family right away, in their own language, and they can press 1 to join the call.
 
 **🌐 Try it: <https://scam-shield-ity3.onrender.com>**
 - **[Watch a scam get caught](https://scam-shield-ity3.onrender.com/demo):** play a scripted scam call and watch Nemotron score it line by line. No phone or account needed.
 - **[Test it](https://scam-shield-ity3.onrender.com/try):** call our number from your own phone, play the scammer, and watch it catch you live.
-- Family sign up, log in and the family dashboard are on the same site. It runs in demo mode, so no real texts go out and the family is made up.
+- **[Family dashboard](https://scam-shield-ity3.onrender.com/dashboard):** make an account, sign someone up, and we really call them to ask for their OK. The demo page uses a made-up family; the dashboard doesn't.
 
 > 🚧 **Work in progress** for the Nebius x NVIDIA Global AI Hackathon. Parts marked *Coming soon* are being built now.
 
@@ -34,23 +34,24 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 |---|---|---|
 | 0 | **Senior's OK first.** When a family member signs someone up, we call the senior on their own phone (*"Press 1 to allow, 2 to say no"*). We used to offer a text too, but texts from our number weren't arriving, so every senior now gets the call. The sign-up form won't send until both phone numbers include the area code. Nothing is listened to until they say YES. The senior can turn it off any time by calling the Scam Shield number from their own phone and pressing **2** (*"If you want to cancel Scam Shield from listening to your conversations, press 2"*); the family can remove them from the dashboard too. | Done |
 | 0b | **Works on cell phones and landlines.** The senior keeps their number. Calls forward to Scam Shield, which rings a calling app on their cell phone or an adapter on their home phone. See [Cell phone or landline?](#cell-phone-or-landline) | Done (needs a real-phone test) |
-| 1 | **Live transcript.** The senior's calls forward to a Scam Shield number, which turns the call into text as it happens. | Working on our "Test it" phone line (Twilio live transcription). Forwarded calls coming soon |
+| 1 | **Live transcript.** The senior's calls forward to a Scam Shield number, which turns the caller's side of the call into text as it happens (Twilio live transcription). The words stay in memory during the call and are never saved. | Done, on forwarded calls and the "Test it" line |
 | 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds scam warnings that match the call. It looks at trusted sites first: the FTC, FBI, Social Security, Medicare, AARP and the BBB. | Done |
 | 3 | **AI scam score.** NVIDIA Nemotron scores the risk from 0 to 100 and explains why: gift cards, secrecy, urgency, a fake grandchild, "your Social Security number is suspended". | Done |
-| 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Done in the demo player and the test line (on screen; real texts need US carrier sign-up) |
-| 5 | **Family alert.** A phone call to the family member, in their own language (English or Spanish): what's happening, the top red flags, and "To join the call, press 1." Pressing 1 puts them right into the call as a 3-way call. It goes out the first time the AI score hits 70, and the alert email (if they gave one) has a "Join call" link too. | Done (runs on live calls once the live transcript is ready) |
+| 4 | **"Is it really you?"** If the caller claims to be family, we text the real person: *"Are you calling Grandma? YES / NO."* If they say NO, we warn the senior. | Done in the demo player and the "Test it" line (answered on screen; real texts need US carrier sign-up) |
+| 5 | **Family alert.** A phone call to the family member, in their own language (English or Spanish): what's happening, the top red flags, and "To join the call, press 1." Pressing 1 puts them right into the call as a 3-way call. It goes out the first time the AI score hits 70, and the alert email (if they gave one) has a "Join call" link too. | Done |
 | 5b | **Join the call (3-way call).** Protected calls run through a conference room. Tapping "Join call" rings the family member's own phone and adds them to the call. Everyone hears a tone when they join. | Done |
-| 6 | **Family dashboard.** Everyone you protect, grouped by who they are to you (Mom, Dad, Grandma... or Other), their past calls (score, reasons, who the caller said they were, and Tavily links), a "Was this a scam?" answer for each call, and a button to pause protection. Each family only sees the people they signed up. | Call history and pause ready, live risk meter coming soon |
+| 6 | **Family dashboard.** Everyone you protect, grouped by who they are to you (Mom, Dad, Grandma... or Other), their past calls (score, reasons, who the caller said they were, and Tavily links), a "Was this a scam?" answer for each call, and buttons to pause, call again or remove someone. A **setup page** shows the steps to finish setting up their phone, with the codes to dial in big letters. Each family only sees the people they signed up. | Done, live risk meter coming soon |
+| 6c | **Your profile.** The family member types their own name, phone, email and language once. Every sign-up uses it, and changing it updates the alerts for everyone they protect. | Done |
 | 6b | **Report and block.** For a scam call, the dashboard writes up the details ready to paste into the FTC's report form ([reportfraud.ftc.gov](https://reportfraud.ftc.gov/)). The family also picks what happens if that number calls again: **warn us** (the call rings and the family is alerted the moment it starts) or **block it** (a busy signal, and it never rings). Each family has their own list. | Done |
 | 7 | **Languages.** Alerts and phone calls in English and Spanish. Every screen has an **English / Español** switch, and the site remembers the choice (it starts in Spanish if the phone is set to Spanish). | Done. |
-| ★ | **Demo mode.** No real calls or texts go out: they're saved so you can see them. The demo player replays a scripted call as a live transcript. | Done, with 20 sample calls |
+| ★ | **Demo page.** Every demo lives on one page, in tabs: a scripted scam call played as a live transcript, plus step by step walkthroughs of adding, pausing and removing someone, and the senior turning it off. Nothing real is sent from the demo. | Done, with 20 sample calls |
 | ★ | **Test it.** Get a code at `/try`, call our Scam Shield number from your own phone, and play the scammer. Twilio turns your words into text, Nemotron scores every sentence, Scam Shield says Grandma's warning out loud on the call, and Ana's alert can be emailed to you. The same number works as "Add Scam Shield to a call": add it as a 3-way call and type the code. | Done |
 
 ## How it works
 
 ```text
   Sign-up: family enters the senior's number and phone type
-       |  we ask the SENIOR: a text (cell) or a phone call (landline)
+       |  we CALL the senior: "press 1 to allow, 2 to say no"
        |  only a YES from the senior's own phone turns protection on
        v
   Anyone calls the senior's usual number
@@ -104,7 +105,7 @@ Nemotron is the brain of Scam Shield. All of this lives in [`app/detector.py`](a
 - **Spanish:** the same grandson scam gets caught in Spanish (score 85).
 - **Caller research:** for the real Social Security, IRS and Medicare numbers (scammers love to fake these on caller ID), Tavily warned about scam calls every time. Scam warnings now come from places like the FBI and AARP instead of random posts.
 - **From score to alert:** playing the fake grandson call line by line, the score went from 30 to 85 and the family alert fired the moment "Danny" said he was arrested and needed bail. It fired only once, and Tavily pulled warnings from AARP, the FCC and the BBB.
-- **Tests:** more than 120 automated tests run on GitHub for every change (that's the green badge at the top).
+- **Tests:** more than 280 automated tests run on GitHub for every change (that's the green badge at the top).
 
 ## Learning from the family's answers
 
@@ -123,10 +124,11 @@ Today we save the answer, the score and the reasons, but **not what was said on 
 | **NVIDIA Nemotron** | The brain. Nemotron 3.5 Lightning reads the transcript, scores the scam risk, explains why, and writes the family alert in their language. |
 | **Nebius Token Factory** | Runs Nemotron for us through a fast, OpenAI compatible API with structured JSON output. |
 | **Tavily** | Real-time web search: reports about the caller's number, and scam warnings from trusted sites. |
-| **Twilio** | Phone number, forwarded calls and 3-way "Join call" calls, the senior's consent call, and the family alerts. Live call transcription and the "Is it really you?" texts are coming soon. |
+| **Twilio** | Our phone number, forwarded calls, live call transcription, 3-way "Join call" calls, the senior's consent call, the family's alert call, and the senior's calling app (Voice SDK). Real "Is it really you?" texts are coming soon. |
 | **FastAPI** (Python) | Our backend server, which also hosts the dashboard. |
 | **Supabase** | Family accounts: sign up and log in with an email and password. |
-| **Vercel** | Hosts the live site. |
+| **Gmail** | Sends the alert email with the "Join call" link. |
+| **Render** | Hosts the live site (always on, with a disk for the database). |
 
 ## Getting started
 
@@ -136,7 +138,8 @@ Today we save the answer, the score and the reasons, but **not what was said on 
 - API keys from:
   - [Nebius Token Factory](https://tokenfactory.nebius.com/) (for Nemotron)
   - [Tavily](https://app.tavily.com/)
-  - [Twilio](https://www.twilio.com/) (only for real phone calls; a trial account can't send custom text messages, so real alerts need an upgraded account)
+  - [Twilio](https://www.twilio.com/) (only for real phone calls)
+- Optional: a Gmail address with an app password (for alert emails), and a [Supabase](https://supabase.com/) project (for family logins)
 
 ### 2. Install
 
@@ -208,24 +211,33 @@ scam-shield/
 │   ├── config.py          # loads settings and API keys from .env
 │   ├── detector.py        # Nemotron scam scoring
 │   ├── call_monitor.py    # checks live calls and sends the family alert at 70 or more
+│   ├── live_calls.py      # live transcription of real forwarded calls
 │   ├── research.py        # Tavily caller checks and scam warnings
-│   ├── alerts.py          # Twilio text messages
-│   ├── consent.py         # senior's YES/NO before we ever listen
-│   ├── calls.py           # conference rooms + "Join call" 3-way calls
+│   ├── alerts.py          # Twilio client and text messages
+│   ├── email_alerts.py    # the alert email with the "Join call" link (Gmail)
+│   ├── consent.py         # senior's YES/NO before we ever listen, and "press 2 to cancel"
+│   ├── calls.py           # conference rooms, the family's alert call, "Join call" 3-way calls
 │   ├── devices.py         # rings the senior's calling app (cell) or adapter (landline)
-│   ├── storage.py         # SQLite database: sign-ups and calls
+│   ├── storage.py         # SQLite database: sign-ups, calls, scam numbers, profiles
 │   ├── phone_numbers.py   # cleans up phone numbers (+1XXXXXXXXXX)
 │   ├── twilio_security.py # checks webhooks really came from Twilio
 │   ├── auth.py            # family logins: checks Supabase login tokens
-│   ├── family.py          # family dashboard: call history, call details, pause and resume
-│   ├── verify.py          # "Is it really you?" check (coming soon)
+│   ├── profile.py         # the family member's own details, typed once
+│   ├── family.py          # family dashboard: call history, pause, report and block, who they are to you
+│   ├── call_again.py      # the Call again and Remove buttons
+│   ├── verify.py          # "Is it really you?" check
+│   ├── senior_warnings.py # the warning Grandma sees and hears during a risky call
 │   ├── languages.py       # each person's language + translations
-│   └── demo_mode.py       # loads the sample calls for the tests and the demo
-├── static/                # landing page, login, family dashboard, "Join call" page, senior's calling app, the tabs on top of every page (nav.js, header.css), and every word in English and Spanish (strings.js)
+│   ├── demo_mode.py       # loads the sample calls for the tests and the demo
+│   ├── demo_api.py        # the demo page's scam call player
+│   ├── phone_line.py      # the "Test it" phone line, and the front door for every call to our number
+│   └── site_pages.py      # privacy, terms, 404, favicon, robots.txt, sitemap
+├── static/                # landing page, login, dashboard, profile, setup steps, demo page, "Test it" page, "Join call" page, senior's calling app, the tabs on top of every page (nav.js, header.css), and every word in English and Spanish (strings.js)
 ├── data/test_scripts/     # 20 sample scam calls and normal calls (English and Spanish)
 ├── scripts/               # day one checks for Nemotron, Tavily and languages
 ├── tests/                 # automated tests (pytest)
 ├── .github/workflows/     # runs the tests on GitHub for every change
+├── render.yaml            # how Render runs the live site
 ├── .env.example           # template for your settings (no real keys)
 └── requirements.txt       # Python libraries we use
 ```
@@ -240,14 +252,16 @@ Seniors keep the phone number they already have, whether it's a cell phone or a 
 | **What rings** | Our calling app (`/phone/<link>`) on their phone | Their own home phone, plugged into a small adapter |
 | **Extra hardware** | None | A phone adapter (ATA), about $40. Homes without internet need one that uses cell data, about $100 |
 | **Their outgoing calls** | Unchanged | Go through Scam Shield and still show their own number |
-| **Turning it off** | Dial `##21#` (Verizon: `*73`), or text STOP | Plug the phone back into the wall jack and dial `*73` |
+| **Turning it off** | Dial `##21#` (Verizon: `*73`) | Plug the phone back into the wall jack and dial `*73` |
 
-**Order matters for both:** ask for their OK *before* turning on forwarding. Once forwarding is on, our consent text still arrives, but our consent call to a landline would forward back to us instead of ringing them.
+**Order matters for both:** ask for their OK *before* turning on forwarding. Once forwarding is on, our consent call would forward back to us instead of ringing them.
+
+The senior can stop Scam Shield any time without touching forwarding: they call the Scam Shield number from their own phone and press **2**.
 
 ### Setting up a cell phone
 
-1. Sign up on the dashboard and choose **Cell phone**. Under **How should we ask them?**, pick a text (the senior replies YES) or a phone call (the senior presses **1**).
-2. On the senior's phone, open the calling-app link the dashboard shows, tap **Turn on calls**, allow the microphone, and add the page to the home screen. Keep it open, since calls only ring while the page is running.
+1. Sign up on the dashboard and choose **Cell phone**. We call the senior, and they press **1** to say yes.
+2. On the dashboard, tap **Show me the steps** (or **Phone setup steps** on their card) to open the setup page. On the senior's phone, open the calling-app link it shows, tap **Turn on calls**, allow the microphone, and add the page to the home screen. Keep it open, since calls only ring while the page is running.
 3. Turn on call forwarding to the Scam Shield number. On most phones, dial `**21*` + the number + `#`. On Verizon, dial `*72` + the number.
 
 If the app isn't open (or the phone has no internet), the caller hears "the person you are calling is not available."
@@ -268,8 +282,10 @@ If the senior has a landline rather than a cell phone, there are a few extra ste
 
 Point your Twilio number's webhooks at your public URL (`PUBLIC_BASE_URL`, e.g. an ngrok address):
 
-- **A message comes in** → `POST {PUBLIC_BASE_URL}/twilio/sms` (seniors' YES/NO replies)
-- **A call comes in** → `POST {PUBLIC_BASE_URL}/twilio/voice`
+- **A call comes in** → `POST {PUBLIC_BASE_URL}/twilio/line/incoming`. This one front door handles every call to our number: calls forwarded from a protected senior's phone, a senior calling us to cancel (press 2), and the "Test it" line.
+- **A message comes in** → `POST {PUBLIC_BASE_URL}/twilio/sms` (only needed for seniors who signed up by text before we switched to calls, so their STOP replies still work)
+
+Then turn on the real calls in `.env`: `REAL_CONSENT_CALLS=true` for the senior's consent call, and `REAL_CALLS=true` for protected calls and the family's alert call. (Or set `DEMO_MODE=false` to make everything real.)
 
 For cell phones (the calling app), create an **API key** (Console → Account → API keys & tokens) and put it in `.env` as `TWILIO_API_KEY_SID` and `TWILIO_API_KEY_SECRET`.
 
@@ -283,16 +299,30 @@ With `DEMO_MODE=false`, every webhook must carry Twilio's signature, so nobody c
 
 ## What's next
 
-- Live transcription on forwarded calls, so protection is always on without the senior adding Scam Shield to the call
-- Text alerts too, once our US carrier sign-up is approved (alerts are calls and email for now)
+- A live risk meter on the dashboard, so the family can watch the score while the call is happening
+- Real "Is it really you?" texts, once our US carrier sign-up is approved
+- Text alerts too, once our US carrier sign-up is approved (alerts are calls and email for now; the "said YES" and "turned it off" notes to the family are texts, so they're blocked until then)
 - More languages: Vietnamese and Chinese
 - Trusted contact setup the family can do in two minutes from their phone
 - A phone app (App Store and Google Play), so a blocked number is blocked on the phone itself too, including texts. Today our block works on calls that come through Scam Shield, and the dashboard shows the steps to block a number in the phone's settings.
 
 ## Team
 
-- **Angie**: product, integration
-- **Cass**: builder, testing, database, UI/UX
+- **Angie**: product, AI and integration
+  - Started the project: the FastAPI server, settings, and the tests that run on GitHub for every change
+  - The scam brain: the Nemotron detector, Tavily caller research, the 20 test calls and the accuracy results
+  - The family alert at a score of 70, the demo player ("Is it really you?" and Grandma's spoken warning), and the "Test it" phone line with live transcription and alert emails
+  - Real protected calls end to end, real consent calls on the live site, and the Call again and Remove buttons
+  - Hosting on Render, one look for every page, and the privacy, terms and 404 pages
+- **Cass**: builder, database, UI/UX
+  - Consent: the senior's "press 1 to allow" call, the area code check, and "call us and press 2 to cancel"
+  - 3-way calls: the conference rooms, the "Join call" link, and the alert phone call where the family presses 1 to join
+  - Cell phones and landlines: the calling app, the landline adapter, the real caller's number, and the setup steps page
+  - The database, Supabase logins, the landing page, the profile page and the tabs on every page
+  - The family dashboard: call history, pause, "Was this a scam?", Report and block, the "Are you sure?" on Remove, and grouping by Mom, Dad, Grandma... or Other
+  - The English / Español switch on every screen, and the demo page with every demo in tabs
+
+Both of us wrote tests for what we built.
 
 ## License
 
