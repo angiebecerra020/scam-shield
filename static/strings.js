@@ -23,11 +23,9 @@ const STRINGS = {
     "nav.home": "Home",
     "nav.demo": "Live demo",
     "nav.try": "Call it yourself",
-    "nav.protect": "Protect someone",
     "nav.dashboard": "Dashboard",
     "nav.logIn": "Log in",
     "nav.logOut": "Log out",
-    "nav.menu": "Menu",
     "nav.main": "Main",
 
     // Things that can go wrong anywhere (busy.js)
@@ -296,11 +294,9 @@ const STRINGS = {
     "nav.home": "Inicio",
     "nav.demo": "Demo en vivo",
     "nav.try": "Llame usted mismo",
-    "nav.protect": "Proteger a alguien",
     "nav.dashboard": "Panel",
     "nav.logIn": "Iniciar sesión",
     "nav.logOut": "Cerrar sesión",
-    "nav.menu": "Menú",
     "nav.main": "Principal",
 
     "error.offline": "No pudimos conectar con Scam Shield. Revise su internet e intente de nuevo.",

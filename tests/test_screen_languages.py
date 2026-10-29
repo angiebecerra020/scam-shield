@@ -38,7 +38,7 @@ def words_for(language: str) -> dict[str, str]:
     Reads one language's words out of strings.js.
 
     Example:
-        words_for("es")["nav.menu"] gives you "Menú"
+        words_for("es")["nav.home"] gives you "Inicio"
     """
     # The "es" list starts at "  es: {", and the server messages after it.
     english, rest = STRINGS_JS.split("\n  es: {", 1)

@@ -75,43 +75,7 @@ svg.lucide {
   vertical-align: -0.15em;
 }
 
-/* Top bar */
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--line);
-}
-
-.wordmark {
-  color: var(--ivory);
-  font-family: var(--serif);
-  font-size: 1.35rem;
-  text-decoration: none;
-}
-
-.wordmark svg.lucide {
-  color: var(--gold);
-}
-
-.nav {
-  display: flex;
-  gap: 18px;
-}
-
-.nav a {
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 0.95rem;
-}
-
-.nav a[aria-current="page"] {
-  color: var(--gold);
-  border-bottom: 1px solid var(--gold);
-}
+/* The header at the top (logo and tabs) is styled in header.css */
 
 main {
   max-width: 1240px;
@@ -937,20 +901,6 @@ input:focus-visible {
     grid-column: auto;
     order: 0;
     padding: 28px 8px;
-  }
-}
-
-/* Phones: the logo on top and the four links on their own row underneath,
-   wrapping if they need to, so nothing ever runs off the screen */
-@media (max-width: 759px) {
-  .topbar {
-    flex-wrap: wrap;
-  }
-
-  .nav {
-    flex-wrap: wrap;
-    gap: 6px 18px;
-    width: 100%;
   }
 }
 

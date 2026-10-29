@@ -5,7 +5,8 @@
   scam live, with no real phone call.
 
   How it fits in: app/demo_api.py sends this page at /demo. It loads demo.css
-  (the look) and demo.js (the behavior). The page has the call on Rosa's
+  (the look) and demo.js (the behavior), plus nav.js and header.css for the
+  tabs at the top that every page shares. The page has the call on Rosa's
   phone, what Nemotron sees in the middle, and the phones of Ana (her
   daughter) and Danny (her grandson) on the side.
 -->
@@ -34,18 +35,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
   <link rel="stylesheet" href="/static/demo.css">
+  <link rel="stylesheet" href="/static/header.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="wordmark" href="/"><i data-lucide="shield-check" aria-hidden="true"></i> Scam Shield</a>
-    <nav class="nav" aria-label="Main">
-      <a href="/">Home</a>
-      <a href="/demo" aria-current="page">Live demo</a>
-      <a href="/try">Call it yourself</a>
-      <a href="/dashboard#protect">Protect someone</a>
-      <a href="/dashboard">Dashboard</a>
-    </nav>
-  </header>
+  <!-- The header with the logo and tabs. nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
 
   <main>
     <section class="intro">
@@ -167,6 +161,13 @@
     <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
   </footer>
 
+  <!-- The header: its words (strings.js, i18n.js), and Supabase and auth.js
+       so it can say Log in or Log out -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/nav.js"></script>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script src="/static/demo.js"></script>
 </body>

@@ -1,0 +1,190 @@
+/*
+  header.css — The look of the header at the top of every page: the logo,
+  the tabs (Home, Live demo, Call it yourself, Dashboard), the language
+  switch, and Log in / Log out.
+
+  How it fits in: nav.js builds the header, and every page that has one
+  loads this file after its own stylesheet. Those pages use two different
+  stylesheets (styles.css + theme.css, or demo.css for the demo player and
+  "Call it yourself"), so this file sets its own colors below instead of
+  borrowing either one's. That way the header looks exactly the same on
+  every page.
+
+  Phones first: the logo and Log in on one row, and the tabs in their own
+  row underneath. On bigger screens it all fits on one row.
+*/
+
+.site-header {
+  /* The same red, black and gold as the rest of the site */
+  --header-black: #1C1C1C;
+  --header-gold: #C9A227;
+  --header-gold-light: #E3C55A;
+  --header-text: #F5F5F5;
+  --header-muted: #B3B3B3;
+  --header-line: #3A3A3A;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 16px;
+  /* Keeps the header's height while nav.js is filling it in, so the page
+     doesn't jump */
+  min-height: 112px;
+  margin: 0;
+  padding: 14px 16px 0;
+  border-bottom: 1px solid var(--header-line);
+  background: var(--header-black);
+  font-family: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* The logo: gold shield and the name, which takes you Home too */
+.site-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--header-gold);
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.site-header .brand img {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+/* The language switch and Log in / Log out, at the right */
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-header .language-switch {
+  width: auto;
+  margin: 0;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--header-muted);
+  font: inherit;
+  font-size: 0.95rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* "Log in": a small gold button */
+.site-header .account-link {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+  padding: 7px 16px;
+  border: 1px solid var(--header-gold);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--header-gold);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.site-header .account-link:hover {
+  background: rgba(201, 162, 39, 0.14);
+}
+
+/* The tabs. On a phone they get their own full row under the logo, and if
+   they ever don't fit they scroll sideways instead of running off the screen. */
+.site-tabs {
+  display: flex;
+  flex-basis: 100%;
+  gap: 4px;
+  margin-top: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.site-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.site-tabs a {
+  flex-shrink: 0;
+  /* Big enough to tap easily on a phone */
+  padding: 10px 12px 12px;
+  /* The gold line under the tab you're on sits right on the header's line */
+  border-bottom: 2px solid transparent;
+  color: var(--header-muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-tabs a:first-child {
+  padding-left: 0;
+}
+
+.site-tabs a:hover {
+  color: var(--header-text);
+}
+
+/* The page you're on is gold and underlined, so you always know where you are */
+.site-tabs a[aria-current="page"] {
+  border-bottom-color: var(--header-gold);
+  color: var(--header-gold);
+  font-weight: 600;
+}
+
+.site-header a:focus-visible,
+.site-header button:focus-visible {
+  outline: 2px solid var(--header-gold-light);
+  outline-offset: 2px;
+}
+
+/* Tablets and computers: logo, then the tabs, then the tools, all on one row */
+@media (min-width: 900px) {
+  .site-header {
+    flex-wrap: nowrap;
+    min-height: 64px;
+    padding: 0 20px;
+  }
+
+  .site-tabs {
+    order: 2;
+    flex-basis: auto;
+    align-self: stretch;
+    margin: 0 auto 0 32px;
+    gap: 8px;
+  }
+
+  .site-tabs a {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+  }
+
+  .site-tabs a:first-child {
+    padding-left: 12px;
+  }
+
+  .header-tools {
+    order: 3;
+  }
+}
+
+/* Small phones: a slightly smaller logo, so it still fits on one row with
+   the language switch and "Iniciar sesión" (the longest Log in) */
+@media (max-width: 400px) {
+  .site-header .brand {
+    font-size: 1.15rem;
+  }
+
+  .site-header .account-link {
+    padding: 6px 12px;
+  }
+}

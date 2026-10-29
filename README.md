@@ -214,7 +214,7 @@ scam-shield/
 │   ├── verify.py          # "Is it really you?" check (coming soon)
 │   ├── languages.py       # each person's language + translations
 │   └── demo_mode.py       # loads the sample calls for the tests and the demo
-├── static/                # landing page, login, family dashboard, "Join call" page, senior's calling app, the header on every page (nav.js), and every word in English and Spanish (strings.js)
+├── static/                # landing page, login, family dashboard, "Join call" page, senior's calling app, the tabs on top of every page (nav.js, header.css), and every word in English and Spanish (strings.js)
 ├── data/test_scripts/     # 20 sample scam calls and normal calls (English and Spanish)
 ├── scripts/               # day one checks for Nemotron, Tavily and languages
 ├── tests/                 # automated tests (pytest)

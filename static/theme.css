@@ -39,41 +39,8 @@ h3 {
   font-weight: 600;
 }
 
-/* The header: logo on the left, links on the right, one thin line under it */
-
-body.landing .site-header,
-body.with-header .site-header {
-  max-width: none;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--line);
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--serif);
-  font-size: 1.35rem;
-  font-weight: 400;
-}
-
-.brand img {
-  width: 1.4em;
-  height: 1.4em;
-}
-
-.site-nav a:not(.button),
-.site-nav .button-link {
-  color: var(--color-muted);
-  font-size: 0.95rem;
-}
-
-.site-nav a[aria-current="page"] {
-  color: var(--color-gold);
-  text-decoration: none;
-  border-bottom: 1px solid var(--color-gold);
-}
-
+/* The English | Español switch on Join call and the calling app (the
+   header's own switch is styled in header.css) */
 .language-switch {
   color: var(--color-muted);
   font-weight: 400;
@@ -88,8 +55,7 @@ button,
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.button-outline,
-.menu-button {
+.button-outline {
   border: 1px solid var(--color-gold);
 }
 

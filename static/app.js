@@ -5,8 +5,8 @@
   family.js. It:
     - checks the family member is logged in (or sends them to /login)
     - shows "Your family" (loadFamily() in family.js)
-    - opens the sign-up form when the address ends in #protect (the
-      header's "Protect someone" link, see nav.js)
+    - opens the sign-up form when the address ends in #protect, so a
+      link can go straight to it
     - asks our server "are you running?" (GET /health) and shows the answer
     - sends the sign-up form (POST /api/enrollments), which texts the senior
       (cell phone) or calls them (landline)
@@ -384,8 +384,8 @@ async function startDashboard() {
 }
 
 /**
- * Open the sign-up form if the address ends in #protect. That's where the
- * header's "Protect someone" link goes (see nav.js).
+ * Open the sign-up form if the address ends in #protect, so a link can go
+ * straight to it.
  *
  * Input:  nothing (it reads the address)
  * Output: nothing; it opens the form, or does nothing.
@@ -413,7 +413,7 @@ document.addEventListener("language-switched", () => {
   }
 });
 
-// Tapping "Protect someone" while already on the dashboard only changes the
+// Following a #protect link while already on the dashboard only changes the
 // #part of the address, which doesn't reload the page. So we watch for it.
 window.addEventListener("hashchange", openSignupIfAsked);
 startDashboard();
