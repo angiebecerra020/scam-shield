@@ -23,7 +23,7 @@ server restarts in the middle of a call it could alert one more time, and
 that's fine for now.
 """
 
-from app import alerts, calls, detector, research, storage
+from app import alerts, calls, detector, email_alerts, research, storage
 
 # The sign-ups we protect. "active" means the senior said YES to Scam Shield.
 # "demo" is the pretend Rosa from the demo player (demo_api.py).
@@ -143,6 +143,18 @@ def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
     extra = why_text(detector_result, enrollment["family_language"])
     if extra:
         alerts.send_sms(enrollment["family_phone"], extra)
+    # Email too, if the family gave us an address. Real texts need US
+    # carrier sign-up, so for now email is how the alert really reaches them.
+    if enrollment.get("family_email"):
+        subject, body = email_alerts.alert_email(
+            enrollment["family_language"],
+            enrollment["senior_name"],
+            enrollment["family_name"],
+            detector_result,
+            calls.join_link(call),
+            real_call=True,
+        )
+        email_alerts.send_email(enrollment["family_email"], subject, body)
     ALERTED_CALL_IDS.add(call["id"])
     storage.mark_call_alerted(call["id"])
 

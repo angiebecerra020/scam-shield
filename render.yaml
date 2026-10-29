@@ -32,6 +32,14 @@ services:
       # ...except the senior's "press 1 to say YES" call, which is real
       - key: REAL_CONSENT_CALLS
         value: "true"
+      # ...and real protected calls: the calling app rings and the family can join
+      - key: REAL_CALLS
+        value: "true"
+      # Lets the senior's calling app receive calls (make one in the Twilio Console)
+      - key: TWILIO_API_KEY_SID
+        sync: false
+      - key: TWILIO_API_KEY_SECRET
+        sync: false
       # The database goes on the disk below, so it survives restarts
       - key: DATABASE_PATH
         value: /var/data/scam_shield.db

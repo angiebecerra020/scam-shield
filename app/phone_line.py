@@ -725,11 +725,25 @@ async def incoming_call(request: Request):
     form = await read_twilio_form(request)
     if form is None:
         return Response(status_code=403)
+    # A call forwarded from a signed-up senior's phone is a real protected
+    # call, not someone trying the test line. Cass's calls.py takes it from here.
+    from app import live_calls
+    senior = live_calls.find_forwarding_senior(form.get("ForwardedFrom"))
+    if senior is not None:
+        xml = calls.handle_incoming_call(
+            caller=form.get("From", ""),
+            call_sid=form.get("CallSid", ""),
+            forwarded_from=senior["senior_phone"],
+            call_token=form.get("CallToken"),
+        )
+        return Response(content=xml, media_type="application/xml")
+
     # A senior we protect calling from their own phone gets the "press 2 to
     # cancel Scam Shield" menu instead of the code question (consent.py).
     senior = consent.find_senior_calling_in(form.get("From", ""))
     if senior is not None:
         return Response(content=consent.senior_menu_twiml(senior["id"]), media_type="application/xml")
+
     if not demo_api.demo_is_on():
         return twiml(hang_up_with(SAYINGS["line_off"]))
     if not phone_under_limit(form.get("From", "")):

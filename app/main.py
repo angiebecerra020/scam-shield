@@ -66,7 +66,7 @@ from app.alerts import DEMO_OUTBOX
 from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
-from app import call_again, demo_api, phone_line, site_pages
+from app import call_again, demo_api, live_calls, phone_line, site_pages
 
 # static/ sits next to app/ in the project folder.
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -91,6 +91,9 @@ app.include_router(site_pages.router)
 
 # The dashboard's "Call them again" button lives in call_again.py.
 app.include_router(call_again.router)
+
+# Live transcription for real protected calls lives in live_calls.py.
+app.include_router(live_calls.router)
 site_pages.add_site_extras(app)
 
 
@@ -238,6 +241,8 @@ class EnrollmentForm(BaseModel):
     phone_type: str = "cell"
     # Only "call" for now. Left out, consent.py calls them.
     ask_by: str | None = None
+    # Where the family gets alerts by email (optional).
+    family_email: str | None = None
 
 
 @app.post("/api/enrollments", status_code=201)

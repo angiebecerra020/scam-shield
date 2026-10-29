@@ -43,6 +43,7 @@ WORDING = {
         "why": "Why we're worried:",
         "score": "Scam risk: {score} out of 100.",
         "watch": "Watch the call live: {link}",
+        "join": "Join the call now: {link}",
         "footer": (
             "This is a Scam Shield test call. Rosa, Ana and Danny are made up, "
             "and only you got this email."
@@ -54,6 +55,7 @@ WORDING = {
         "why": "Por qué nos preocupa:",
         "score": "Riesgo de estafa: {score} de 100.",
         "watch": "Mire la llamada en vivo: {link}",
+        "join": "Únase a la llamada ahora: {link}",
         "footer": (
             "Esta es una llamada de prueba de Scam Shield. Rosa, Ana y Danny son "
             "inventados, y solo usted recibió este correo."
@@ -95,6 +97,7 @@ def alert_email(
     family_name: str,
     detector_result: dict,
     watch_link: str,
+    real_call: bool = False,
 ) -> tuple[str, str]:
     """
     Writes the alert email: the subject line and the message.
@@ -103,7 +106,9 @@ def alert_email(
             senior_name, like "Rosa"
             family_name, who reads it, like "Ana"
             detector_result, what detector.score_call() gave back
-            watch_link, where they can watch the call live
+            watch_link, where they can watch the call live (or join it, on a real call)
+            real_call, True for a real protected call: the link joins the call,
+                       and we leave out the "this is a test" line
     Output: (subject, body)
 
     Example:
@@ -129,8 +134,12 @@ def alert_email(
     score = detector_result.get("risk_score")
     if score is not None:
         lines.append(words["score"].format(score=score))
-    lines.append(words["watch"].format(link=watch_link))
-    lines.extend(["", words["footer"], "Scam Shield"])
+    if real_call:
+        lines.append(words["join"].format(link=watch_link))
+        lines.extend(["", "Scam Shield"])
+    else:
+        lines.append(words["watch"].format(link=watch_link))
+        lines.extend(["", words["footer"], "Scam Shield"])
 
     subject = words["subject"].format(senior=senior_name)
     return subject, "\n".join(lines)

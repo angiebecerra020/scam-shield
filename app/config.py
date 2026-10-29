@@ -60,6 +60,9 @@ class Settings:
     gmail_app_password: str = ""
     # Real "press 1 to say YES" consent calls, even in demo mode (consent.py).
     real_consent_calls: bool = False
+    # Real calls for protected seniors (ringing their calling app, joining
+    # the family in), even in demo mode. The demo player stays pretend.
+    real_calls: bool = False
 
 
 def read_text_setting(name: str, default: str = "") -> str:
@@ -152,6 +155,7 @@ def get_settings() -> Settings:
         # We take the spaces out so it works however you paste it.
         gmail_app_password=read_text_setting("GMAIL_APP_PASSWORD").replace(" ", ""),
         real_consent_calls=read_true_false_setting("REAL_CONSENT_CALLS", default=False),
+        real_calls=read_true_false_setting("REAL_CALLS", default=False),
     )
 
 
