@@ -98,6 +98,15 @@
   background: rgba(201, 162, 39, 0.14);
 }
 
+/* "Logged in as ...": a long email gets cut off with "…" instead of
+   pushing the header wider than the phone */
+.site-header .account-name {
+  max-width: 16em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* The tabs. On a phone they get their own full row under the logo, and if
    they ever don't fit they scroll sideways instead of running off the screen. */
 .site-tabs {
