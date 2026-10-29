@@ -249,7 +249,10 @@ function addStep(key, blanks) {
   const item = document.createElement("li");
   // Splitting on the blanks keeps their names: "open {appLink}, tap" gives
   // you ["open ", "appLink", ", tap"], with the names at the odd spots.
-  const pieces = t(key).split(/\{(\w+)\}/);
+  // We read the raw words, not t(key), because t() fills unknown blanks with
+  // nothing, and then the name, link and number would disappear.
+  const words = STRINGS[currentLanguage][key] ?? STRINGS.en[key] ?? key;
+  const pieces = words.split(/\{(\w+)\}/);
   pieces.forEach((piece, index) => {
     if (index % 2 === 0) {
       item.append(piece);
@@ -294,7 +297,7 @@ function showSetupSteps(enrollment) {
     document.getElementById("setup-note").textContent = t("setup.landlineOff");
   } else {
     addStep("setup.cell1", { name, appLink: { link: setup.app_link, label: t("setup.cellAppLink") } });
-    addStep("setup.cell2", { number });
+    addStep("setup.cell2", { name, number });
     document.getElementById("setup-note").textContent = t("setup.cellOff");
   }
 }

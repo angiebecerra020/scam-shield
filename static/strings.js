@@ -170,10 +170,10 @@ const STRINGS = {
       "While {name}'s phone is still plugged into the wall, pick it up and dial *72 then {number}. Wait for the tone, then hang up.",
     "setup.landline3": "Unplug {name}'s phone from the wall and plug it into the adapter.",
     "setup.landlineOff": "To turn Scam Shield off later: plug the phone back into the wall and dial *73.",
-    "setup.cell1": "On {name}'s phone, open {appLink}, tap “Turn on calls”, and add it to the home screen.",
+    "setup.cell1": "On {name}'s phone, open {appLink} and tap “Turn on calls”. Then add it to the home screen, so it's always one tap away.",
     "setup.cellAppLink": "this calling app link",
     "setup.cell2":
-      "Turn on call forwarding to {number}. On most phones, dial **21* then the number then #. On Verizon, dial *72 then the number.",
+      "Send {name}'s calls through Scam Shield: on {name}'s phone, dial **21*{number}# and press call. On Verizon, dial *72{number} instead.",
     "setup.cellOff":
       "To turn Scam Shield off later: dial ##21# (Verizon: *73), or text STOP to the Scam Shield number.",
 
@@ -447,10 +447,10 @@ const STRINGS = {
     "setup.landlineOff":
       "Para apagar Scam Shield más adelante: vuelva a conectar el teléfono a la pared y marque *73.",
     "setup.cell1":
-      "En el teléfono de {name}, abra {appLink}, toque “Activar llamadas” y agréguelo a la pantalla de inicio.",
+      "En el teléfono de {name}, abra {appLink} y toque “Activar llamadas”. Luego agréguelo a la pantalla de inicio, para tenerlo siempre a mano.",
     "setup.cellAppLink": "este enlace de la aplicación de llamadas",
     "setup.cell2":
-      "Active el desvío de llamadas a {number}. En la mayoría de los teléfonos, marque **21*, luego el número y luego #. Con Verizon, marque *72 y luego el número.",
+      "Pase las llamadas de {name} por Scam Shield: en el teléfono de {name}, marque **21*{number}# y presione llamar. Con Verizon, marque *72{number}.",
     "setup.cellOff":
       "Para apagar Scam Shield más adelante: marque ##21# (Verizon: *73), o envíe STOP al número de Scam Shield.",
 
