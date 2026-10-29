@@ -111,15 +111,22 @@ def find_senior_for_call(forwarded_from: str | None) -> dict | None:
         active = [e for e in enrollments if e["status"] == "active"]
         if active:
             return active[0]
+        # A removed sign-up is only a fallback, so their calls still ring
+        # through. If the family signed them up again, use the new one.
+        not_removed = [e for e in enrollments if e["status"] != "removed"]
+        if not_removed:
+            return not_removed[0]
         if enrollments:
             return enrollments[0]
         return None
 
-    # Paused seniors count too: their calls still come to us, and we pass
-    # them straight through without listening.
-    signed_up = storage.find_enrollments_with_status(("active", "paused"))
-    if len(signed_up) == 1:
-        return signed_up[0]
+    # Paused and removed seniors count too: their calls may still come to us,
+    # and we pass them straight through without listening. We count phones,
+    # not sign-ups, since someone removed and signed up again has two.
+    signed_up = storage.find_enrollments_with_status(("active", "paused", "removed"))
+    phones = {enrollment["senior_phone"] for enrollment in signed_up}
+    if len(phones) == 1:
+        return find_senior_for_call(phones.pop())
     return None
 
 

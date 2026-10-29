@@ -141,6 +141,10 @@ const STRINGS = {
     "family.removeConfirm":
       "Are you sure you want to remove {name}? This deletes them and all their calls, and Scam Shield stops protecting them. It can't be undone.",
     "family.removeYes": "Yes, remove",
+    "family.removedCell":
+      "{name} was removed, and Scam Shield isn't listening. Their calls still ring like normal. To stop their calls going through Scam Shield at all, turn off call forwarding on their phone: dial ##21# (Verizon: *73).",
+    "family.removedLandline":
+      "{name} was removed, and Scam Shield isn't listening. Their calls still ring like normal. To finish, plug their phone back into the wall and dial *73 to turn off call forwarding.",
     "family.removeKeep": "Keep them",
     "dash.busyCallAgain": "Calling…",
     "dash.calledAgain": "We're calling them again now.",
@@ -418,6 +422,10 @@ const STRINGS = {
     "family.removeConfirm":
       "¿Está seguro de que quiere eliminar a {name}? Esto borra a esta persona y todas sus llamadas, y Scam Shield deja de protegerle. No se puede deshacer.",
     "family.removeYes": "Sí, eliminar",
+    "family.removedCell":
+      "Se eliminó a {name}, y Scam Shield no está escuchando. Sus llamadas siguen sonando como siempre. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
+    "family.removedLandline":
+      "Se eliminó a {name}, y Scam Shield no está escuchando. Sus llamadas siguen sonando como siempre. Para terminar, vuelva a conectar su teléfono a la pared y marque *73 para desactivar el desvío de llamadas.",
     "family.removeKeep": "Mantenerle",
     "dash.busyCallAgain": "Llamando…",
     "dash.calledAgain": "Le estamos llamando otra vez.",

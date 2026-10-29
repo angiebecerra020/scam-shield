@@ -4,8 +4,8 @@ call_again.py
 Two buttons on each person in "Your family" on the dashboard:
   - "Call again": if the senior missed our "press 1 to say YES" call,
     Scam Shield rings them again.
-  - "Remove": deletes the person and their call history, so the family
-    can start over.
+  - "Remove": deletes the person's call history and takes them off the
+    dashboard, so the family can start over.
 
 How it fits in: it adds one route next to Cass's sign-up routes in main.py.
 It uses her own checks (family.find_my_enrollment makes sure it's your
@@ -74,23 +74,35 @@ def call_again(enrollment_id: str, user: dict | None) -> dict:
 
 def remove_senior(enrollment_id: str, user: dict | None) -> dict:
     """
-    Deletes one senior for good: their sign-up and every call we saved for
-    them. After this, the family can sign them up again from scratch.
+    Removes one senior for good: we stop listening, delete every call we
+    saved for them and the family's contact details, and take them off the
+    dashboard. After this, the family can sign them up again from scratch.
+
+    We keep a small "removed" record (their number and their phone's device
+    name) instead of deleting the sign-up, because their phone may still
+    forward calls to us until someone turns forwarding off. With the record,
+    calls.py keeps ringing their phone like normal, without listening. With
+    nothing, they'd hear "not set up" and miss every call.
 
     Input:  enrollment_id, which senior
             user, who's logged in (None when login is off)
-    Output: {"removed": the senior's name}
+    Output: {"removed": the senior's name, "phone_type": "cell" or "landline"}
+            (the dashboard uses phone_type to show how to turn forwarding off)
     Raises: family.FamilyError (404) if it isn't yours
 
     Example:
-        remove_senior("abc", {"id": "user-ana"}) gives you {"removed": "Rosa"}
+        remove_senior("abc", {"id": "user-ana"}) gives you
+        {"removed": "Rosa", "phone_type": "cell"}
     """
     enrollment = family.find_my_enrollment(enrollment_id, user)
     with storage.connect() as db:
         db.execute("DELETE FROM calls WHERE enrollment_id = ?", (enrollment_id,))
-        db.execute("DELETE FROM enrollments WHERE id = ?", (enrollment_id,))
+        db.execute(
+            "UPDATE enrollments SET status = 'removed', family_name = '', family_phone = '' WHERE id = ?",
+            (enrollment_id,),
+        )
     CALLED_AGAIN.pop(enrollment_id, None)
-    return {"removed": enrollment["senior_name"]}
+    return {"removed": enrollment["senior_name"], "phone_type": enrollment["phone_type"]}
 
 
 @router.delete("/api/enrollments/{enrollment_id}")
@@ -99,7 +111,7 @@ def remove_senior_route(enrollment_id: str, user: dict | None = Depends(require_
     The dashboard's red Remove button.
 
     Example:
-        DELETE /api/enrollments/abc gives you {"removed": "Rosa"}
+        DELETE /api/enrollments/abc gives you {"removed": "Rosa", "phone_type": "cell"}
     """
     try:
         return remove_senior(enrollment_id, user)

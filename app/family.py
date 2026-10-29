@@ -78,6 +78,7 @@ def owns(enrollment: dict, user: dict | None) -> bool:
 def my_enrollments(user: dict | None) -> list[dict]:
     """
     Gets every senior the logged in family member signed up, newest first.
+    Seniors they removed (call_again.py) aren't included.
 
     Input:  user, the same as owns()
     Output: a list of enrollments from storage
@@ -86,8 +87,10 @@ def my_enrollments(user: dict | None) -> list[dict]:
         my_enrollments({"id": "user-ana"}) gives you [rosa]
     """
     if user is None:
-        return storage.find_all_enrollments()
-    return storage.find_enrollments_for_owner(user["id"])
+        enrollments = storage.find_all_enrollments()
+    else:
+        enrollments = storage.find_enrollments_for_owner(user["id"])
+    return [enrollment for enrollment in enrollments if enrollment["status"] != "removed"]
 
 
 def find_my_enrollment(enrollment_id: str, user: dict | None) -> dict:
@@ -106,7 +109,8 @@ def find_my_enrollment(enrollment_id: str, user: dict | None) -> dict:
         find_my_enrollment("abc", {"id": "user-ana"}) gives you Rosa's sign-up
     """
     enrollment = storage.get_enrollment(enrollment_id)
-    if enrollment is None or not owns(enrollment, user):
+    # A removed senior is gone as far as the family is concerned.
+    if enrollment is None or enrollment["status"] == "removed" or not owns(enrollment, user):
         raise FamilyError("We couldn't find that sign-up.", 404)
     return enrollment
 

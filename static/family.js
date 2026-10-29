@@ -260,12 +260,31 @@ function seniorActions(senior) {
       note.textContent = data.error;
       return;
     }
+    showRemovedNotice(data);
     await loadFamily();
   });
 
   const box = makeElement("div", "senior-actions");
   box.append(wrapper, question, note);
   return box;
+}
+
+/**
+ * After a Remove, say what's left to do: their phone still forwards calls
+ * to Scam Shield (we let them ring through without listening) until
+ * someone turns forwarding off.
+ *
+ * Input:  removed — what DELETE /api/enrollments/{id} sent back,
+ *                   e.g. {removed: "Rosa", phone_type: "cell"}
+ * Output: nothing; it shows the note above "Your family".
+ * Example: showRemovedNotice({removed: "Rosa", phone_type: "cell"})
+ *          gives you  "Rosa was removed... dial ##21# (Verizon: *73)."
+ */
+function showRemovedNotice(removed) {
+  const key = removed.phone_type === "landline" ? "family.removedLandline" : "family.removedCell";
+  const notice = document.getElementById("family-notice");
+  notice.textContent = t(key, { name: removed.removed });
+  notice.hidden = false;
 }
 
 /**
