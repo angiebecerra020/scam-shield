@@ -115,6 +115,9 @@
       <h2><span data-text="dash.settingUp">Setting up Scam Shield for</span> <span id="senior-name"></span></h2>
       <!-- aria-live makes screen readers announce the status when it changes -->
       <p id="consent-message" aria-live="polite"></p>
+      <!-- Shown while we wait for them to press 1, in case they missed the call -->
+      <button type="button" id="call-again" class="button-outline" hidden data-text="dash.callAgain">Call them again</button>
+      <p id="call-again-result" class="hint" aria-live="polite"></p>
       <!-- Shows up if we can't reach the server while waiting for their answer -->
       <p id="consent-trouble" class="error" role="alert"></p>
 

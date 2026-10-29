@@ -226,6 +226,8 @@ function showConsentStatus(enrollment) {
     : status;
   document.getElementById("demo-reply-yes").hidden = status !== "pending";
   document.getElementById("demo-scam-call").hidden = status !== "active";
+  // "Call them again" only makes sense while we're still waiting on a call.
+  document.getElementById("call-again").hidden = !(status === "pending" && askBy === "call");
 
   const setupSteps = document.getElementById("setup-steps");
   setupSteps.hidden = status !== "active";
@@ -295,6 +297,21 @@ function showSetupSteps(enrollment) {
     addStep("setup.cell2", { number });
     document.getElementById("setup-note").textContent = t("setup.cellOff");
   }
+}
+
+/**
+ * Rings the senior again with the "press 1 to say YES" call, in case they
+ * missed it. The server limits how often (call_again.py).
+ *
+ * Example: tap "Call them again"  gives you  "We're calling them again now."
+ */
+async function callAgain() {
+  const button = document.getElementById("call-again");
+  const result = document.getElementById("call-again-result");
+  setBusy(button, t("dash.busyCallAgain"));
+  const answer = await sendRequest(`/api/enrollments/${enrollmentId}/call-again`, { method: "POST" });
+  setReady(button);
+  result.textContent = answer.ok ? t("dash.calledAgain") : answer.data.error;
 }
 
 /**
@@ -403,6 +420,7 @@ document.getElementById("signup-form").addEventListener("change", checkAskBy);
 // old values back only after the "reset" event, so we check right after it.
 document.getElementById("signup-form").addEventListener("reset", () => setTimeout(checkAskBy));
 document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
+document.getElementById("call-again").addEventListener("click", callAgain);
 document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);
 // When they flip the language switch, redraw the words this file made.
 // (i18n.js already translated everything marked with data-text.)
