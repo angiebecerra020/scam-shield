@@ -12,7 +12,8 @@ with no real phone call. You pick one of our test calls, and this file:
      (detector.py), Tavily (research.py) and the family alert (call_monitor.py)
   3. runs the "Is it really you?" check (verify.py) and Grandma's warning
      (senior_warnings.py)
-  4. hands everything back to the page, including the texts Ana and Danny get
+  4. hands everything back to the page, including Ana's alert call and the
+     texts Danny gets
 
 It only works in demo mode, so it can never text or call a real person. And
 since the hosted demo uses our real Nemotron and Tavily credits, each visitor
@@ -30,7 +31,7 @@ from pydantic import BaseModel
 from app import alerts, call_monitor, calls, detector, senior_warnings, storage, verify
 from app.config import PROJECT_ROOT, get_settings
 from app.demo_mode import list_scripts, transcript_text
-from app.languages import pick_language
+from app.languages import message, pick_language
 
 router = APIRouter()
 
@@ -245,18 +246,33 @@ def forget_old_sessions() -> None:
 
 def new_texts(session: dict) -> dict:
     """
-    Gets the texts Ana and Danny got since the last time we looked.
+    Gets what showed up on Ana's and Danny's phones since the last time we looked.
 
-    In demo mode texts don't really go out. They're saved in the demo outbox
-    (alerts.DEMO_OUTBOX), so we pick out the new ones for this call's phones.
+    In demo mode nothing really goes out. Texts are saved in the demo outbox
+    (alerts.DEMO_OUTBOX), and Ana's alert call in calls.DEMO_CALL_LOG, so we
+    pick out the new ones for this call's phones. The alert call shows up
+    on Ana's phone with the words she'd hear.
 
     Input:  session, one demo call from SESSIONS
-    Output: {"family": [texts for Ana], "contact": [texts for Danny]}
+    Output: {"family": [what Ana got], "contact": [texts for Danny]}
 
     Example:
-        Right after the alert, you get {"family": ["Scam Shield ALERT: ...",
-        "Why we're worried: ..."], "contact": []}
+        Right after the alert, you get {"family": ["📞 Scam Shield ALERT call:
+        “Scam Shield alert. Rosa may be on a scam call right now...”"], "contact": []}
     """
+    texts = {"family": [], "contact": []}
+    family_phone = session["enrollment"]["family_phone"]
+
+    call_log = calls.DEMO_CALL_LOG
+    # Same as the outbox below: start over if the tests emptied it.
+    if session["calls_seen"] > len(call_log):
+        session["calls_seen"] = 0
+    for placed in call_log[session["calls_seen"]:]:
+        if placed["who"] == "alert" and placed["to"] == family_phone:
+            language = calls.alert_call_language(session["enrollment"])
+            texts["family"].append(message("alert_call_demo", language, words=placed["says"]))
+    session["calls_seen"] = len(call_log)
+
     outbox = alerts.DEMO_OUTBOX
     # If the outbox got emptied (the tests do that), start counting from the top again.
     if session["outbox_seen"] > len(outbox):
@@ -265,9 +281,7 @@ def new_texts(session: dict) -> dict:
     fresh = outbox[session["outbox_seen"]:]
     session["outbox_seen"] = len(outbox)
 
-    family_phone = session["enrollment"]["family_phone"]
     contact_phone = session["contacts"][0]["phone"]
-    texts = {"family": [], "contact": []}
     for text in fresh:
         if text["to"] == family_phone:
             texts["family"].append(text["body"])
@@ -303,6 +317,7 @@ def start_demo_call(script_id: str, family_language: str) -> dict:
         "enrollment": enrollment,
         "contacts": contacts,
         "outbox_seen": len(alerts.DEMO_OUTBOX),
+        "calls_seen": len(calls.DEMO_CALL_LOG),
         "warned": False,
         "started": time.time(),
     }
@@ -345,7 +360,7 @@ def check_demo_line(call_id: str, up_to_line: int) -> dict:
 
     Example:
         check_demo_line("abc", 3) after "I got arrested, I need bail money"
-        gives you a score around 85, alert_sent True, and Ana's alert texts
+        gives you a score around 85, alert_sent True, and Ana's alert call
     """
     session = find_session(call_id)
     script = session["script"]

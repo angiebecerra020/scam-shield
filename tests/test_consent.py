@@ -313,7 +313,7 @@ def test_every_creole_text_matches_english():
     def blanks(text):
         return {name for _, name, _, _ in Formatter().parse(text) if name}
 
-    spoken_keys = {key for key in MESSAGES["en"] if key.startswith("consent_call_")}
+    spoken_keys = {key for key in MESSAGES["en"] if key.startswith(("consent_call_", "alert_call_"))}
     for key, english in MESSAGES["en"].items():
         if key in spoken_keys:
             assert key not in MESSAGES["ht"]

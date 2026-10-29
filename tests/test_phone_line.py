@@ -278,7 +278,7 @@ def test_scam_words_alert_email_and_warn_on_the_call(pretend_ai, inbox):
     assert seen["latest"]["result"]["risk_score"] == 92
     assert seen["latest"]["alert_sent"] is True
     assert seen["latest"]["verify"]["contact_name"] == "Danny"
-    assert seen["texts"]["family"][0].startswith("Scam Shield")
+    assert seen["texts"]["family"][0].startswith("📞 Scam Shield ALERT call")
     assert seen["senior_warning"]["kind"] == "scam_likely"
     assert seen["email"] == {"asked": True, "status": "sent"}
 

@@ -14,10 +14,12 @@ Instead, every phone joins the same Twilio conference room:
 
 A plain two-person call can't take a third person later, but a conference
 room can. So when the detector (detector.py) decides the call looks like a
-scam, it calls send_family_alert(). The family gets a text with a secret
-"Join call" link. Tapping it makes Twilio ring the FAMILY MEMBER'S OWN phone
-and put them in the room. Everyone hears a short tone when they join, so
-nobody is listening in secret.
+scam, it calls send_family_alert(). That PHONES the family member (texts
+from our number get blocked by the carriers), says why we're worried, and
+asks them to press 1 to join. Pressing 1 puts them right in the room. The
+alert email has a "Join call" link too: tapping it makes Twilio ring the
+FAMILY MEMBER'S OWN phone and put them in the room. Everyone hears a short
+tone when they join, so nobody is listening in secret.
 
 We ring the senior on their private DEVICE (a calling app on a cell phone,
 or an adapter on a landline; see devices.py), never on their own number:
@@ -39,16 +41,17 @@ In demo mode we never place real calls; we record what we would have done in
 DEMO_CALL_LOG instead.
 """
 
+import json
 import secrets
 from datetime import datetime, timedelta, timezone
 
 from twilio.twiml.voice_response import VoiceResponse
 
 from app import storage
-from app.alerts import send_sms, twilio_client
+from app.alerts import twilio_client
 from app.config import get_settings
 from app.devices import device_address, dial_device
-from app.languages import message
+from app.languages import SPOKEN_LANGUAGES, message, spoken_language
 from app.phone_numbers import normalize_phone
 
 # Calls we "placed" while DEMO_MODE=true. Each one is a dict like
@@ -59,6 +62,8 @@ DEMO_CALL_LOG: list[dict] = []
 SENIOR_RING_SECONDS = 25
 # Wait this long before ringing the family again if they tap the link twice.
 FAMILY_RING_COOLDOWN = timedelta(seconds=60)
+# How many of the detector's reasons we read out on the alert call.
+ALERT_CALL_REASONS = 2
 
 
 class JoinError(Exception):
@@ -417,7 +422,7 @@ def handle_conference_status(conference_name: str, event: str) -> None:
 
 def join_link(call: dict) -> str:
     """
-    The "Join call" link we text to the family.
+    The "Join call" link we put in the family's alert email.
 
     Example:
         join_link(call)  ->  "https://abc.ngrok.app/join/Xy7..."
@@ -425,31 +430,199 @@ def join_link(call: dict) -> str:
     return public_url(f"/join/{call['join_token']}")
 
 
+def alert_call_language(enrollment: dict) -> str:
+    """
+    The language we SPEAK on the alert call: the family's, if Twilio can
+    speak it, otherwise English (Twilio has no Creole voice).
+
+    Example:
+        alert_call_language({"family_language": "ht", ...})  ->  "en"
+    """
+    language = enrollment["family_language"]
+    return language if language in SPOKEN_LANGUAGES else "en"
+
+
+def alert_call_words(call: dict, enrollment: dict) -> str:
+    """
+    What the family member hears first on the alert call: who may be getting
+    scammed, and why we think so (or that it's a number they reported).
+
+    Input:  call — the live call (from storage), with the detector's reasons
+            enrollment — the senior's sign-up
+    Output: the words to say, before "To join the call, press 1..."
+
+    Example:
+        alert_call_words(call, rosa)
+        ->  "Scam Shield alert. Rosa may be on a scam call right now.
+             Why we're worried: Claims to be her grandson; Asks for gift cards."
+    """
+    language = alert_call_language(enrollment)
+    name = enrollment["senior_name"]
+    words = [message("alert_call_prompt", language, senior_name=name)]
+    if call.get("scam_list") == "warn":
+        words.append(message("alert_call_reported", language, senior_name=name))
+    else:
+        reasons = json.loads(call.get("reasons") or "[]")[:ALERT_CALL_REASONS]
+        # The reasons are written in the family's language, so we only read
+        # them out if that's the language we're speaking.
+        if reasons and language == enrollment["family_language"]:
+            words.append(message("alert_call_why", language, reasons="; ".join(reasons)))
+    return " ".join(words)
+
+
 def send_family_alert(call: dict) -> None:
     """
-    Text the family member that the senior may be on a scam call, with the
-    "Join call" link, in the family member's language.
+    Phone the family member: the senior may be on a scam call right now, and
+    they can press 1 to join it. When they pick up, Twilio asks us what to
+    say (family_alert_twiml).
 
-    detector.py will call this when the scam score gets high.
+    We call instead of texting because the carriers block texts from our
+    Twilio number until it's registered.
 
     Input:  call — the live call (from storage)
-    Output: nothing
+    Output: nothing. In demo mode, and always for the demo player's made up
+            Rosa, the call goes into DEMO_CALL_LOG instead, with its words.
 
     Example:
         send_family_alert(call)
-        ->  Ana gets "Scam Shield ALERT: Rosa may be on a scam call right now.
-                      Tap to join the call: https://.../join/Xy7..."
+        ->  Ana's phone rings: "Scam Shield alert. Rosa may be on a scam call
+            right now... To join the call, press 1. To hang up, press 2."
     """
+    # Read it again, for the reasons and scam list saved since it started.
+    call = storage.get_call(call["id"]) or call
     enrollment = storage.get_enrollment(call["enrollment_id"])
-    send_sms(
-        enrollment["family_phone"],
-        message(
-            "family_alert",
-            enrollment["family_language"],
-            senior_name=enrollment["senior_name"],
-            join_link=join_link(call),
-        ),
+    settings = get_settings()
+
+    # The demo player's family has made up 555 numbers, so never really call them.
+    if enrollment["status"] == "demo" or (settings.demo_mode and not settings.real_calls):
+        language = alert_call_language(enrollment)
+        DEMO_CALL_LOG.append(
+            {
+                "to": enrollment["family_phone"],
+                "who": "alert",
+                "conference": call["conference_name"],
+                "says": alert_call_words(call, enrollment) + " " + message("alert_call_question", language),
+            }
+        )
+        print(f"[demo mode] would call {enrollment['family_phone']} with the scam alert")
+        return
+
+    twilio_client().calls.create(
+        to=enrollment["family_phone"],
+        from_=settings.twilio_phone_number,
+        url=public_url(f"/twilio/family-alert?call_id={call['id']}"),
     )
+
+
+def joinable_call(call_id: str) -> tuple[dict | None, dict | None]:
+    """
+    The call and enrollment behind an alert call, if the family can still
+    join it: the call is going, and the senior still has Scam Shield on.
+
+    Output: (call, enrollment), or (None, None) if it can't be joined.
+
+    Example:
+        joinable_call("abc")  ->  ({"status": "live", ...}, {"senior_name": "Rosa", ...})
+    """
+    call = storage.get_call(call_id)
+    if call is None or call["status"] != "live":
+        return None, None
+    enrollment = storage.get_enrollment(call["enrollment_id"])
+    if enrollment is None or enrollment["status"] != "active":
+        return None, None
+    return call, enrollment
+
+
+def family_alert_twiml(call_id: str, attempt: int = 1) -> str:
+    """
+    What the family member hears when they pick up the alert call.
+
+    We ask twice. If they still don't press anything, we say goodbye (the
+    alert email's "Join call" link still works after that).
+
+    Input:  call_id — which protected call this alert is about
+            attempt — 1 the first time, 2 when we ask again
+    Output: TwiML that says the alert and listens for one key press
+
+    Example:
+        family_alert_twiml("abc")
+        ->  '<Response><Gather numDigits="1" ...><Say>Scam Shield alert. Rosa...</Say>...'
+    """
+    response = VoiceResponse()
+    call, enrollment = joinable_call(call_id)
+    if call is None:
+        # The scam call ended before they picked up. Nothing to join.
+        response.say(message("alert_call_ended", "en"), language=spoken_language("en"))
+        response.hangup()
+        return str(response)
+
+    language = alert_call_language(enrollment)
+    voice = spoken_language(language)
+    gather = response.gather(
+        num_digits=1,
+        timeout=8,
+        action=public_url(f"/twilio/family-alert-answer?call_id={call_id}"),
+    )
+    gather.say(alert_call_words(call, enrollment), language=voice)
+    gather.say(message("alert_call_question", language), language=voice)
+
+    # Only reached if they didn't press anything.
+    if attempt < 2:
+        response.redirect(public_url(f"/twilio/family-alert?call_id={call_id}&attempt=2"))
+    else:
+        response.say(message("alert_call_goodbye", language), language=voice)
+        response.hangup()
+    return str(response)
+
+
+def handle_alert_digits(call_id: str, called_phone: str, digits: str) -> str:
+    """
+    Act on the key the family member pressed on the alert call.
+
+    1 puts them straight into the senior's call (a 3-way call), and everyone
+    hears a tone as they join. 2 hangs up. The press only counts if it came
+    on our call TO the family's own phone.
+
+    Input:  call_id      — which protected call
+            called_phone — the number we called (Twilio's "To")
+            digits       — the key they pressed
+    Output: TwiML: what they hear next
+
+    Examples:
+        handle_alert_digits("abc", "+13055550101", "1")  ->  "Connecting you now..." and Ana is in the call
+        handle_alert_digits("abc", "+13055550101", "7")  ->  asks again
+    """
+    response = VoiceResponse()
+    call, enrollment = joinable_call(call_id)
+    if call is None:
+        response.say(message("alert_call_ended", "en"), language=spoken_language("en"))
+        response.hangup()
+        return str(response)
+    if normalize_phone(called_phone or "") != enrollment["family_phone"]:
+        response.hangup()
+        return str(response)
+
+    language = alert_call_language(enrollment)
+    voice = spoken_language(language)
+
+    if digits == "1":
+        response.say(message("alert_call_joining", language), language=voice)
+        dial = response.dial()
+        dial.conference(
+            call["conference_name"],
+            # Same as the "Join call" link: everyone hears a tone, and if the
+            # family member hangs up, the senior's call keeps going.
+            beep="onEnter",
+            start_conference_on_enter=True,
+            end_conference_on_exit=False,
+        )
+        storage.mark_family_called(call["id"])
+    elif digits == "2":
+        response.say(message("alert_call_bye", language), language=voice)
+        response.hangup()
+    else:
+        response.redirect(public_url(f"/twilio/family-alert?call_id={call_id}&attempt=2"))
+    return str(response)
 
 
 def reported_number_action(enrollment: dict, caller: str) -> str | None:
@@ -509,8 +682,7 @@ def record_blocked_call(enrollment: dict, caller: str, call_sid: str) -> dict:
 def warn_about_reported_number(call: dict, enrollment: dict) -> None:
     """
     Alert the family the moment a number they reported calls, without waiting
-    for Nemotron: the family alert with the "Join call" link, then a text
-    saying it's a number they reported.
+    for Nemotron: the alert call says it's a number they reported.
 
     We save that we alerted them, so call_monitor.py doesn't send the alert
     again once Nemotron scores the call.
@@ -520,21 +692,13 @@ def warn_about_reported_number(call: dict, enrollment: dict) -> None:
     Output: nothing
 
     Example:
-        Ana gets "Scam Shield ALERT: Rosa may be on a scam call right now..."
-        and "Scam Shield: the number calling Rosa (+13055550142) is one you reported as a scam."
+        Ana's phone rings: "Scam Shield alert. Rosa may be on a scam call right
+        now. The number calling Rosa is one you reported as a scam..."
     """
-    send_family_alert(call)
-    send_sms(
-        enrollment["family_phone"],
-        message(
-            "reported_number_calling",
-            enrollment["family_language"],
-            senior_name=enrollment["senior_name"],
-            caller=call["caller_number"],
-        ),
-    )
-    storage.mark_call_alerted(call["id"])
+    # Saved first, so the alert call knows to say it's a reported number.
     storage.mark_call_scam_list(call["id"], "warn")
+    send_family_alert(call)
+    storage.mark_call_alerted(call["id"])
 
 
 def find_live_call(join_token: str) -> tuple[dict, dict]:

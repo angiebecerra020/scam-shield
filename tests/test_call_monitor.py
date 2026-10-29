@@ -105,26 +105,33 @@ def make_protected_call(status: str = "active", family_language: str = "en") -> 
     return calls.start_protected_call(enrollment, caller="+13055550142", call_sid="demo")
 
 
-def texts_to_family() -> list[str]:
-    """Gives you every text the family (Ana) got in the demo outbox."""
-    return [text["body"] for text in alerts.DEMO_OUTBOX if text["to"] == "+13055550101"]
+def alert_calls_to_family() -> list[str]:
+    """Gives you what the family (Ana) would hear on each alert call we "placed"."""
+    return [
+        placed["says"]
+        for placed in calls.DEMO_CALL_LOG
+        if placed["who"] == "alert" and placed["to"] == "+13055550101"
+    ]
 
 
-def test_high_score_sends_the_join_call_alert_and_the_why_text(monkeypatch, fake_tavily):
-    """A score of 92 sends Ana the alert with the Join call link, then the reason."""
+def test_high_score_calls_the_family_with_the_why_and_press_1(monkeypatch, fake_tavily):
+    """A score of 92 phones Ana: what's happening, why, and press 1 to join. No texts."""
     pretend_nemotron(monkeypatch, SCAM_RESULT)
     call = make_protected_call()
 
     outcome = call_monitor.check_live_call(call["id"], "Caller: Grandma, buy gift cards.")
 
-    family_texts = texts_to_family()
+    words = alert_calls_to_family()
     assert outcome["alert_sent_now"] is True
-    assert "/join/" in family_texts[0]
-    assert family_texts[1].startswith("Why we're worried: ")
+    assert len(words) == 1
+    assert "Rosa may be on a scam call right now" in words[0]
+    assert "Why we're worried: Asks for gift cards; Says don't tell Mom." in words[0]
+    assert "To join the call, press 1" in words[0]
+    assert alerts.DEMO_OUTBOX == []
 
 
 def test_family_only_gets_the_alert_once(monkeypatch, fake_tavily):
-    """Checking the same scam call again doesn't text the family again."""
+    """Checking the same scam call again doesn't call the family again."""
     pretend_nemotron(monkeypatch, SCAM_RESULT)
     call = make_protected_call()
 
@@ -133,7 +140,7 @@ def test_family_only_gets_the_alert_once(monkeypatch, fake_tavily):
 
     assert second["alert_sent_now"] is False
     assert second["alert_sent"] is True
-    assert len(texts_to_family()) == 2
+    assert len(alert_calls_to_family()) == 1
 
 
 def test_safe_call_sends_nothing_and_skips_tavily(monkeypatch, fake_tavily):
@@ -144,7 +151,7 @@ def test_safe_call_sends_nothing_and_skips_tavily(monkeypatch, fake_tavily):
     outcome = call_monitor.check_live_call(call["id"], "Caller: Hi Grandma, it's Sofia!")
 
     assert outcome["alert_sent_now"] is False
-    assert texts_to_family() == []
+    assert alert_calls_to_family() == []
     assert fake_tavily["searches"] == 0
 
 
@@ -156,7 +163,7 @@ def test_no_alert_if_the_senior_never_said_yes(monkeypatch, fake_tavily):
     outcome = call_monitor.check_live_call(call["id"], "Caller: Grandma, buy gift cards.")
 
     assert outcome["alert_sent_now"] is False
-    assert texts_to_family() == []
+    assert alert_calls_to_family() == []
 
 
 def test_no_alert_after_the_call_ended(monkeypatch, fake_tavily):
@@ -192,14 +199,14 @@ def test_tavily_only_searches_once_per_call(monkeypatch, fake_tavily):
 
 
 def test_spanish_family_gets_spanish(monkeypatch, fake_tavily):
-    """If Ana reads Spanish, Nemotron writes in Spanish and the why text is in Spanish."""
+    """If Ana speaks Spanish, Nemotron writes in Spanish and the alert call is in Spanish."""
     languages_asked = pretend_nemotron(monkeypatch, SCAM_RESULT)
     call = make_protected_call(family_language="es")
 
     call_monitor.check_live_call(call["id"], "Caller: Abuela, compra tarjetas de regalo.")
 
     assert languages_asked == ["es"]
-    assert texts_to_family()[1].startswith("Por qué nos preocupa: ")
+    assert "Por qué nos preocupa: " in alert_calls_to_family()[0]
 
 
 def test_unknown_call_id_gives_a_clear_error():
@@ -208,6 +215,13 @@ def test_unknown_call_id_gives_a_clear_error():
         call_monitor.check_live_call("no-such-call", "Caller: hi")
 
 
-def test_the_why_text_is_in_creole_for_a_creole_family():
-    """A family member who reads Creole gets "Poukisa nou enkyete" with the red flags."""
-    assert call_monitor.why_text(SCAM_RESULT, "ht").startswith("Poukisa nou enkyete: ")
+def test_a_creole_family_hears_the_alert_call_in_english(monkeypatch, fake_tavily):
+    """Twilio can't speak Creole, so the alert call is in English (without the Creole reasons)."""
+    pretend_nemotron(monkeypatch, SCAM_RESULT)
+    call = make_protected_call(family_language="ht")
+
+    call_monitor.check_live_call(call["id"], "Caller: Grandma, buy gift cards.")
+
+    words = alert_calls_to_family()[0]
+    assert words.startswith("Scam Shield alert. Rosa may be on a scam call right now.")
+    assert "Why we're worried" not in words

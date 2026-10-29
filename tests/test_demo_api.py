@@ -166,8 +166,10 @@ def test_scam_line_alerts_ana_asks_danny_and_warns_rosa(pretend_ai):
     result = check(call["call_id"], 3)
 
     assert result["alert_sent_now"] is True
-    assert "/join/" in result["texts"]["family"][0]
-    assert result["texts"]["family"][1].startswith("Why we're worried: ")
+    # Ana's alert is a phone call now, shown on her phone with what she hears.
+    assert result["texts"]["family"][0].startswith("📞 Scam Shield ALERT call: ")
+    assert "Why we're worried: " in result["texts"]["family"][0]
+    assert "press 1" in result["texts"]["family"][0]
     assert result["verify"]["contact_name"] == "Danny"
     assert result["verify"]["answer"] is None
     assert "Is that really you?" in result["texts"]["contact"][0]
@@ -176,7 +178,7 @@ def test_scam_line_alerts_ana_asks_danny_and_warns_rosa(pretend_ai):
 
 
 def test_rosa_is_only_warned_once(pretend_ai):
-    """The next lines don't warn Rosa again or text Ana again."""
+    """The next lines don't warn Rosa again or call Ana again."""
     pretend_ai["result"] = GRANDSON_SCAM
     call = start()
 
@@ -244,7 +246,7 @@ def test_spanish_call_warns_rosa_in_spanish(pretend_ai):
 
     assert result["senior_warning"]["text"].startswith("Esta llamada parece una estafa")
     assert result["senior_warning"]["speech_language"] == "es-US"
-    assert result["texts"]["family"][0].startswith("ALERTA")
+    assert result["texts"]["family"][0].startswith("📞 Llamada de ALERTA")
     # The fake officer isn't using a family member's name, so Danny isn't asked.
     assert result["verify"] is None
 

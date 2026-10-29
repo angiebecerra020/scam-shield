@@ -8,13 +8,14 @@ the demo player) sends the call so far here, over and over as new lines come
 in. Each time, we:
   1. ask Nemotron how risky the call is (detector.py)
   2. the first time it looks suspicious, ask Tavily about the caller (research.py)
-  3. the first time the score hits 70 or more, send the family alert with the
-     "Join call" link (calls.send_family_alert), plus a short text that says
-     WHY we're worried
+  3. the first time the score hits 70 or more, phone the family: the alert
+     call says WHY we're worried and lets them press 1 to join the call
+     (calls.send_family_alert). If they gave an email, that gets the alert
+     with a "Join call" link too.
   4. save the score, the reasons and the Tavily links with the call, so the
      family can look back at it later on the dashboard (family.py)
 
-We only alert the family once per call, so they don't get ten texts. And we
+We only alert the family once per call, so their phone doesn't ring ten times. And we
 only alert for seniors who said YES to Scam Shield (that's the consent check
 in consent.py).
 
@@ -23,7 +24,7 @@ server restarts in the middle of a call it could alert one more time, and
 that's fine for now.
 """
 
-from app import alerts, calls, detector, email_alerts, research, storage
+from app import calls, detector, email_alerts, research, storage
 
 # The sign-ups we protect. "active" means the senior said YES to Scam Shield.
 # "demo" is the pretend Rosa from the demo player (demo_api.py).
@@ -34,44 +35,6 @@ ALERTED_CALL_IDS: set[str] = set()
 
 # The Tavily results for each call, so we only search once per call.
 RESEARCH_BY_CALL_ID: dict[str, dict] = {}
-
-# How the "why we're worried" text starts, in the family's language.
-WHY_START = {
-    "en": "Why we're worried: ",
-    "es": "Por qué nos preocupa: ",
-    "ht": "Poukisa nou enkyete: ",
-}
-
-
-# How many red flags we list in the "why" text. Two keeps it short like a text.
-WHY_REASONS = 2
-
-
-def why_text(detector_result: dict, language: str) -> str | None:
-    """
-    Writes the short text that tells the family WHY we think it's a scam.
-
-    The family alert already says "may be on a scam call", so here we list the
-    actual red flags instead of repeating that. If there are no reasons, we
-    use Nemotron's family alert message.
-
-    Input:  detector_result, what detector.score_call() gave back
-            language, the family's language, "en" or "es"
-    Output: the text, or None if there's nothing to explain
-
-    Example:
-        why_text({"reasons": ["Claims to be a grandson in trouble", "Asks for gift cards"]}, "en")
-        gives you "Why we're worried: Claims to be a grandson in trouble; Asks for gift cards."
-    """
-    start = WHY_START.get(language, WHY_START["en"])
-    reasons = detector_result.get("reasons") or []
-    if reasons:
-        return start + "; ".join(reasons[:WHY_REASONS]) + "."
-
-    message = detector_result.get("family_alert_message")
-    if message:
-        return start + message
-    return None
 
 
 def research_once(call: dict, detector_result: dict) -> dict | None:
@@ -130,21 +93,19 @@ def should_alert(call: dict, enrollment: dict | None, detector_result: dict) -> 
 
 def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
     """
-    Sends the family alert with the "Join call" link, then the "why" text.
+    Phones the family with the alert (press 1 to join the call), and emails
+    it too if they gave us an address.
 
     Input:  call, enrollment, detector_result (same as should_alert)
-    Output: nothing. In demo mode the texts go to the demo outbox instead.
+    Output: nothing. In demo mode the call goes into calls.DEMO_CALL_LOG instead.
 
     Example:
-        Ana gets "Scam Shield ALERT: Rosa may be on a scam call right now..."
-        and then "Why we're worried: The caller says they are grandson Danny..."
+        Ana's phone rings: "Scam Shield alert. Rosa may be on a scam call right
+        now. Why we're worried: The caller says they are grandson Danny...
+        To join the call, press 1."
     """
     calls.send_family_alert(call)
-    extra = why_text(detector_result, enrollment["family_language"])
-    if extra:
-        alerts.send_sms(enrollment["family_phone"], extra)
-    # Email too, if the family gave us an address. Real texts need US
-    # carrier sign-up, so for now email is how the alert really reaches them.
+    # Email too, if the family gave us an address, with a "Join call" link.
     if enrollment.get("family_email"):
         subject, body = email_alerts.alert_email(
             enrollment["family_language"],

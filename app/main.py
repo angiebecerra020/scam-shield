@@ -44,7 +44,9 @@ Routes:
     POST /twilio/voice            -> Twilio: a call reached our number
     POST /twilio/senior-status    -> Twilio: how ringing the senior went
     POST /twilio/conference-status -> Twilio: the call's conference room closed
-    GET  /join/{token}            -> the "Join call" page from the family alert
+    POST /twilio/family-alert     -> Twilio: what to say on the alert call to the family
+    POST /twilio/family-alert-answer -> Twilio: the key they pressed (1 joins the call)
+    GET  /join/{token}            -> the "Join call" page from the alert email
     GET  /api/join/{token}        -> who the call is for, and is it still live?
     POST /api/join/{token}        -> ring the family member into the call
 """
@@ -631,6 +633,39 @@ def show_call_to_join(join_token: str):
         return calls.describe_call(join_token)
     except calls.JoinError as problem:
         return error(problem.text, problem.status_code)
+
+
+@app.post("/twilio/family-alert")
+async def speak_family_alert(request: Request, call_id: str, attempt: int = 1):
+    """
+    Twilio asks what to say when the family member picks up the alert call.
+
+    Example:
+        POST /twilio/family-alert?call_id=abc
+        ->  <Response><Gather ...><Say>Scam Shield alert. Rosa may be...</Say>...
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return error("This request didn't come from Twilio.", 403)
+
+    return twiml(calls.family_alert_twiml(call_id, attempt))
+
+
+@app.post("/twilio/family-alert-answer")
+async def receive_family_alert_key(request: Request, call_id: str):
+    """
+    Twilio tells us which key the family member pressed on the alert call.
+    1 puts them into the senior's call.
+
+    Example (demo mode, pretending to be Twilio):
+        curl -X POST "localhost:8000/twilio/family-alert-answer?call_id=abc" \\
+             -d To=+13055550101 -d Digits=1
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return error("This request didn't come from Twilio.", 403)
+
+    return twiml(calls.handle_alert_digits(call_id, form.get("To", ""), form.get("Digits", "")))
 
 
 @app.post("/api/join/{join_token}")

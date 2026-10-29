@@ -228,14 +228,14 @@ def test_pausing_stops_the_alerts(monkeypatch, fake_tavily):
     pretend_nemotron(monkeypatch, SCAM_RESULT)
     rosa = sign_up_rosa()
     call = scam_call_for(rosa)
-    alerts.DEMO_OUTBOX.clear()
+    calls.DEMO_CALL_LOG.clear()
 
     paused = client.post(f"/api/enrollments/{rosa}/pause")
     outcome = call_monitor.check_live_call(call["id"], "Caller: Buy gift cards.")
 
     assert paused.json()["status"] == "paused"
     assert outcome["alert_sent"] is False
-    assert texts_to_family() == []
+    assert [placed for placed in calls.DEMO_CALL_LOG if placed["who"] == "alert"] == []
 
 
 def test_paused_calls_ring_like_normal_without_listening():
@@ -554,28 +554,28 @@ def test_warned_numbers_ring_and_alert_the_family_right_away(monkeypatch, fake_t
     """With "warn", the call still rings Rosa, and Ana is alerted before Nemotron says anything."""
     rosa, call = checked_scam_call(monkeypatch)
     client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "warn"})
-    alerts.DEMO_OUTBOX.clear()
+    calls.DEMO_CALL_LOG.clear()
 
     xml = calls.handle_incoming_call(SCAMMER_PHONE, "CA-again", SENIOR_PHONE)
 
-    family_texts = texts_to_family()
+    alert_calls = [placed for placed in calls.DEMO_CALL_LOG if placed["who"] == "alert"]
     assert "<Conference" in xml
-    assert "/join/" in family_texts[0]
-    assert "one you reported as a scam" in family_texts[1]
+    assert alert_calls[0]["to"] == FAMILY_PHONE
+    assert "The number calling Rosa is one you reported as a scam." in alert_calls[0]["says"]
 
 
 def test_a_warned_call_doesnt_get_a_second_alert_from_nemotron(monkeypatch, fake_tavily):
-    """Once we warned Ana at the start, a high score later doesn't text her again."""
+    """Once we warned Ana at the start, a high score later doesn't call her again."""
     rosa, call = checked_scam_call(monkeypatch)
     client.post(f"/api/calls/{call['id']}/scam-list", json={"choice": "warn"})
     calls.handle_incoming_call(SCAMMER_PHONE, "CA-again", SENIOR_PHONE)
     newest = client.get("/api/family").json()["seniors"][0]["calls"][0]
-    alerts.DEMO_OUTBOX.clear()
+    calls.DEMO_CALL_LOG.clear()
 
     outcome = call_monitor.check_live_call(newest["id"], "Caller: Grandma, buy gift cards.")
 
     assert outcome["alert_sent_now"] is False
-    assert texts_to_family() == []
+    assert [placed for placed in calls.DEMO_CALL_LOG if placed["who"] == "alert"] == []
 
 
 def test_do_nothing_takes_the_number_off_the_list(monkeypatch, fake_tavily):

@@ -388,6 +388,7 @@ def start_live_call(ticket: dict, call_sid: str) -> None:
         "enrollment": enrollment,
         "contacts": contacts,
         "outbox_seen": len(alerts.DEMO_OUTBOX),
+        "calls_seen": len(calls.DEMO_CALL_LOG),
         "warned": False,
         "started": time.time(),
     }
@@ -502,10 +503,10 @@ def share_warning(ticket: dict, warning: dict) -> None:
 
 def collect_texts(ticket: dict, session: dict) -> None:
     """
-    Adds the newest texts for Ana and Danny (from the demo outbox) to the ticket.
+    Adds what Ana and Danny just got (her alert call, his texts) to the ticket.
 
     Example:
-        Right after the alert, ticket["texts"]["family"] has Ana's two texts
+        Right after the alert, ticket["texts"]["family"] has Ana's alert call
     """
     fresh = demo_api.new_texts(session)
     ticket["texts"]["family"].extend(fresh["family"])
