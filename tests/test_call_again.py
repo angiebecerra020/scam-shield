@@ -88,3 +88,28 @@ def test_no_call_when_we_asked_by_text():
     response = client.post(f"/api/enrollments/{enrollment_id}/call-again")
 
     assert response.status_code == 409
+
+
+def test_remove_deletes_the_senior_and_their_calls():
+    """The red Remove button deletes the person and every call we saved for them."""
+    enrollment_id = save_senior()
+    with storage.connect() as db:
+        db.execute(
+            "INSERT INTO calls (id, enrollment_id, conference_name, join_token, status, started_at) "
+            "VALUES ('c1', ?, 'room', 'token', 'ended', ?)",
+            (enrollment_id, storage.now_text()),
+        )
+
+    response = client.delete(f"/api/enrollments/{enrollment_id}")
+
+    assert response.json() == {"removed": "Rosa"}
+    assert storage.get_enrollment(enrollment_id) is None
+    assert storage.get_call("c1") is None
+
+
+def test_removed_senior_can_be_asked_again():
+    """After Remove, the same phone isn't blocked by "we already asked this person"."""
+    enrollment_id = save_senior()
+    client.delete(f"/api/enrollments/{enrollment_id}")
+
+    assert storage.find_enrollments_for_senior("+15555550142") == []

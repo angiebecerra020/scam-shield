@@ -1,8 +1,11 @@
 """
 call_again.py
 
-The "Call them again" button on the dashboard. If the senior missed our
-"press 1 to say YES" call, the family can have Scam Shield ring them again.
+Two buttons on each person in "Your family" on the dashboard:
+  - "Call again": if the senior missed our "press 1 to say YES" call,
+    Scam Shield rings them again.
+  - "Remove": deletes the person and their call history, so the family
+    can start over.
 
 How it fits in: it adds one route next to Cass's sign-up routes in main.py.
 It uses her own checks (family.find_my_enrollment makes sure it's your
@@ -15,7 +18,7 @@ import time
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from app import consent, family
+from app import consent, family, storage
 from app.auth import require_login
 
 router = APIRouter()
@@ -67,6 +70,41 @@ def call_again(enrollment_id: str, user: dict | None) -> dict:
     consent.call_senior_for_consent(enrollment)
     CALLED_AGAIN[enrollment_id] = earlier + [now]
     return consent.public_view(enrollment)
+
+
+def remove_senior(enrollment_id: str, user: dict | None) -> dict:
+    """
+    Deletes one senior for good: their sign-up and every call we saved for
+    them. After this, the family can sign them up again from scratch.
+
+    Input:  enrollment_id, which senior
+            user, who's logged in (None when login is off)
+    Output: {"removed": the senior's name}
+    Raises: family.FamilyError (404) if it isn't yours
+
+    Example:
+        remove_senior("abc", {"id": "user-ana"}) gives you {"removed": "Rosa"}
+    """
+    enrollment = family.find_my_enrollment(enrollment_id, user)
+    with storage.connect() as db:
+        db.execute("DELETE FROM calls WHERE enrollment_id = ?", (enrollment_id,))
+        db.execute("DELETE FROM enrollments WHERE id = ?", (enrollment_id,))
+    CALLED_AGAIN.pop(enrollment_id, None)
+    return {"removed": enrollment["senior_name"]}
+
+
+@router.delete("/api/enrollments/{enrollment_id}")
+def remove_senior_route(enrollment_id: str, user: dict | None = Depends(require_login)):
+    """
+    The dashboard's red Remove button.
+
+    Example:
+        DELETE /api/enrollments/abc gives you {"removed": "Rosa"}
+    """
+    try:
+        return remove_senior(enrollment_id, user)
+    except family.FamilyError as problem:
+        return error(problem.text, problem.status_code)
 
 
 @router.post("/api/enrollments/{enrollment_id}/call-again")
