@@ -7,7 +7,7 @@ to Scam Shield, a caller rings them, and we read the call as it happens.
 How it fits in:
   1. Our Twilio number's front door is phone_line.incoming_call. When a call
      was forwarded from a signed-up senior's phone, it hands the call to
-     Cass's calls.handle_incoming_call instead of the "Call it yourself" line.
+     Cass's calls.handle_incoming_call instead of the "Test it" line.
   2. calls.handle_incoming_call puts the call in a conference room, rings the
      senior's calling app, and turns on Twilio's live transcription with
      start_transcription() below.

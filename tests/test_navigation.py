@@ -36,7 +36,7 @@ def test_one_job_pages_skip_the_header(path):
 
 
 def test_nav_script_has_the_links():
-    """nav.js has the Home, Live demo, Call it yourself and Dashboard tabs."""
+    """nav.js has the Home, Live demo, Test it and Dashboard tabs."""
     script = client.get("/static/nav.js").text
 
     assert '{ href: "/", text: "nav.home" }' in script

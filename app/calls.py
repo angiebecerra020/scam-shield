@@ -223,7 +223,7 @@ def start_protected_call(
             call_sid    — Twilio's ID for the caller's side of the call
             call_token  — the incoming call's CallToken (may be None)
             ring_senior — False for pretend calls (the demo player, the
-                          "Call it yourself" line), where the senior is
+                          "Test it" line), where the senior is
                           made up and there's no phone to ring. With
                           REAL_CALLS on, ringing a made-up phone fails, and
                           handle_senior_status() would then hang up the

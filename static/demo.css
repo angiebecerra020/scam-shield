@@ -730,7 +730,7 @@ a:focus-visible {
   margin-top: 14px;
 }
 
-/* "Call it yourself" (try.html): the email box, and the card with our number and the code */
+/* "Test it" (try.html): the email box, and the card with our number and the code */
 
 input[type="email"] {
   width: 100%;

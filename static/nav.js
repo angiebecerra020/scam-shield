@@ -1,6 +1,6 @@
 /*
   nav.js — The header at the top of every page: the logo, the tabs
-  (Home, Live demo, Call it yourself, Dashboard), and Log in / Log out.
+  (Home, Live demo, Test it, Dashboard), and Log in / Log out.
 
   How it fits in: the home page, login, dashboard, demo player, "Call it
   yourself", privacy, terms and 404 pages each have an empty
@@ -97,7 +97,7 @@ async function addAccountLink(tools) {
  *
  * Input:  nothing (it fills in <header id="site-header">)
  * Output: nothing; it updates the page.
- * Example: open any page  gives you  "Scam Shield   Home  Live demo  Call it yourself  Dashboard   Español  Log in"
+ * Example: open any page  gives you  "Scam Shield   Home  Live demo  Test it  Dashboard   Español  Log in"
  */
 function buildHeader() {
   const header = document.getElementById("site-header");

@@ -1,7 +1,7 @@
 """
 phone_line.py
 
-The "Call it yourself" line. Anyone can call our Twilio number, play the
+The "Test it" line. Anyone can call our Twilio number, play the
 scammer, and watch Scam Shield catch them live on the page (static/try.html).
 
 How it fits in:
@@ -642,7 +642,7 @@ def public_view(ticket: dict) -> dict:
 @router.get("/try")
 def show_try_page() -> FileResponse:
     """
-    Sends the "Call it yourself" page.
+    Sends the "Test it" page.
 
     Example:
         Open http://localhost:8000/try and you see the page

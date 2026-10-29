@@ -1,12 +1,12 @@
 /*
   header.css — The look of the header at the top of every page: the logo,
-  the tabs (Home, Live demo, Call it yourself, Dashboard), the language
+  the tabs (Home, Live demo, Test it, Dashboard), the language
   switch, and Log in / Log out.
 
   How it fits in: nav.js builds the header, and every page that has one
   loads this file after its own stylesheet. Those pages use two different
   stylesheets (styles.css + theme.css, or demo.css for the demo player and
-  "Call it yourself"), so this file sets its own colors below instead of
+  "Test it"), so this file sets its own colors below instead of
   borrowing either one's. That way the header looks exactly the same on
   every page.
 

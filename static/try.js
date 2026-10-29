@@ -1,7 +1,7 @@
 /*
   try.js
 
-  This makes the "Call it yourself" page work. You get a code, call our
+  This makes the "Test it" page work. You get a code, call our
   number, and this page shows your call as Scam Shield hears it.
 
   How it fits in: try.html loads this file. It talks to the phone line in

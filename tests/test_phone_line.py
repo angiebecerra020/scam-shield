@@ -1,7 +1,7 @@
 """
 test_phone_line.py
 
-Tests for the "Call it yourself" line (app/phone_line.py) and the alert
+Tests for the "Test it" line (app/phone_line.py) and the alert
 emails (app/email_alerts.py).
 
 How it fits in: we pretend to be Twilio. We sign every request with a test
@@ -178,11 +178,11 @@ def look(ticket: dict) -> dict:
 
 
 def test_try_page_loads():
-    """The "Call it yourself" page opens at /try."""
+    """The "Test it" page opens at /try."""
     response = client.get("/try")
 
     assert response.status_code == 200
-    assert "Call it yourself" in response.text
+    assert "Test it" in response.text
 
 
 def test_getting_a_code():

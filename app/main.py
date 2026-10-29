@@ -77,7 +77,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # The demo player's page and its routes live in demo_api.py.
 app.include_router(demo_api.router)
 
-# The "Call it yourself" phone line and its page live in phone_line.py.
+# The "Test it" phone line and its page live in phone_line.py.
 app.include_router(phone_line.router)
 
 # Privacy, terms, the tab icon, robots.txt, the sitemap, the friendly 404
