@@ -112,13 +112,16 @@ const STRINGS = {
     "dash.tagline": "The people you protect, and the calls they got.",
     "dash.signupTitle": "Protect someone's calls",
     "dash.signupHint":
-      "We'll ask them for their OK first: a text for a cell phone, a phone call for a landline. Nothing is listened to until they say YES.",
+      "We'll ask them for their OK first, with a text or a phone call. Nothing is listened to until they say YES.",
     "dash.whoProtecting": "Who are we protecting?",
     "dash.theirName": "Their name",
     "dash.theirPhone": "Their phone",
     "dash.phoneKind": "What kind of phone is it?",
     "dash.cell": "Cell phone",
     "dash.landline": "Landline (home phone)",
+    "dash.askBy": "How should we ask them?",
+    "dash.askByText": "Text message (they reply YES)",
+    "dash.askByCall": "Phone call (they press 1)",
     "dash.theirLanguage": "Their language",
     "dash.whoGetsAlerts": "Who gets the alerts?",
     "dash.yourName": "Your name",
@@ -126,6 +129,7 @@ const STRINGS = {
     "dash.yourLanguage": "Your language",
     "dash.creoleLandline":
       "Haitian Creole works with cell phones for now, since we text them. For a landline, pick English or Spanish.",
+    "dash.creoleCall": "We can't ask by phone call in Haitian Creole yet. Choose a text message instead.",
     "dash.askButton": "Ask them for their OK",
     "dash.busyText": "Sending the text…",
     "dash.busyCall": "Calling them…",
@@ -148,7 +152,7 @@ const STRINGS = {
     "dash.offline": "offline. Is the server running?",
     "dash.keepChecking": "{problem} We'll keep checking.",
     "status.pending": "We texted them. Waiting for them to reply YES…",
-    "status.pendingLandline": "We're calling them now. Waiting for them to press 1…",
+    "status.pendingCall": "We're calling them now. Waiting for them to press 1…",
     "status.active": "They said YES. Their calls are now protected. ✅",
     "status.declined": "They said NO, so we won't listen to their calls.",
     "status.expired": "They didn't answer within 24 hours. You can ask again.",
@@ -378,13 +382,16 @@ const STRINGS = {
     "dash.tagline": "Las personas que usted protege, y las llamadas que recibieron.",
     "dash.signupTitle": "Proteja las llamadas de alguien",
     "dash.signupHint":
-      "Primero le pediremos su permiso: un mensaje de texto a un celular, o una llamada a un teléfono de casa. No escuchamos nada hasta que digan que SÍ.",
+      "Primero le pediremos su permiso, con un mensaje de texto o una llamada. No escuchamos nada hasta que digan que SÍ.",
     "dash.whoProtecting": "¿A quién vamos a proteger?",
     "dash.theirName": "Nombre",
     "dash.theirPhone": "Teléfono",
     "dash.phoneKind": "¿Qué tipo de teléfono es?",
     "dash.cell": "Celular",
     "dash.landline": "Teléfono de casa (fijo)",
+    "dash.askBy": "¿Cómo le pedimos permiso?",
+    "dash.askByText": "Mensaje de texto (responde SÍ)",
+    "dash.askByCall": "Llamada (marca el 1)",
     "dash.theirLanguage": "Idioma",
     "dash.whoGetsAlerts": "¿Quién recibe las alertas?",
     "dash.yourName": "Su nombre",
@@ -392,6 +399,7 @@ const STRINGS = {
     "dash.yourLanguage": "Su idioma",
     "dash.creoleLandline":
       "Por ahora el criollo haitiano solo funciona con celulares, porque les enviamos mensajes de texto. Para un teléfono de casa, elija inglés o español.",
+    "dash.creoleCall": "Todavía no podemos pedir permiso por llamada en criollo haitiano. Elija un mensaje de texto.",
     "dash.askButton": "Pedirle su permiso",
     "dash.busyText": "Enviando el mensaje…",
     "dash.busyCall": "Llamándole…",
@@ -414,7 +422,7 @@ const STRINGS = {
     "dash.offline": "fuera de línea. ¿Está funcionando el servidor?",
     "dash.keepChecking": "{problem} Seguiremos revisando.",
     "status.pending": "Le enviamos un mensaje. Esperando a que responda SÍ…",
-    "status.pendingLandline": "Le estamos llamando ahora. Esperando a que marque el 1…",
+    "status.pendingCall": "Le estamos llamando ahora. Esperando a que marque el 1…",
     "status.active": "Dijo que SÍ. Sus llamadas ahora están protegidas. ✅",
     "status.declined": "Dijo que NO, así que no escucharemos sus llamadas.",
     "status.expired": "No respondió en 24 horas. Puede volver a preguntarle.",
@@ -567,10 +575,15 @@ const SERVER_MESSAGES_ES = {
   "This person is already protected by Scam Shield.": "Esta persona ya está protegida por Scam Shield.",
   "This person is already signed up, but protection is paused. You can turn it back on from the dashboard.":
     "Esta persona ya está registrada, pero la protección está en pausa. Puede volver a activarla desde el panel.",
-  "We already texted this person. They have 24 hours to answer.":
-    "Ya le enviamos un mensaje a esta persona. Tiene 24 horas para responder.",
-  "This person said no recently, so we won't text them again yet.":
-    "Esta persona dijo que no hace poco, así que todavía no le volveremos a escribir.",
+  "We already asked this person. They have 24 hours to answer.":
+    "Ya le pedimos permiso a esta persona. Tiene 24 horas para responder.",
+  "This person said no recently, so we won't ask them again yet.":
+    "Esta persona dijo que no hace poco, así que todavía no le volveremos a preguntar.",
+  "Please choose a text message or a phone call.": "Por favor elija un mensaje de texto o una llamada.",
+  "Landlines can't get text messages. Choose a phone call instead.":
+    "Los teléfonos de casa no reciben mensajes de texto. Elija una llamada.",
+  "We can't ask by phone call in Haitian Creole yet. Choose a text message instead.":
+    "Todavía no podemos pedir permiso por llamada en criollo haitiano. Elija un mensaje de texto.",
   "Haitian Creole works with cell phones for now, since we text them. For a landline, pick English or Spanish.":
     "Por ahora el criollo haitiano solo funciona con celulares, porque les enviamos mensajes de texto. Para un teléfono de casa, elija inglés o español.",
   "We couldn't find that sign-up.": "No encontramos ese registro.",

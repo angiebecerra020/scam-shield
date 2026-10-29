@@ -60,7 +60,7 @@ MESSAGES = {
             "Scam Shield ALERT: {senior_name} may be on a scam call right now. "
             "Tap to join the call: {join_link}"
         ),
-        # SPOKEN on the consent phone call to a landline (landlines can't get texts).
+        # SPOKEN on the consent phone call (always for a landline, or when the family picks a call).
         "consent_call_prompt": (
             "Hello {senior_name}. This is Scam Shield. {family_name} wants to "
             "protect your phone calls from scammers. We would listen to your calls, "

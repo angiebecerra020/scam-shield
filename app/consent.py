@@ -2,18 +2,20 @@
 consent.py — Makes sure the senior agrees before we ever listen to their calls.
 
 How it fits in: when a family member sets up Scam Shield, we don't start
-listening right away. We ask the SENIOR, on their own phone:
-  - cell phone: we text "Ana wants to protect your phone calls... Reply YES or NO."
-  - landline (can't get texts): we call and say "...press 1 to allow, 2 to say no."
-Only a YES from that phone turns protection on. That way a stranger who types
+listening right away. We ask the SENIOR, on their own phone, the way the
+family picks on the sign-up form:
+  - by text: "Ana wants to protect your phone calls... Reply YES or NO."
+  - by phone call: "...press 1 to allow, 2 to say no."
+A cell phone can be asked either way. A landline can't get texts, so we
+always call it. Only a YES from that phone turns protection on. That way a stranger who types
 in someone else's number can't start listening to their calls: they would
 need the senior's phone to say YES.
 
 The steps:
   1. start_enrollment()      — family signs up; we text or call the senior
                                (status "pending")
-  2. handle_senior_reply()   — cell: Twilio forwards the senior's text to us
-     handle_consent_digits() — landline: the senior presses a key on our call
+  2. handle_senior_reply()   — by text: Twilio forwards the senior's text to us
+     handle_consent_digits() — by call: the senior presses a key on our call
        YES / 1 -> "active"   (calls.py will now protect their calls)
        NO / 2  -> "declined"
        STOP    -> "revoked"  (texts only; works any time, even months later,
@@ -48,6 +50,8 @@ from app.languages import SPOKEN_LANGUAGES, message, pick_language, spoken_langu
 from app.phone_numbers import mask_phone, normalize_phone
 
 PHONE_TYPES = ("cell", "landline")
+# The ways we can ask the senior for their YES.
+ASK_WAYS = ("text", "call")
 
 # How long the senior has to answer the first text.
 ANSWER_WINDOW = timedelta(hours=24)
@@ -159,7 +163,7 @@ def expire_old_requests(enrollments: list[dict]) -> list[dict]:
 
 def check_allowed_to_ask(senior_phone: str) -> None:
     """
-    Make sure we're allowed to send this senior a consent text right now.
+    Make sure we're allowed to ask this senior for their YES right now.
 
     Input:  senior_phone — E.164 number
     Output: nothing if it's fine
@@ -183,13 +187,13 @@ def check_allowed_to_ask(senior_phone: str) -> None:
             )
         if enrollment["status"] == "pending":
             raise EnrollmentError(
-                "We already texted this person. They have 24 hours to answer.", 409
+                "We already asked this person. They have 24 hours to answer.", 409
             )
         if enrollment["status"] in ("declined", "revoked"):
             answered = storage.parse_time(enrollment["answered_at"])
             if now - answered < ASK_AGAIN_AFTER_NO:
                 raise EnrollmentError(
-                    "This person said no recently, so we won't text them again yet.", 409
+                    "This person said no recently, so we won't ask them again yet.", 409
                 )
 
 
@@ -201,11 +205,12 @@ def start_enrollment(
     senior_language: str = "en",
     family_language: str = "en",
     phone_type: str = "cell",
+    ask_by: str | None = None,
     owner_id: str | None = None,
 ) -> dict:
     """
-    Sign a senior up for Scam Shield and ask them for their YES: by text for
-    a cell phone, by phone call for a landline.
+    Sign a senior up for Scam Shield and ask them for their YES, by text or
+    by phone call.
 
     Nothing is listened to yet: the enrollment starts as "pending".
 
@@ -213,6 +218,8 @@ def start_enrollment(
             family_name, family_phone — the person signing up, who gets alerts
             senior_language, family_language — "en" or "es"
             phone_type — "cell" or "landline": the kind of phone senior_phone is
+            ask_by — "text" or "call": how to ask them. Left out, we text a
+                     cell phone and call a landline.
             owner_id — the logged in family member's Supabase user ID, so only
                        they see this senior on their dashboard (None when login is off)
     Output: the new enrollment (as public_view() shows it)
@@ -223,7 +230,11 @@ def start_enrollment(
         start_enrollment("Rosa", "305-555-0100", "Ana", "305-555-0101", "es", "en")
         ->  {"id": "...", "status": "pending", ...}
         and Rosa gets: "Scam Shield: Ana quiere proteger sus llamadas..."
+
+        start_enrollment(..., phone_type="cell", ask_by="call")
+        ->  Rosa's cell phone rings: "...press 1 to allow, 2 to say no."
     """
+    clean_type = clean_phone_type(phone_type)
     enrollment = {
         # A long random ID, because it appears in the dashboard's web address.
         # Counting 1, 2, 3... would let anyone peek at other families.
@@ -232,7 +243,8 @@ def start_enrollment(
         "senior_phone": clean_phone(senior_phone, "Senior's phone"),
         "family_name": clean_name(family_name, "Your name"),
         "family_phone": clean_phone(family_phone, "Your phone"),
-        "phone_type": clean_phone_type(phone_type),
+        "phone_type": clean_type,
+        "ask_by": clean_ask_by(ask_by, clean_type),
         # The name Twilio knows the senior's calling app or phone adapter by.
         "device_id": "senior-" + secrets.token_hex(4),
         # The secret part of the calling-app link. Long and random, because
@@ -249,19 +261,24 @@ def start_enrollment(
     if enrollment["senior_phone"] == enrollment["family_phone"]:
         raise EnrollmentError("The senior's phone and your phone must be different.", 400)
 
-    # A landline senior gets a SPOKEN consent call, and Twilio can't speak
-    # Haitian Creole yet. So Creole works for cell phones only, for now.
-    if enrollment["phone_type"] == "landline" and enrollment["senior_language"] not in SPOKEN_LANGUAGES:
+    # The consent call is SPOKEN, and Twilio can't speak Haitian Creole yet.
+    # So we can only ask a Creole speaker by text, which needs a cell phone.
+    if enrollment["ask_by"] == "call" and enrollment["senior_language"] not in SPOKEN_LANGUAGES:
+        if enrollment["phone_type"] == "landline":
+            raise EnrollmentError(
+                "Haitian Creole works with cell phones for now, since we text them. "
+                "For a landline, pick English or Spanish.",
+                400,
+            )
         raise EnrollmentError(
-            "Haitian Creole works with cell phones for now, since we text them. "
-            "For a landline, pick English or Spanish.",
+            "We can't ask by phone call in Haitian Creole yet. Choose a text message instead.",
             400,
         )
 
     check_allowed_to_ask(enrollment["senior_phone"])
     storage.save_enrollment(enrollment)
 
-    if enrollment["phone_type"] == "landline":
+    if enrollment["ask_by"] == "call":
         call_senior_for_consent(enrollment)
     else:
         send_sms(
@@ -289,14 +306,55 @@ def clean_phone_type(raw: str) -> str:
     return phone_type
 
 
+def clean_ask_by(raw: str | None, phone_type: str) -> str:
+    """
+    Check the "How should we ask them?" answer from the sign-up form.
+
+    Left blank, we pick for them: a text for a cell phone, a call for a
+    landline. A landline can't get texts, so "text" for one is a mistake.
+
+    Input:  raw        — "text", "call", or None
+            phone_type — "cell" or "landline", already checked
+    Output: "text" or "call"
+    Raises: EnrollmentError for anything else, or a text to a landline
+
+    Examples:
+        clean_ask_by("Call", "cell")      ->  "call"
+        clean_ask_by(None, "landline")    ->  "call"
+        clean_ask_by("text", "landline")  ->  EnrollmentError
+    """
+    if raw is None or raw.strip() == "":
+        return "call" if phone_type == "landline" else "text"
+    ask_by = raw.strip().lower()
+    if ask_by not in ASK_WAYS:
+        raise EnrollmentError("Please choose a text message or a phone call.", 400)
+    if ask_by == "text" and phone_type == "landline":
+        raise EnrollmentError("Landlines can't get text messages. Choose a phone call instead.", 400)
+    return ask_by
+
+
+def how_we_asked(enrollment: dict) -> str:
+    """
+    Say how we asked a senior for their YES: "text" or "call".
+
+    Sign-ups saved before families could choose have no ask_by, so we work it
+    out the old way: landlines were called, cell phones were texted.
+
+    Example:
+        how_we_asked({"ask_by": None, "phone_type": "landline"})  ->  "call"
+    """
+    return enrollment.get("ask_by") or ("call" if enrollment["phone_type"] == "landline" else "text")
+
+
 # ---------------------------------------------------------------------------
-# Landlines: asking for consent with a phone call
+# Asking for consent with a phone call
 # ---------------------------------------------------------------------------
 
 
 def call_senior_for_consent(enrollment: dict) -> None:
     """
-    Phone a landline senior to ask for their YES (landlines can't get texts).
+    Phone the senior to ask for their YES. Landlines are always asked this
+    way (they can't get texts); cell phones are when the family picks it.
 
     When they pick up, Twilio asks us what to say (consent_call_twiml).
 
@@ -304,7 +362,7 @@ def call_senior_for_consent(enrollment: dict) -> None:
     Output: nothing. In demo mode, the call goes into DEMO_CALL_LOG instead.
 
     Example:
-        call_senior_for_consent(rosa)  ->  Rosa's landline rings
+        call_senior_for_consent(rosa)  ->  Rosa's phone rings
     """
     settings = get_settings()
     url = public_url(f"/twilio/consent-call?enrollment_id={enrollment['id']}")
@@ -561,7 +619,7 @@ def public_view(enrollment: dict) -> dict:
     Example:
         public_view(rosa)  ->  {"id": "abc", "senior_name": "Rosa",
                                 "senior_phone": "•••-•••-0100", "status": "pending",
-                                "phone_type": "cell", "setup": {...}}
+                                "phone_type": "cell", "ask_by": "text", "setup": {...}}
     """
     return {
         "id": enrollment["id"],
@@ -571,6 +629,7 @@ def public_view(enrollment: dict) -> dict:
         "family_phone": mask_phone(enrollment["family_phone"]),
         "status": enrollment["status"],
         "phone_type": enrollment["phone_type"],
+        "ask_by": how_we_asked(enrollment),
         "setup": setup_details(enrollment),
     }
 

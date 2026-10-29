@@ -61,7 +61,7 @@
     <!-- Step 1: the family member fills this in -->
     <form id="signup-form" class="form" hidden>
       <h2 data-text="dash.signupTitle">Protect someone's calls</h2>
-      <p class="hint" data-text="dash.signupHint">We'll ask them for their OK first: a text for a cell phone, a phone call for a landline. Nothing is listened to until they say YES.</p>
+      <p class="hint" data-text="dash.signupHint">We'll ask them for their OK first, with a text or a phone call. Nothing is listened to until they say YES.</p>
 
       <fieldset>
         <legend data-text="dash.whoProtecting">Who are we protecting?</legend>
@@ -71,6 +71,13 @@
           <select name="phone_type">
             <option value="cell" data-text="dash.cell">Cell phone</option>
             <option value="landline" data-text="dash.landline">Landline (home phone)</option>
+          </select>
+        </label>
+        <!-- A landline can't get texts, so app.js turns off "Text message" for one -->
+        <label><span data-text="dash.askBy">How should we ask them?</span>
+          <select name="ask_by">
+            <option value="text" data-text="dash.askByText">Text message (they reply YES)</option>
+            <option value="call" data-text="dash.askByCall">Phone call (they press 1)</option>
           </select>
         </label>
         <label><span data-text="dash.theirLanguage">Their language</span>
@@ -95,8 +102,9 @@
         </label>
       </fieldset>
 
-      <!-- Shown when they pick Haitian Creole for a landline (app.js) -->
+      <!-- Shown when they pick Haitian Creole with a phone call (app.js) -->
       <p id="creole-landline-note" class="hint" hidden data-text="dash.creoleLandline">Haitian Creole works with cell phones for now, since we text them. For a landline, pick English or Spanish.</p>
+      <p id="creole-call-note" class="hint" hidden data-text="dash.creoleCall">We can't ask by phone call in Haitian Creole yet. Choose a text message instead.</p>
       <button type="submit" data-text="dash.askButton">Ask them for their OK</button>
       <p id="signup-error" class="error" role="alert"></p>
     </form>

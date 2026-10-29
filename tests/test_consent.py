@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from app import storage
 from app.alerts import DEMO_OUTBOX
+from app.calls import DEMO_CALL_LOG
 from app.consent import read_answer
 from app.main import app
 
@@ -248,6 +249,74 @@ def test_creole_family_with_a_landline_senior_is_fine():
     response = sign_up(family_language="ht", phone_type="landline")
 
     assert response.status_code == 201
+
+
+# ----- Text or call: the family picks how we ask -----
+
+
+def test_cell_phone_is_texted_when_the_family_doesnt_pick():
+    response = sign_up(phone_type="cell")
+
+    assert response.json()["ask_by"] == "text"
+    assert DEMO_OUTBOX[0]["to"] == SENIOR_PHONE
+    assert DEMO_CALL_LOG == []
+
+
+def test_cell_phone_can_be_asked_with_a_phone_call():
+    """Some seniors never read texts, so the family can pick a call instead."""
+    response = sign_up(phone_type="cell", ask_by="call")
+
+    assert response.status_code == 201
+    assert response.json()["ask_by"] == "call"
+    assert DEMO_OUTBOX == []  # no text
+    assert DEMO_CALL_LOG == [{"to": SENIOR_PHONE, "who": "consent", "conference": None}]
+
+
+def test_pressing_1_on_the_call_turns_a_cell_phone_on():
+    enrollment_id = sign_up(phone_type="cell", ask_by="call").json()["id"]
+
+    client.post(
+        f"/twilio/consent-answer?enrollment_id={enrollment_id}",
+        data={"To": SENIOR_PHONE, "Digits": "1"},
+    )
+
+    assert status_of(enrollment_id) == "active"
+
+
+def test_landline_cant_be_asked_by_text():
+    response = sign_up(phone_type="landline", ask_by="text")
+
+    assert response.status_code == 400
+    assert "phone call" in response.json()["error"]
+    assert DEMO_OUTBOX == []
+    assert DEMO_CALL_LOG == []
+
+
+def test_landline_is_called_when_the_family_doesnt_pick():
+    response = sign_up(phone_type="landline")
+
+    assert response.json()["ask_by"] == "call"
+
+
+def test_unknown_way_to_ask_is_rejected():
+    assert sign_up(ask_by="carrier pigeon").status_code == 400
+
+
+def test_creole_cell_phone_cant_be_asked_by_call_yet():
+    """Our phone voices can't speak Creole, so a Creole speaker has to be texted."""
+    response = sign_up(senior_language="ht", ask_by="call")
+
+    assert response.status_code == 400
+    assert "text message" in response.json()["error"]
+    assert DEMO_CALL_LOG == []
+
+
+def test_old_sign_ups_without_ask_by_still_show_how_we_asked():
+    """Sign-ups saved before families could pick have no ask_by saved."""
+    from app.consent import how_we_asked
+
+    assert how_we_asked({"ask_by": None, "phone_type": "cell"}) == "text"
+    assert how_we_asked({"ask_by": None, "phone_type": "landline"}) == "call"
 
 
 def test_every_creole_text_matches_english():

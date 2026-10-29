@@ -24,7 +24,7 @@
 const CHECK_EVERY_MS = 3000;
 
 // The statuses we have words for (as "status.pending" and so on, in strings.js).
-const KNOWN_STATUSES = ["pending", "pendingLandline", "active", "declined", "expired", "revoked"];
+const KNOWN_STATUSES = ["pending", "pendingCall", "active", "declined", "expired", "revoked"];
 
 // Remembered while the page is open.
 let demoMode = false;
@@ -35,6 +35,8 @@ let lastEnrollment = null;
 let seniorPhone = "";
 let enrollmentId = "";
 let phoneType = "cell";
+// How we asked them for their YES: "text" or "call".
+let askBy = "text";
 let statusTimer = null;
 
 /**
@@ -125,7 +127,7 @@ async function submitSignup(event) {
   // Sending the text or placing the call goes through Twilio, which can take
   // a few seconds. Say so, and stop a second tap from asking them twice.
   const button = form.querySelector('button[type="submit"]');
-  setBusy(button, fields.phone_type === "landline" ? t("dash.busyCall") : t("dash.busyText"));
+  setBusy(button, fields.ask_by === "call" ? t("dash.busyCall") : t("dash.busyText"));
   const { ok, data } = await sendRequest("/api/enrollments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -142,6 +144,7 @@ async function submitSignup(event) {
   seniorPhone = fields.senior_phone;
   enrollmentId = data.id;
   phoneType = data.phone_type;
+  askBy = data.ask_by;
   form.hidden = true;
   document.getElementById("consent-status").hidden = false;
   document.getElementById("senior-name").textContent = data.senior_name;
@@ -156,18 +159,30 @@ async function submitSignup(event) {
 }
 
 /**
- * Show a note when the senior's language is Haitian Creole and their phone is
- * a landline. We ask for a landline's OK with a spoken phone call, and our
- * phone voices can't speak Creole yet (see app/languages.py).
+ * Keep the "How should we ask them?" choice sensible, and show a note when it
+ * can't work.
+ *
+ * A landline can't get texts, so for one we pick "Phone call" and turn
+ * "Text message" off. And our phone voices can't speak Haitian Creole yet
+ * (see app/languages.py), so a phone call in Creole gets a note.
  *
  * Input:  nothing (it reads the form)
- * Output: nothing; it shows or hides the note.
+ * Output: nothing; it updates the form.
  * Example: pick Landline and Kreyòl ayisyen  gives you  "Haitian Creole works with cell phones for now..."
+ *          pick Cell phone, Phone call and Kreyòl ayisyen  gives you  "We can't ask by phone call in Haitian Creole yet..."
  */
-function checkCreoleLandline() {
+function checkAskBy() {
   const form = document.getElementById("signup-form");
-  const creoleLandline = form.phone_type.value === "landline" && form.senior_language.value === "ht";
-  document.getElementById("creole-landline-note").hidden = !creoleLandline;
+  const landline = form.phone_type.value === "landline";
+  const textChoice = form.ask_by.querySelector('option[value="text"]');
+  textChoice.disabled = landline;
+  if (landline) {
+    form.ask_by.value = "call";
+  }
+
+  const creoleCall = form.ask_by.value === "call" && form.senior_language.value === "ht";
+  document.getElementById("creole-landline-note").hidden = !(creoleCall && landline);
+  document.getElementById("creole-call-note").hidden = !(creoleCall && !landline);
 }
 
 /**
@@ -205,7 +220,7 @@ async function checkConsent(enrollmentId) {
 function showConsentStatus(enrollment) {
   lastEnrollment = enrollment;
   const status = enrollment.status;
-  const messageKey = status === "pending" && phoneType === "landline" ? "pendingLandline" : status;
+  const messageKey = status === "pending" && askBy === "call" ? "pendingCall" : status;
   document.getElementById("consent-message").textContent = KNOWN_STATUSES.includes(messageKey)
     ? t(`status.${messageKey}`)
     : status;
@@ -284,7 +299,7 @@ function showSetupSteps(enrollment) {
 
 /**
  * Demo mode: pretend the senior said YES, the way Twilio would tell us:
- * a YES text for a cell phone, or pressing 1 on the consent call for a landline.
+ * a YES text, or pressing 1 on the consent call, depending on how we asked.
  *
  * Example: tap the button -> a few seconds later the page says "They said YES…"
  */
@@ -294,7 +309,7 @@ async function demoReplyYes() {
   setBusy(button, t("dash.busyYes"));
 
   let answer;
-  if (phoneType === "landline") {
+  if (askBy === "call") {
     answer = await sendRequest(`/twilio/consent-answer?enrollment_id=${enrollmentId}`, {
       method: "POST",
       body: new URLSearchParams({ To: seniorPhone, Digits: "1" }),
@@ -311,7 +326,7 @@ async function demoReplyYes() {
     result.textContent = answer.data.error;
     return;
   }
-  result.textContent = phoneType === "landline" ? t("dash.demoPressed1") : t("dash.demoSentYes");
+  result.textContent = askBy === "call" ? t("dash.demoPressed1") : t("dash.demoSentYes");
 }
 
 /**
@@ -383,7 +398,10 @@ function openSignupIfAsked() {
 }
 
 document.getElementById("signup-form").addEventListener("submit", submitSignup);
-document.getElementById("signup-form").addEventListener("change", checkCreoleLandline);
+document.getElementById("signup-form").addEventListener("change", checkAskBy);
+// "Protect someone else" empties the form (family.js). The browser puts the
+// old values back only after the "reset" event, so we check right after it.
+document.getElementById("signup-form").addEventListener("reset", () => setTimeout(checkAskBy));
 document.getElementById("demo-reply-yes").addEventListener("click", demoReplyYes);
 document.getElementById("demo-scam-call").addEventListener("click", demoScamCall);
 // When they flip the language switch, redraw the words this file made.

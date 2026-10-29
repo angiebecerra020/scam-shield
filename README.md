@@ -32,7 +32,7 @@ Call blockers only stop numbers that are already known to be bad. Banks and fami
 
 | # | Feature | Status |
 |---|---|---|
-| 0 | **Senior's OK first.** When a family member signs someone up, we ask the senior on their own phone: a text for a cell phone (*"Reply YES or NO"*), or a phone call for a landline (*"Press 1 to allow, 2 to say no"*). Nothing is listened to until they say YES. | Done |
+| 0 | **Senior's OK first.** When a family member signs someone up, we ask the senior on their own phone, by text (*"Reply YES or NO"*) or by phone call (*"Press 1 to allow, 2 to say no"*). The family picks which on the sign-up form; a landline can't get texts, so it always gets the call. Nothing is listened to until they say YES. | Done |
 | 0b | **Works on cell phones and landlines.** The senior keeps their number. Calls forward to Scam Shield, which rings a calling app on their cell phone or an adapter on their home phone. See [Cell phone or landline?](#cell-phone-or-landline) | Done (needs a real-phone test) |
 | 1 | **Live transcript.** The senior's calls forward to a Scam Shield number, which turns the call into text as it happens. | Working on our "Call it yourself" test line (Twilio live transcription). Forwarded calls coming soon |
 | 2 | **Caller research.** Tavily checks whether the caller's number has been reported, and finds scam warnings that match the call. It looks at trusted sites first: the FTC, FBI, Social Security, Medicare, AARP and the BBB. | Done |
@@ -239,7 +239,7 @@ Seniors keep the phone number they already have, whether it's a cell phone or a 
 
 ### Setting up a cell phone
 
-1. Sign up on the dashboard and choose **Cell phone**. The senior replies YES to our text.
+1. Sign up on the dashboard and choose **Cell phone**. Under **How should we ask them?**, pick a text (the senior replies YES) or a phone call (the senior presses **1**).
 2. On the senior's phone, open the calling-app link the dashboard shows, tap **Turn on calls**, allow the microphone, and add the page to the home screen. Keep it open, since calls only ring while the page is running.
 3. Turn on call forwarding to the Scam Shield number. On most phones, dial `**21*` + the number + `#`. On Verizon, dial `*72` + the number.
 

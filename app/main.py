@@ -18,10 +18,10 @@ Routes:
 
   Consent (consent.py): the senior must say YES before we listen
     POST /api/enrollments         -> [login] family signs a senior up; we text
-                                     the senior (cell) or call them (landline)
+                                     or call the senior, the way the family picked
     GET  /api/enrollments/{id}    -> [login] has the senior said YES yet?
     POST /twilio/sms              -> Twilio: the senior texted us back
-    POST /twilio/consent-call     -> Twilio: what to say on the landline consent call
+    POST /twilio/consent-call     -> Twilio: what to say on the consent call
     POST /twilio/consent-answer   -> Twilio: the key the senior pressed
 
   Family dashboard (family.py): each family only sees the seniors they signed up
@@ -220,7 +220,7 @@ class EnrollmentForm(BaseModel):
         {"senior_name": "Rosa", "senior_phone": "305-555-0100",
          "family_name": "Ana", "family_phone": "305-555-0101",
          "senior_language": "es", "family_language": "en",
-         "phone_type": "landline"}
+         "phone_type": "landline", "ask_by": "call"}
     """
 
     senior_name: str
@@ -230,6 +230,8 @@ class EnrollmentForm(BaseModel):
     senior_language: str = "en"
     family_language: str = "en"
     phone_type: str = "cell"
+    # "text" or "call". Left out, consent.py picks by phone_type.
+    ask_by: str | None = None
 
 
 @app.post("/api/enrollments", status_code=201)
