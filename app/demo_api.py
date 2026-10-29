@@ -295,7 +295,8 @@ def start_demo_call(script_id: str, family_language: str) -> dict:
     enrollment, contacts = demo_family(script, family_language)
     storage.save_enrollment(enrollment)
     caller = script.get("caller_number") or "+13055550199"
-    call = calls.start_protected_call(enrollment, caller=caller, call_sid="demo")
+    # Rosa is made up, so there's no phone of hers to ring.
+    call = calls.start_protected_call(enrollment, caller=caller, call_sid="demo", ring_senior=False)
 
     SESSIONS[call["id"]] = {
         "script": script,

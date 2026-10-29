@@ -377,7 +377,9 @@ def start_live_call(ticket: dict, call_sid: str) -> None:
     demo_api.forget_old_sessions()
     enrollment, contacts = demo_api.demo_family({"language": ticket["language"]}, ticket["family_language"])
     storage.save_enrollment(enrollment)
-    call = calls.start_protected_call(enrollment, caller=PRETEND_CALLER, call_sid=call_sid)
+    # Rosa is made up, so there's no phone of hers to ring. The visitor's own
+    # call is the whole call.
+    call = calls.start_protected_call(enrollment, caller=PRETEND_CALLER, call_sid=call_sid, ring_senior=False)
 
     # We also add the call to the demo player's sessions, so Danny's YES or
     # NO works the exact same way it does there.

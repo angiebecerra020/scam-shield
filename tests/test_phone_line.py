@@ -11,12 +11,13 @@ list instead of going out, so nothing here costs money or reaches a person.
 """
 
 import time
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 from twilio.request_validator import RequestValidator
 
-from app import call_monitor, demo_api, detector, email_alerts, phone_line, research, storage, verify
+from app import call_monitor, calls, demo_api, detector, email_alerts, phone_line, research, storage, verify
 from app.main import app
 
 client = TestClient(app)
@@ -452,3 +453,22 @@ def test_a_protected_senior_calling_hears_the_cancel_menu_not_the_code_question(
 
     assert "press 2" in response.text
     assert "code" not in response.text
+
+
+def test_typing_the_code_doesnt_ring_a_made_up_phone_with_real_calls_on(monkeypatch):
+    """
+    The live site runs with REAL_CALLS on. The test line's Rosa is made up,
+    so ringing "her" calling app always fails, and then handle_senior_status()
+    hung up the visitor with "not available" right after they typed the code.
+    """
+    monkeypatch.setenv("REAL_CALLS", "true")
+    pretend_twilio = MagicMock()
+    monkeypatch.setattr(calls, "twilio_client", lambda: pretend_twilio)
+
+    response = call_and_type_code(get_code())
+
+    assert "<Transcription" in response
+    assert "<Hangup" not in response
+    # No real call to a made-up phone, and nothing that could hang the visitor up
+    pretend_twilio.conferences.return_value.participants.create.assert_not_called()
+    pretend_twilio.calls.return_value.update.assert_not_called()

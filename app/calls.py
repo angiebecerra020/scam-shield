@@ -209,15 +209,25 @@ def handle_incoming_call(
 
 
 def start_protected_call(
-    enrollment: dict, caller: str, call_sid: str, call_token: str | None = None
+    enrollment: dict,
+    caller: str,
+    call_sid: str,
+    call_token: str | None = None,
+    ring_senior: bool = True,
 ) -> dict:
     """
     Save a new protected call and ring the senior into its conference room.
 
-    Input:  enrollment — the senior's active enrollment
-            caller     — who is calling
-            call_sid   — Twilio's ID for the caller's side of the call
-            call_token — the incoming call's CallToken (may be None)
+    Input:  enrollment  — the senior's active enrollment
+            caller      — who is calling
+            call_sid    — Twilio's ID for the caller's side of the call
+            call_token  — the incoming call's CallToken (may be None)
+            ring_senior — False for pretend calls (the demo player, the
+                          "Call it yourself" line), where the senior is
+                          made up and there's no phone to ring. With
+                          REAL_CALLS on, ringing a made-up phone fails, and
+                          handle_senior_status() would then hang up the
+                          real caller with "not available".
     Output: the saved call (a dict)
 
     Example:
@@ -238,6 +248,8 @@ def start_protected_call(
         "started_at": storage.now_text(),
     }
     storage.save_call(call)
+    if not ring_senior:
+        return call
 
     ring_into_conference(
         to=device_address(enrollment),
