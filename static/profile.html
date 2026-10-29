@@ -1,0 +1,70 @@
+<!--
+  profile.html — The family member's own details: name, phone, email and
+  language.
+
+  How it fits in: the web server (app/profile.py) sends this page at
+  /profile. Whoever signs seniors up types their details here once (or on
+  their first sign-up), and every sign-up after that uses them, so the
+  dashboard's form only asks about the senior. Saving a change here also
+  updates every senior they protect, so alerts go to the new phone or email.
+  profile.js makes it work.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Your details for Scam Shield alerts.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <title data-text="profile.pageTitle">Your profile · Scam Shield</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/header.css">
+</head>
+<body class="with-header">
+  <!-- The header with the logo and tabs (Log out lives here too). nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
+  <!-- Hidden until profile.js checks the login -->
+  <main class="card" id="profile-page" hidden>
+    <a href="/dashboard" class="back-link" data-text="setup.back">← Back to dashboard</a>
+    <h1 data-text="profile.title">Your profile</h1>
+    <p class="tagline" data-text="profile.tagline">Type this once. We use it for every person you protect.</p>
+
+    <form id="profile-form" class="form">
+      <fieldset>
+        <legend data-text="dash.whoGetsAlerts">Who gets the alerts?</legend>
+        <label><span data-text="dash.yourName">Your name</span> <input name="name" required maxlength="40" autocomplete="name"></label>
+        <label><span data-text="dash.yourPhone">Your phone</span> <input name="phone" type="tel" required autocomplete="tel" placeholder="305-555-0100" aria-describedby="phone-hint"></label>
+        <p id="phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code: all 10 digits.</p>
+        <label><span data-text="dash.yourEmail">Your email, for alerts</span> <input name="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+        <label><span data-text="dash.yourLanguage">Your language</span>
+          <select name="language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+      </fieldset>
+      <p class="hint" data-text="profile.updatesAll">Saving changes this for everyone you protect, so the next alert goes to your new phone or email.</p>
+      <button type="submit" data-text="profile.save">Save</button>
+      <!-- "Saved." or what went wrong (profile.js) -->
+      <p id="profile-saved" class="success" aria-live="polite"></p>
+      <p id="profile-error" class="error" role="alert"></p>
+    </form>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/busy.js"></script>
+  <script src="/static/nav.js"></script>
+  <script src="/static/profile.js"></script>
+</body>
+</html>

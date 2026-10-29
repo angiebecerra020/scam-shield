@@ -9,6 +9,9 @@ How it fits in: Scam Shield has to remember two things between requests:
     got, so the family dashboard can show past calls (see family.py)
   - scam_numbers: numbers a family reported as scams, and whether to warn
     them or block the call if that number calls again (see calls.py)
+  - profiles: each family member's own details (name, phone, email,
+    language), typed once and reused for every senior they sign up
+    (see profile.py)
 
 SQLite comes with Python, so there's nothing extra to install. The file's
 location comes from DATABASE_PATH in .env (see config.py).
@@ -72,6 +75,16 @@ CREATE TABLE IF NOT EXISTS scam_numbers (
     action        TEXT NOT NULL,     -- "warn" or "block" when it calls again
     from_call_id  TEXT,              -- the call they reported it from
     created_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS profiles (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_id      TEXT UNIQUE,       -- the family's login (NULL when login is off)
+    name          TEXT NOT NULL,
+    phone         TEXT NOT NULL,     -- E.164, e.g. +13055550101
+    email         TEXT,              -- for alerts (optional)
+    language      TEXT NOT NULL,     -- "en" or "es"
+    updated_at    TEXT NOT NULL
 );
 """
 
@@ -630,4 +643,75 @@ def remove_scam_number(owner_id: str | None, phone: str) -> None:
         db.execute(
             "DELETE FROM scam_numbers WHERE owner_id IS ? AND phone = ?",
             (owner_id, phone),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Profiles: the family member's own details
+# ---------------------------------------------------------------------------
+
+
+def get_profile(owner_id: str | None) -> dict | None:
+    """
+    Find one family member's saved details.
+
+    Input:  owner_id, the family's login (None when login is off)
+    Output: {"name", "phone", "email", "language", ...}, or None if they
+            haven't saved any yet
+
+    Example:
+        get_profile("user-ana") gives you {"name": "Ana", "phone": "+13055550101", ...}
+    """
+    with connect() as db:
+        # "IS" instead of "=" so None (login off) matches None.
+        row = db.execute("SELECT * FROM profiles WHERE owner_id IS ?", (owner_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def save_profile(owner_id: str | None, profile: dict) -> None:
+    """
+    Save a family member's details, replacing the old ones.
+
+    Input:  owner_id, the family's login (None when login is off)
+            profile, {"name", "phone", "email", "language"} (profile.py checks them first)
+    Output: nothing
+
+    Example:
+        save_profile("user-ana", {"name": "Ana", "phone": "+13055550101",
+                                  "email": None, "language": "en"})
+    """
+    with connect() as db:
+        # One row per family member: replace the old one if it's there.
+        db.execute("DELETE FROM profiles WHERE owner_id IS ?", (owner_id,))
+        db.execute(
+            """
+            INSERT INTO profiles (owner_id, name, phone, email, language, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (owner_id, profile["name"], profile["phone"], profile["email"], profile["language"], now_text()),
+        )
+
+
+def update_family_details(owner_id: str, profile: dict) -> None:
+    """
+    Copy a family member's new details onto every senior they protect, so
+    alerts go to their new phone and email right away. Removed seniors keep
+    their blanked-out details (call_again.py).
+
+    Input:  owner_id, the family's login
+            profile, the same as save_profile()
+    Output: nothing
+
+    Example:
+        update_family_details("user-ana", {"name": "Ana", "phone": "+13055550199", ...})
+        and Rosa's alerts now go to +13055550199
+    """
+    with connect() as db:
+        db.execute(
+            """
+            UPDATE enrollments
+            SET family_name = ?, family_phone = ?, family_email = ?, family_language = ?
+            WHERE owner_id = ? AND status != 'removed'
+            """,
+            (profile["name"], profile["phone"], profile["email"], profile["language"], owner_id),
         )

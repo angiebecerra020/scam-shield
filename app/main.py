@@ -15,11 +15,15 @@ Routes:
     GET  /login                   -> the log in and sign up page
     GET  /dashboard               -> the family dashboard
     GET  /setup/{id}              -> steps to finish setting up their phone
+    GET  /profile                 -> your own details, typed once (profile.py)
+    GET  /api/profile             -> [login] your saved details
+    PUT  /api/profile             -> [login] save your details
     GET  /api/auth-config         -> what the browser needs to talk to Supabase
 
   Consent (consent.py): the senior must say YES before we listen
-    POST /api/enrollments         -> [login] family signs a senior up; we text
-                                     or call the senior, the way the family picked
+    POST /api/enrollments         -> [login] family signs a senior up; we call
+                                     the senior. "Your" details come from your
+                                     profile if the form leaves them out
     GET  /api/enrollments/{id}    -> [login] has the senior said YES yet?
     POST /twilio/sms              -> Twilio: the senior texted us back
     POST /twilio/consent-call     -> Twilio: what to say on the consent call
@@ -63,7 +67,7 @@ from app import calls, consent, devices, family
 from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
-from app import call_again, demo_api, live_calls, phone_line, site_pages
+from app import call_again, demo_api, live_calls, phone_line, profile, site_pages
 
 # static/ sits next to app/ in the project folder.
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -91,6 +95,9 @@ app.include_router(call_again.router)
 
 # Live transcription for real protected calls lives in live_calls.py.
 app.include_router(live_calls.router)
+
+# The family member's profile page and its routes live in profile.py.
+app.include_router(profile.router)
 site_pages.add_site_extras(app)
 
 
@@ -240,12 +247,15 @@ class EnrollmentForm(BaseModel):
          "family_name": "Ana", "family_phone": "305-555-0101",
          "senior_language": "es", "family_language": "en",
          "phone_type": "landline", "ask_by": "call"}
+
+    The family_ details can be left out: then they come from the family
+    member's profile (profile.py).
     """
 
     senior_name: str
     senior_phone: str
-    family_name: str
-    family_phone: str
+    family_name: str = ""
+    family_phone: str = ""
     senior_language: str = "en"
     family_language: str = "en"
     phone_type: str = "cell"
@@ -261,7 +271,8 @@ def create_enrollment(form: EnrollmentForm, user: dict | None = Depends(require_
     Sign a senior up and text them to ask for their YES.
 
     We save whose login signed them up, so only that family sees them on the
-    dashboard (family.py).
+    dashboard (family.py). If the form leaves out "your" details, we use
+    the family member's profile; their first sign-up saves it (profile.py).
 
     Input:  the sign-up form (JSON), and the logged in user (None when login is off)
     Output: the new enrollment with status "pending", or {"error": "..."}
@@ -272,7 +283,10 @@ def create_enrollment(form: EnrollmentForm, user: dict | None = Depends(require_
     """
     try:
         owner_id = user["id"] if user else None
-        return consent.start_enrollment(**form.model_dump(), owner_id=owner_id)
+        fields = profile.fill_in_family(form.model_dump(), user)
+        enrollment = consent.start_enrollment(**fields, owner_id=owner_id)
+        profile.remember_from_signup(fields, user)
+        return enrollment
     except consent.EnrollmentError as problem:
         return error(problem.text, problem.status_code)
 

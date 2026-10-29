@@ -26,6 +26,7 @@ const STRINGS = {
     "nav.dashboard": "Dashboard",
     "nav.logIn": "Log in",
     "nav.logOut": "Log out",
+    "nav.profile": "Your profile",
     "nav.main": "Main",
 
     // Things that can go wrong anywhere (busy.js)
@@ -132,6 +133,19 @@ const STRINGS = {
     "dash.openSetup": "Show me the steps",
     "dash.callAgain": "Call them again",
     "dash.yourEmail": "Your email, for alerts",
+    "dash.alertsGoTo": "Alerts go to",
+    "dash.changeProfile": "Change your details",
+    "dash.savedOnce": "We'll save this to your profile, so you only type it once.",
+
+    // The profile page (profile.html, profile.js)
+    "profile.pageTitle": "Your profile · Scam Shield",
+    "profile.title": "Your profile",
+    "profile.tagline": "Type this once. We use it for every person you protect.",
+    "profile.updatesAll":
+      "Saving changes this for everyone you protect, so the next alert goes to your new phone or email.",
+    "profile.save": "Save",
+    "profile.busySave": "Saving…",
+    "profile.saved": "Saved.",
     "family.callAgain": "Call again",
     "family.remove": "Remove",
     "family.busyRemove": "Removing…",
@@ -317,6 +331,7 @@ const STRINGS = {
     "nav.dashboard": "Panel",
     "nav.logIn": "Iniciar sesión",
     "nav.logOut": "Cerrar sesión",
+    "nav.profile": "Su perfil",
     "nav.main": "Principal",
 
     "error.offline": "No pudimos conectar con Scam Shield. Revise su internet e intente de nuevo.",
@@ -420,6 +435,19 @@ const STRINGS = {
     "dash.openSetup": "Ver los pasos",
     "dash.callAgain": "Llamarle otra vez",
     "dash.yourEmail": "Su correo, para las alertas",
+    "dash.alertsGoTo": "Las alertas van a",
+    "dash.changeProfile": "Cambiar sus datos",
+    "dash.savedOnce": "Guardaremos esto en su perfil, así solo lo escribe una vez.",
+
+    // La página del perfil (profile.html, profile.js)
+    "profile.pageTitle": "Su perfil · Scam Shield",
+    "profile.title": "Su perfil",
+    "profile.tagline": "Escríbalo una vez. Lo usamos para cada persona que usted protege.",
+    "profile.updatesAll":
+      "Al guardar, esto cambia para todas las personas que usted protege, así la próxima alerta va a su nuevo teléfono o correo.",
+    "profile.save": "Guardar",
+    "profile.busySave": "Guardando…",
+    "profile.saved": "Guardado.",
     "family.callAgain": "Llamar otra vez",
     "family.remove": "Eliminar",
     "family.busyRemove": "Eliminando…",
@@ -631,6 +659,9 @@ const SERVER_MESSAGES_ES = {
   "Scam Shield is turned off for this person.": "Scam Shield está apagado para esta persona.",
   "We're already calling your phone. Please answer it.": "Ya estamos llamando a su teléfono. Por favor conteste.",
   "This link doesn't match any phone.": "Este enlace no corresponde a ningún teléfono.",
+  "Your name is required.": "Su nombre es obligatorio.",
+  "That email doesn't look right. Check it, or leave it blank.":
+    "Ese correo no se ve bien. Revíselo, o déjelo en blanco.",
   "No senior has said YES yet. Sign someone up first.":
     "Nadie ha dicho que SÍ todavía. Primero registre a alguien.",
 };

@@ -5,6 +5,8 @@
   family.js. It:
     - checks the family member is logged in (or sends them to /login)
     - shows "Your family" (loadFamily() in family.js)
+    - skips the "Who gets the alerts?" boxes once the family member has a
+      profile (GET /api/profile); the server fills those in (app/profile.py)
     - opens the sign-up form when the address ends in #protect, so a
       link can go straight to it
     - asks our server "are you running?" (GET /health) and shows the answer
@@ -36,6 +38,8 @@ let phoneType = "cell";
 // ones may say "text".
 let askBy = "call";
 let statusTimer = null;
+// The family member's saved details (GET /api/profile), or null before their first sign-up.
+let myProfile = null;
 
 /**
  * Ask the server if it's running, then show the answer on the page.
@@ -105,6 +109,56 @@ async function sendRequest(url, options = {}) {
 }
 
 /**
+ * Ask the server for the family member's profile, and show or skip the
+ * "Who gets the alerts?" boxes on the sign-up form.
+ *
+ * Input:  nothing (it calls GET /api/profile)
+ * Output: nothing; it updates the form.
+ * Example: Ana has a profile  gives you  "Alerts go to Ana · 305-555-0101"
+ *          instead of the boxes
+ */
+async function loadProfile() {
+  const { ok, data } = await sendRequest("/api/profile");
+  // If we can't tell, keep the boxes: typing them again beats being stuck.
+  myProfile = ok ? data.profile : null;
+  drawFamilyFields();
+}
+
+/**
+ * Show the "Alerts go to" note when there's a profile, or the boxes when there isn't.
+ *
+ * A disabled fieldset's boxes aren't required and aren't sent with the
+ * form, so the server uses the profile instead.
+ *
+ * Example: myProfile {name: "Ana", phone: "+13055550101", email: "ana@example.com"}
+ *          gives you "Alerts go to Ana · 305-555-0101 · ana@example.com"
+ */
+function drawFamilyFields() {
+  const haveProfile = myProfile !== null;
+  const fields = document.getElementById("family-fields");
+  fields.hidden = haveProfile;
+  fields.disabled = haveProfile;
+  document.getElementById("alerts-go-to").hidden = !haveProfile;
+  if (haveProfile) {
+    const parts = [myProfile.name, showPhone(myProfile.phone)];
+    if (myProfile.email) {
+      parts.push(myProfile.email);
+    }
+    document.getElementById("alerts-go-to-who").textContent = parts.join(" · ");
+  }
+}
+
+/**
+ * Write a saved US number the way people type it.
+ *
+ * Example: showPhone("+13055550101")  gives you  "305-555-0101"
+ */
+function showPhone(phone) {
+  const us = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(phone);
+  return us ? `${us[1]}-${us[2]}-${us[3]}` : phone;
+}
+
+/**
  * Send the sign-up form. On success, switch to the "waiting for YES" panel.
  *
  * Input:  event — the form's submit event
@@ -156,6 +210,10 @@ async function submitSignup(event) {
   showConsentStatus(data);
   // Add them to "Your family" right away, as "Waiting for their YES".
   loadFamily();
+  // Their first sign-up saved their profile, so next time the form is shorter.
+  if (myProfile === null) {
+    loadProfile();
+  }
 
   // If they signed someone else up earlier, stop checking on that one.
   clearInterval(statusTimer);
@@ -174,6 +232,10 @@ async function submitSignup(event) {
  */
 function findPhoneMissingAreaCode(form) {
   for (const input of [form.senior_phone, form.family_phone]) {
+    // A disabled box isn't sent (the profile fills it in), so skip it.
+    if (input.matches(":disabled")) {
+      continue;
+    }
     const typed = input.value.trim();
     const digits = typed.replace(/\D/g, "");
     if (typed && !typed.startsWith("+") && digits.length < 10) {
@@ -290,6 +352,7 @@ async function startDashboard() {
   document.getElementById("dashboard").hidden = false;
   showServerStatus();
   loadFamily();
+  loadProfile();
   openSignupIfAsked();
 }
 

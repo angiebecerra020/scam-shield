@@ -8,6 +8,9 @@
   We build the header here, so it's written in one place and every page gets
   the same one. To add a tab, add it to NAV_LINKS below.
 
+  When someone is logged in, "Your profile" (profile.html) sits next to
+  Log out, since it's about them and not a page everyone visits.
+
   The tabs always show, even on a phone (they get their own row under the
   logo), so nobody has to hunt behind a menu to find a page.
 
@@ -55,7 +58,7 @@ function navLink(link) {
  *
  * Input:  tools — the element holding the language switch
  * Output: nothing; it adds the link or button.
- * Example: Ana is logged in  gives you  a "Log out" button at the end of the header
+ * Example: Ana is logged in  gives you  "Your profile" and a "Log out" button at the end of the header
  */
 async function addAccountLink(tools) {
   // We're already on the login page, so a "Log in" link would go nowhere.
@@ -82,6 +85,15 @@ async function addAccountLink(tools) {
     logIn.textContent = t("nav.logIn");
     tools.appendChild(logIn);
     return;
+  }
+
+  // Not on the profile page itself, where it would go nowhere.
+  if (window.location.pathname !== "/profile") {
+    const profileLink = document.createElement("a");
+    profileLink.href = "/profile";
+    profileLink.className = "account-link";
+    profileLink.textContent = t("nav.profile");
+    tools.appendChild(profileLink);
   }
 
   const logOutButton = document.createElement("button");

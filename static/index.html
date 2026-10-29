@@ -10,9 +10,11 @@
   It has two parts:
     - Your family: everyone you protect, a pause button for each, and their
       past calls. Tap a call to see its score, reasons and Tavily links.
-    - The sign-up form: a family member enters the senior's details, we text
-      the senior (cell) or call them (landline), and the page waits for their
-      YES, then links to the steps to finish setup (setup.html).
+    - The sign-up form: a family member enters the senior's details, we call
+      the senior, and the page waits for their YES, then links to the steps
+      to finish setup (setup.html). The family member's own details come
+      from their profile (profile.html), so after the first sign-up the form
+      only asks about the senior.
   The live risk meter is coming in a later step.
 -->
 <!DOCTYPE html>
@@ -85,8 +87,18 @@
         </label>
       </fieldset>
 
-      <fieldset>
+      <!-- Once they have a profile, this short note takes the place of the
+           "Who gets the alerts?" boxes below (app.js) -->
+      <div id="alerts-go-to" class="panel" hidden>
+        <p><span data-text="dash.alertsGoTo">Alerts go to</span> <strong id="alerts-go-to-who"></strong></p>
+        <a href="/profile" data-text="dash.changeProfile">Change your details</a>
+      </div>
+
+      <!-- Only before they have a profile. The first sign-up saves it.
+           app.js disables it once there's a profile, so it isn't sent. -->
+      <fieldset id="family-fields">
         <legend data-text="dash.whoGetsAlerts">Who gets the alerts?</legend>
+        <p class="hint" data-text="dash.savedOnce">We'll save this to your profile, so you only type it once.</p>
         <label><span data-text="dash.yourName">Your name</span> <input name="family_name" required maxlength="40" autocomplete="name"></label>
         <label><span data-text="dash.yourPhone">Your phone</span> <input name="family_phone" type="tel" required autocomplete="tel" placeholder="305-555-0100" aria-describedby="family-phone-hint"></label>
         <p id="family-phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code: all 10 digits.</p>
