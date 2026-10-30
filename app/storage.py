@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS enrollments (
     phone_type    TEXT NOT NULL,     -- "cell" or "landline"
     ask_by        TEXT,              -- "text" or "call": how we asked for their YES
     family_email  TEXT,              -- where the family gets alerts by email (optional)
-    device_id     TEXT NOT NULL,     -- name of the senior's app or adapter at Twilio
-    device_key    TEXT NOT NULL,     -- secret part of the calling-app link
+    device_id     TEXT NOT NULL,     -- name of a landline senior's adapter at Twilio
+    device_key    TEXT NOT NULL,     -- unused now (was the old calling-app link), kept for old databases
     senior_language TEXT NOT NULL,   -- "en" or "es"
     family_language TEXT NOT NULL,
     status        TEXT NOT NULL,     -- pending / active / paused / declined / expired / revoked / removed
@@ -73,7 +73,8 @@ CREATE TABLE IF NOT EXISTS scam_numbers (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_id      TEXT,              -- the family who reported it (NULL when login is off)
     phone         TEXT NOT NULL,     -- the scammer's number, E.164
-    action        TEXT NOT NULL,     -- "warn" or "block" when it calls again
+    action        TEXT NOT NULL,     -- "warn" or "block" when it calls again, or "potential"
+                                     -- (Scam Shield marked it after a scam voicemail)
     from_call_id  TEXT,              -- the call they reported it from
     created_at    TEXT NOT NULL
 );
@@ -244,10 +245,9 @@ def get_enrollment(enrollment_id: str) -> dict | None:
 
 def find_enrollment_by_device(column: str, value: str) -> dict | None:
     """
-    Find the enrollment that owns a calling app or phone adapter.
+    Find the enrollment that owns a phone adapter.
 
-    Input:  column — "device_id" (the name Twilio knows the device by) or
-                     "device_key" (the secret in the calling-app link)
+    Input:  column — "device_id" (the name Twilio knows the adapter by)
             value  — what to look for
     Output: the enrollment as a dict, or None
 
@@ -675,7 +675,7 @@ def save_scam_number(owner_id: str | None, phone: str, action: str, from_call_id
 
     Input:  owner_id, the family's login (None when login is off)
             phone, the number, E.164
-            action, "warn" or "block"
+            action, "warn" or "block", or "potential" (from a scam voicemail)
             from_call_id, the call they reported it from
     Output: nothing
 

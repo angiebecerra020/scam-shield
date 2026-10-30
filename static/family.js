@@ -666,8 +666,15 @@ function reportAndBlock(call, details) {
   box.appendChild(actions);
 
   box.appendChild(makeElement("h5", "", t("report.ifAgain")));
+  // A scam voicemail puts the number on the list as "potential" (none of
+  // the buttons yet), so the family can still pick warn or block.
+  if (call.number_on_list === "potential") {
+    box.appendChild(makeElement("p", "hint", t("report.potential")));
+  }
   const choices = makeElement("div", "answer-buttons");
-  const picked = call.number_on_list || "none";
+  const picked = SCAM_LIST_CHOICES.some((option) => option.choice === call.number_on_list)
+    ? call.number_on_list
+    : "none";
   for (const option of SCAM_LIST_CHOICES) {
     const button = makeElement("button", "button-small button-outline", t(option.label));
     button.type = "button";

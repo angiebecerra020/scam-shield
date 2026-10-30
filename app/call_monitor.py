@@ -25,6 +25,7 @@ that's fine for now.
 """
 
 from app import calls, detector, email_alerts, research, storage
+from app.phone_numbers import normalize_phone
 
 # The sign-ups we protect. "active" means the senior said YES to Scam Shield.
 # "demo" is the pretend Rosa from the demo player (demo_api.py).
@@ -160,6 +161,66 @@ def alert_other_families(call: dict, enrollment: dict, detector_result: dict) ->
             real_call=True,
         )
         email_alerts.send_email(other["family_email"], subject, body)
+
+
+def check_voicemail(call_id: str, transcript: str) -> dict | None:
+    """
+    Reads a voicemail someone left a cell phone senior (a missed call their
+    phone still forwards to us; see live_calls.voicemail_twiml). If it looks
+    like a scam, we email every family that protects the senior with the
+    number that called and what they were after, and put the number on each
+    family's scam list as a "potential" scam.
+
+    Input:  call_id, our ID for the voicemail call
+            transcript, everything the caller said, one line per sentence
+    Output: the detector result, or None if there was nothing to read
+
+    Example:
+        check_voicemail("v1", "Caller: Grandma, it's Danny. I need bail money in gift cards.")
+        gives you a score around 90, Ana gets the email, and the number shows
+        up on her list as a potential scam
+    """
+    call = storage.get_call(call_id)
+    if call is None:
+        return None
+    storage.mark_call_ended(call_id)
+    enrollment = storage.get_enrollment(call["enrollment_id"])
+    if not transcript.strip() or enrollment is None or enrollment["status"] != "active":
+        return None
+
+    result = detector.score_call(transcript, enrollment["family_language"])
+    storage.save_call_score(call_id, result)
+    score = result.get("risk_score")
+    print(f"[voicemail {call_id}] score {score}")
+
+    reported = calls.reported_number_action(enrollment, call["caller_number"])
+    looks_like_scam = (score is not None and score >= detector.ALERT_FROM) or reported == "warn"
+    if not looks_like_scam:
+        return result
+
+    # A hidden number ("Anonymous") can't go on a list, but the email still goes out.
+    caller_phone = normalize_phone(call["caller_number"] or "")
+    for family in storage.find_enrollments_for_senior(enrollment["senior_phone"]):
+        if family["status"] != "active":
+            continue
+        # A number the family already chose to warn about or block stays that way.
+        if caller_phone and calls.reported_number_action(family, caller_phone) is None:
+            storage.save_scam_number(family.get("owner_id"), caller_phone, "potential", call_id)
+        if not family.get("family_email"):
+            print(f"[voicemail {call_id}] No family email saved, so no voicemail email")
+            continue
+        subject, body = email_alerts.voicemail_email(
+            family["family_language"],
+            family["senior_name"],
+            family["family_name"],
+            result,
+            call["caller_number"],
+            on_list=bool(caller_phone),
+        )
+        sent = email_alerts.send_email(family["family_email"], subject, body)
+        print(f"[voicemail {call_id}] Voicemail email: {sent}")
+    storage.mark_call_alerted(call_id)
+    return result
 
 
 def all_sources(found: dict | None) -> list[dict]:

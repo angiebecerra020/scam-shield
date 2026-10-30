@@ -10,7 +10,6 @@ tests check both paths, and that a landline senior can still call out.
 Demo mode is on (see conftest.py), so no real calls are placed. Run with:  pytest
 """
 
-import jwt
 from fastapi.testclient import TestClient
 
 from app import calls, storage
@@ -160,68 +159,10 @@ def test_dashboard_shows_setup_details_for_each_phone_type(monkeypatch):
     landline = sign_up("landline", senior_phone="+15555550102").json()
 
     assert cell["setup"]["forward_to"] == "+15555550150"
-    assert "/phone/" in cell["setup"]["app_link"]
+    assert "app_link" not in cell["setup"]
     assert landline["setup"]["adapter_username"].startswith("senior-")
     assert landline["setup"]["adapter_domain"] == SIP_DOMAIN
     assert "app_link" not in landline["setup"]
-
-
-# ----- The calling app (cell phones) -----
-
-
-def app_key(enrollment_id: str) -> str:
-    return storage.get_enrollment(enrollment_id)["device_key"]
-
-
-def test_calling_app_page_loads():
-    response = client.get("/phone/anything")
-
-    assert response.status_code == 200
-    assert "Scam Shield" in response.text
-
-
-def test_calling_app_in_demo_mode_has_no_login():
-    enrollment_id = sign_up("cell").json()["id"]
-
-    details = client.get(f"/api/phone/{app_key(enrollment_id)}").json()
-
-    assert details == {"senior_name": "Rosa", "demo_mode": True, "token": None}
-
-
-def test_calling_app_login_can_only_receive_calls_for_this_senior(monkeypatch):
-    enrollment_id = sign_up("cell").json()["id"]
-    monkeypatch.setenv("DEMO_MODE", "false")
-    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "ACfake")
-    monkeypatch.setenv("TWILIO_API_KEY_SID", "SKfake")
-    monkeypatch.setenv("TWILIO_API_KEY_SECRET", "fake-secret-that-is-long-enough-for-hs256")
-
-    token = client.get(f"/api/phone/{app_key(enrollment_id)}").json()["token"]
-    claims = jwt.decode(token, "fake-secret-that-is-long-enough-for-hs256", algorithms=["HS256"])
-
-    voice = claims["grants"]["voice"]
-    assert claims["grants"]["identity"] == storage.get_enrollment(enrollment_id)["device_id"]
-    assert voice["incoming"]["allow"] is True
-    assert "outgoing" not in voice
-
-
-def test_calling_app_says_so_when_twilio_api_key_is_missing(monkeypatch):
-    enrollment_id = sign_up("cell").json()["id"]
-    monkeypatch.setenv("DEMO_MODE", "false")
-    monkeypatch.setenv("TWILIO_API_KEY_SID", "")
-
-    response = client.get(f"/api/phone/{app_key(enrollment_id)}")
-
-    assert response.status_code == 503
-
-
-def test_wrong_calling_app_link_is_rejected():
-    assert client.get("/api/phone/not-a-real-key").status_code == 404
-
-
-def test_landline_has_no_calling_app():
-    enrollment_id = sign_up("landline").json()["id"]
-
-    assert client.get(f"/api/phone/{app_key(enrollment_id)}").status_code == 404
 
 
 # ----- Landline senior calling out through the adapter -----
