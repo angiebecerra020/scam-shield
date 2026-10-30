@@ -393,3 +393,37 @@ input::placeholder {
   margin: 12px 0;
   padding: 12px 16px;
 }
+
+/* Spots for our videos on the home page. Each one becomes a YouTube embed later. */
+.video-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 16px;
+}
+
+.video-spot {
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  background: #121212;
+  border: 2px dashed #C9A227;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+}
+
+.video-spot-title {
+  color: #C9A227;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Scam Shield 2.0, coming soon: a gold frame so it stands out */
+.coming-soon {
+  border: 2px solid #C9A227;
+  border-radius: 18px;
+  padding: 24px;
+}

@@ -79,7 +79,7 @@ function copyButton(link) {
 }
 
 /**
- * The 3 steps for a cell phone: forward the calls they decline or miss, open
+ * The 4 steps for a cell phone: forward the calls they decline or miss, open
  * the Scam Shield page and keep it open, then how a call works. If the page
  * is closed, Scam Shield calls their real phone instead (calls.py).
  *
@@ -109,6 +109,12 @@ function cellSteps(name, setup, number) {
       makeTag("p", "", t("setup.cellStep1a", { name })),
       makeTag("p", "", t("setup.cellStep1b")),
       makeTag("p", "hint", t("setup.cellStep1c")),
+    ]),
+    // So they can add us to a call they already picked up (live_calls.senior_added_us).
+    step(t("setup.cellContactTitle"), [
+      makeTag("p", "", t("setup.cellContactA", { name })),
+      dialCode(number),
+      makeTag("p", "", t("setup.cellContactB")),
     ]),
   ];
 }
