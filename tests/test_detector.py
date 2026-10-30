@@ -275,3 +275,9 @@ def test_accuracy_on_all_scripts():
     print_accuracy_table(rows)
     correct = sum(1 for row in rows if row["correct"])
     assert correct / len(rows) >= 0.75, "The detector got fewer than 75% of the calls right"
+
+
+def test_a_different_voice_is_not_a_scam_sign():
+    """"Danny? You sound different" in the demo call shouldn't show up as a red flag."""
+    assert "you sound different" in detector.SYSTEM_PROMPT
+    assert "Never list it as a reason" in detector.SYSTEM_PROMPT

@@ -128,6 +128,8 @@ NOT scam signs by themselves (don't raise the score for these alone):
   especially if they say "call the number on the back of your card" or "we'll never ask for your PIN"
 - A real relative talking about money they gave, deposited, or will bring
 - Confirming a name, an appointment, or a delivery
+- The caller's voice sounding different, or the senior saying "you sound different" (colds and bad
+  phone lines change voices). Never list it as a reason
 
 Normal call signs: no request for money or private numbers, no secrecy, no threats, and details
 a real relative, friend, doctor's office, or business would know. A real relative calling to chat is safe.
