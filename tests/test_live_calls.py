@@ -419,6 +419,30 @@ def test_when_the_family_is_alerted_the_senior_hears_the_warning_too(inbox, monk
     assert warned == [call["id"]]
 
 
+def test_the_warning_plays_as_the_family_call_goes_out(inbox, monkeypatch):
+    """The senior hears it right after the family's phone starts ringing,
+    before the alert emails and the Tavily search."""
+    happened = []
+    monkeypatch.setattr(calls, "send_family_alert", lambda call: happened.append("family call"))
+    monkeypatch.setattr(live_calls, "warn_senior", lambda call_id: happened.append("warning"))
+    monkeypatch.setattr(email_alerts, "deliver", lambda message: happened.append("email"))
+    monkeypatch.setattr(research, "research_call", lambda *args: happened.append("search") or {})
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
+        },
+    )
+
+    assert happened[:2] == ["family call", "warning"]
+
+
 def test_the_scam_warning_words():
     save_grandma()
     twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
@@ -426,4 +450,4 @@ def test_the_scam_warning_words():
 
     response = twilio_post(f"/twilio/protected/silence?call_id={call['id']}&kind=scam", {})
 
-    assert "This is a potential scam. Disconnect from the call and contact a loved one." in response.text
+    assert "This is a potential scam. We are notifying a family member." in response.text

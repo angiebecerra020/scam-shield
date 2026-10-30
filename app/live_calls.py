@@ -80,7 +80,7 @@ SCREEN_WORDS = {
         "unprotected": "Connecting you now.",
         "silence": "Careful. This caller hasn't said anything. Silent calls are often scams. "
         "Please don't talk to them. We'll end this call soon.",
-        "scam": "This is a potential scam. Disconnect from the call and contact a loved one.",
+        "scam": "This is a potential scam. We are notifying a family member.",
     },
     "es": {
         "question": "Hola, habla Scam Shield. Tiene una llamada del {caller}. "
@@ -89,7 +89,7 @@ SCREEN_WORDS = {
         "unprotected": "Le conectamos ahora.",
         "silence": "Cuidado. Esta persona no ha dicho nada. Las llamadas en silencio suelen ser estafas. "
         "Por favor no hable con ella. Vamos a terminar esta llamada pronto.",
-        "scam": "Esta es una posible estafa. Cuelgue la llamada y comuníquese con un ser querido.",
+        "scam": "Esta es una posible estafa. Estamos avisando a un familiar.",
     },
 }
 
@@ -178,14 +178,12 @@ def check_call(call_id: str) -> None:
                 # Not enough to judge yet. The next sentence brings us back here.
                 return
             try:
-                checked = call_monitor.check_live_call(call_id, "\n".join(turns))
+                # The moment the family's phone starts ringing, the senior
+                # hears the warning too, right on the call (warn_senior).
+                call_monitor.check_live_call(call_id, "\n".join(turns), warn_senior=warn_senior)
             except ValueError:
                 # The call isn't in storage anymore (the family removed the senior).
-                checked = {}
-            if checked.get("alert_sent_now"):
-                # The family just got the alert, so the senior hears it too, right
-                # on the call, before they send a dime.
-                warn_senior(call_id)
+                pass
             CHECKED[call_id] = count
 
 
@@ -413,7 +411,7 @@ def warn_about_silence(call_id: str) -> None:
 def warn_senior(call_id: str) -> None:
     """
     Says the scam warning out loud to everyone on the call, the moment the
-    family gets the alert: "This is a potential scam. Disconnect from the call..."
+    family's alert call goes out: "This is a potential scam. We are notifying a family member."
 
     Example:
         warn_senior("c1") right after Nemotron scores the call 92
@@ -468,7 +466,7 @@ async def silence_message(request: Request, call_id: str = "", kind: str = "sile
 
     Example:
         Rosa hears "Careful. This caller hasn't said anything..."
-        with kind=scam, Rosa hears "This is a potential scam. Disconnect from the call..."
+        with kind=scam, Rosa hears "This is a potential scam. We are notifying a family member."
     """
     form = await read_twilio_form(request)
     if form is None:

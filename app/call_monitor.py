@@ -91,12 +91,16 @@ def should_alert(call: dict, enrollment: dict | None, detector_result: dict) -> 
     return score >= detector.ALERT_FROM
 
 
-def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
+def send_alerts(call: dict, enrollment: dict, detector_result: dict, warn_senior=None) -> None:
     """
     Phones the family with the alert (press 1 to join the call), and emails
     it too if they gave us an address.
 
     Input:  call, enrollment, detector_result (same as should_alert)
+            warn_senior, optional: says the warning out loud on the call
+            (live_calls.warn_senior). It runs right after the family's phone
+            starts ringing, so the senior hears "we are notifying a family
+            member" at the same time, not after the emails go out.
     Output: nothing. In demo mode the call goes into calls.DEMO_CALL_LOG instead.
 
     Example:
@@ -110,6 +114,8 @@ def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
         # A failed alert call (a Twilio error, a bad number) must never stop
         # the emails below, or the family hears nothing at all.
         print(f"[alert {call['id']}] Couldn't make the alert call: {problem}")
+    if warn_senior is not None:
+        warn_senior(call["id"])
     # Email too, if the family gave us an address, with a "Join call" link.
     if not enrollment.get("family_email"):
         print(f"[alert {call['id']}] No family email saved, so no alert email")
@@ -176,13 +182,14 @@ def all_sources(found: dict | None) -> list[dict]:
     return sources
 
 
-def check_live_call(call_id: str, transcript: str) -> dict:
+def check_live_call(call_id: str, transcript: str, warn_senior=None) -> dict:
     """
     Checks a call that's happening right now, and alerts the family if needed.
     Call this every time the transcript gets a new line.
 
     Input:  call_id, our ID for the call (from calls.start_protected_call)
             transcript, the whole call so far, one line per turn
+            warn_senior, optional, passed on to send_alerts()
     Output: {"call_id", "result": <detector result>, "research": <Tavily result or None>,
              "alert_sent_now": True if we just alerted the family,
              "alert_sent": True if the family has been alerted about this call}
@@ -202,13 +209,7 @@ def check_live_call(call_id: str, transcript: str) -> dict:
         language = enrollment["family_language"]
 
     result = detector.score_call(transcript, language)
-    found = research_once(call, result)
-
-    # Save it for the call history. We save the links every time because the
-    # search might finish after the call's highest score.
     storage.save_call_score(call_id, result)
-    if found:
-        storage.save_call_sources(call_id, all_sources(found))
 
     # Only the score and status, never the call's words (our privacy promise).
     print(
@@ -220,8 +221,16 @@ def check_live_call(call_id: str, transcript: str) -> dict:
         print(f"[live call {call_id}] Couldn't score it: {(result.get('reasons') or ['?'])[0]}")
     alert_sent_now = False
     if should_alert(call, enrollment, result):
-        send_alerts(call, enrollment, result)
+        # Alert first, then search: the family and the senior shouldn't wait
+        # on Tavily, and the alert doesn't use what it finds.
+        send_alerts(call, enrollment, result, warn_senior)
         alert_sent_now = True
+
+    found = research_once(call, result)
+    # Save the links for the call history. We save them every time because
+    # the search might finish after the call's highest score.
+    if found:
+        storage.save_call_sources(call_id, all_sources(found))
 
     return {
         "call_id": call_id,
