@@ -11,10 +11,10 @@
 
 Scam Shield follows a senior's phone call through a live transcript, checks the caller against the web, and uses **NVIDIA Nemotron** on **Nebius Token Factory** to spot the warning signs of a scam: gift cards, secrecy, urgency, a "grandchild" in trouble. When the risk is high, Scam Shield phones the family right away, in their own language, and they can press 1 to join the call.
 
-**🌐 Try it: <https://scam-shield-ity3.onrender.com>**
-- **[Watch a scam get caught](https://scam-shield-ity3.onrender.com/demo):** play a scripted scam call and watch Nemotron score it line by line. No phone or account needed.
-- **[Test it](https://scam-shield-ity3.onrender.com/try):** call our number from your own phone, play the scammer, and watch it catch you live.
-- **[Family dashboard](https://scam-shield-ity3.onrender.com/dashboard):** make an account, sign someone up, and we really call them to ask for their OK. The demo page uses a made-up family; the dashboard doesn't.
+**🌐 Try it: <https://scam-shield-86hy.onrender.com>**
+- **[Watch a scam get caught](https://scam-shield-86hy.onrender.com/demo):** play a scripted scam call and watch Nemotron score it line by line. No phone or account needed.
+- **[Test it](https://scam-shield-86hy.onrender.com/try):** call our number from your own phone, play the scammer, and watch it catch you live.
+- **[Family dashboard](https://scam-shield-86hy.onrender.com/dashboard):** make an account, sign someone up, and we really call them to ask for their OK. The demo page uses a made-up family; the dashboard doesn't.
 
 > 🚧 **Work in progress** for the Nebius x NVIDIA Global AI Hackathon. Parts marked *Coming soon* are being built now.
 
@@ -187,7 +187,7 @@ pytest
 
 ## Demo
 
-**On the live site:** open <https://scam-shield-ity3.onrender.com>, tap **Log in** in the header (on a phone it's under **Menu**), and make an account. Then follow the steps below from "sign someone up". We host on Render because the live demo and the phone line need one always-on server that remembers each call (and a disk, so the database doesn't reset).
+**On the live site:** open <https://scam-shield-86hy.onrender.com>, tap **Log in** in the header, and make an account. Then follow the steps below from "sign someone up". We host on Render because the live demo and the phone line need one always-on server that remembers each call (and a disk, so the database doesn't reset).
 
 - **Demo page** (`/demo`): every demo lives here, in tabs at the top. Nothing else on the site pretends.
   - **A scam call:** pick one of our sample calls and watch it play line by line as if it were live: the risk score climbs, the family alert goes out, Danny gets "Is it really you?", and Grandma hears a spoken warning.
