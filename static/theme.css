@@ -461,3 +461,20 @@ input::placeholder {
   border-radius: 50%;
   object-fit: cover;
 }
+
+/* Each home page video with its 3 bullet points under it */
+.video-card h3 {
+  margin: 12px 0 4px;
+}
+
+.video-spot.has-video {
+  border-style: solid;
+  overflow: hidden;
+  padding: 0;
+}
+
+.video-spot.has-video iframe {
+  border: 0;
+  height: 100%;
+  width: 100%;
+}
