@@ -44,60 +44,62 @@
 
   <main>
     <section class="intro">
-      <p class="eyebrow">Test it</p>
-      <h1>Call our AI scam call detector and try to fool it.</h1>
-      <p class="lead">
-        Get a code, call our number from your phone, and play a scammer calling Grandma Rosa.
-        NVIDIA Nemotron reads every sentence while you talk, and you watch it all here.
-        Rosa, Ana and Danny are made up, and we never save the audio.
-      </p>
+      <p class="eyebrow" data-text="nav.try">Test it</p>
+      <h1 data-text="try.title">Call our AI scam call detector and try to fool it.</h1>
+      <p class="lead" data-text="try.lead">Get a code, call our number from your phone, and play a scammer calling Grandma Rosa. NVIDIA Nemotron reads every sentence while you talk, and you watch it all here. Rosa, Ana and Danny are made up, and we never save the audio.</p>
 
       <form id="code-form" class="controls">
         <label class="field field-small">
-          <span>You'll speak</span>
+          <span data-text="try.youSpeak">You'll speak</span>
           <select id="language">
             <option value="en">English</option>
             <option value="es">Español</option>
           </select>
         </label>
         <label class="field field-small">
-          <span>Ana reads</span>
+          <span data-text="demo.anaReads">Ana reads</span>
           <select id="family-language">
             <option value="en">English</option>
             <option value="es">Español</option>
           </select>
         </label>
         <label class="field">
-          <span>Get Ana's alert by email (optional)</span>
+          <span data-text="try.emailLabel">Get Ana's alert by email (optional)</span>
           <input type="email" id="email" autocomplete="email" placeholder="you@example.com">
         </label>
         <div class="buttons">
-          <button type="submit" id="get-code" class="primary"><i data-lucide="phone-call" aria-hidden="true"></i> <span>Get my code</span></button>
+          <button type="submit" id="get-code" class="primary"><i data-lucide="phone-call" aria-hidden="true"></i> <span data-text="try.getCode">Get my code</span></button>
         </div>
       </form>
       <p id="line-error" class="error" role="alert"></p>
 
       <div id="dial-card" class="dial-card" hidden>
         <div>
-          <p class="dial-label">Call this number</p>
+          <p class="dial-label" data-text="try.callNumber">Call this number</p>
           <p class="dial-number"><a id="dial-number" href="#"></a></p>
         </div>
         <div>
-          <p class="dial-label">Then type this code</p>
+          <p class="dial-label" data-text="try.typeCode">Then type this code</p>
           <p class="dial-code" id="dial-code"></p>
         </div>
         <div>
-          <p class="dial-label">Status</p>
-          <p class="line-status" id="line-status" aria-live="polite">Waiting for your call</p>
+          <p class="dial-label" data-text="try.status">Status</p>
+          <p class="line-status" id="line-status" aria-live="polite" data-text="try.waitingForCall">Waiting for your call</p>
         </div>
         <div class="dial-steps-wrap">
-          <p class="dial-label">Ideas to try</p>
-          <ol class="dial-steps">
+          <p class="dial-label" data-text="try.ideas">Ideas to try</p>
+          <!-- One list per language (i18n.js shows the right one) -->
+          <ol class="dial-steps" data-lang="en">
             <li>Start friendly: <em>"Hi Grandma, it's me, Danny."</em></li>
             <li>Then the trouble: <em>"I got arrested and I need bail money. Please don't tell Mom."</em></li>
             <li>Then the ask: <em>"Can you buy gift cards and read me the numbers?"</em></li>
           </ol>
-          <p class="note">Want to test it the other way? Try a normal call, like a pharmacy reminder, and see that it stays calm.</p>
+          <ol class="dial-steps" data-lang="es" lang="es" hidden>
+            <li>Empiece con cariño: <em>"Hola abuela, soy yo, Danny."</em></li>
+            <li>Luego el problema: <em>"Me arrestaron y necesito dinero para la fianza. Por favor no le digas a mamá."</em></li>
+            <li>Luego lo que pide: <em>"¿Puedes comprar tarjetas de regalo y leerme los números?"</em></li>
+          </ol>
+          <p class="note" data-text="try.otherWay">Want to test it the other way? Try a normal call, like a pharmacy reminder, and see that it stays calm.</p>
         </div>
       </div>
     </section>
@@ -106,17 +108,17 @@
       <!-- Rosa's phone: what you say, line by line, and her warning -->
       <section class="phone" aria-labelledby="rosa-title">
         <header class="phone-header">
-          <p class="phone-owner" id="rosa-title">Rosa's phone <span>grandma</span></p>
-          <p class="call-status" id="call-status">Waiting</p>
+          <p class="phone-owner" id="rosa-title"><span data-text="demo.rosaPhone">Rosa's phone</span> <span class="phone-role" data-text="demo.grandma">grandma</span></p>
+          <p class="call-status" id="call-status" data-text="demo.waiting">Waiting</p>
         </header>
         <div class="caller-card">
           <i data-lucide="phone-incoming" aria-hidden="true"></i>
           <div>
-            <p class="caller-label">Incoming call</p>
-            <p class="caller-number" id="caller-number">You, playing the caller</p>
+            <p class="caller-label" data-text="demo.incoming">Incoming call</p>
+            <p class="caller-number" id="caller-number" data-text="try.youCaller">You, playing the caller</p>
           </div>
         </div>
-        <ol id="transcript" class="transcript" aria-live="polite" aria-label="What you've said on the call"></ol>
+        <ol id="transcript" class="transcript" aria-live="polite" aria-label="What you've said on the call" data-text-aria-label="try.transcriptAria"></ol>
         <div id="senior-warning" class="senior-warning" role="alert" hidden>
           <i data-lucide="triangle-alert" aria-hidden="true"></i>
           <p id="senior-warning-text"></p>
@@ -125,32 +127,32 @@
 
       <!-- What Nemotron sees: the risk, the reasons, and what Tavily found -->
       <section class="ai" id="ai" data-verdict="waiting" aria-labelledby="ai-title" aria-busy="false">
-        <p class="eyebrow">What the AI sees</p>
-        <h2 id="ai-title">Scam risk</h2>
+        <p class="eyebrow" data-text="demo.aiSees">What the AI sees</p>
+        <h2 id="ai-title" data-text="demo.scamRisk">Scam risk</h2>
 
         <div class="score">
           <p class="score-number"><span id="score">0</span><small>/100</small></p>
-          <p class="verdict" id="verdict">Start talking to see the score</p>
+          <p class="verdict" id="verdict" data-text="try.startTalking">Start talking to see the score</p>
         </div>
 
         <div class="meter" aria-hidden="true">
           <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
-          <div class="meter-marks"><span class="mark-suspicious">40 suspicious</span><span class="mark-alert">70 family alerted</span></div>
+          <div class="meter-marks"><span class="mark-suspicious" data-text="demo.mark40">40 suspicious</span><span class="mark-alert" data-text="demo.mark70">70 family alerted</span></div>
         </div>
 
-        <ol id="trail" class="trail" aria-label="The score after each sentence"></ol>
+        <ol id="trail" class="trail" aria-label="The score after each sentence" data-text-aria-label="try.trailAria"></ol>
 
-        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> Nemotron is reading the call</p>
+        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> <span data-text="demo.thinking">Nemotron is reading the call</span></p>
 
         <div class="facts">
-          <h3>Who they say they are</h3>
-          <p id="claimed" class="claimed">Nobody yet</p>
+          <h3 data-text="demo.whoTheySay">Who they say they are</h3>
+          <p id="claimed" class="claimed" data-text="demo.nobodyYet">Nobody yet</p>
 
-          <h3>Why</h3>
+          <h3 data-text="demo.why">Why</h3>
           <ul id="reasons" class="reasons"></ul>
 
-          <h3><i data-lucide="search" aria-hidden="true"></i> What the web says</h3>
-          <p id="research-note" class="note">Once the call seems suspicious, Tavily looks for matching scam warnings.</p>
+          <h3><i data-lucide="search" aria-hidden="true"></i> <span data-text="demo.webSays">What the web says</span></h3>
+          <p id="research-note" class="note" data-text="try.researchNote">Once the call seems suspicious, Tavily looks for matching scam warnings.</p>
           <ul id="sources" class="sources"></ul>
         </div>
 
@@ -161,22 +163,22 @@
       <div class="family">
         <section class="phone phone-small" id="ana-phone" aria-labelledby="ana-title">
           <header class="phone-header">
-            <p class="phone-owner" id="ana-title">Ana's phone <span>daughter</span></p>
+            <p class="phone-owner" id="ana-title"><span data-text="demo.anaPhone">Ana's phone</span> <span class="phone-role" data-text="demo.daughter">daughter</span></p>
             <i data-lucide="message-square" aria-hidden="true"></i>
           </header>
-          <ol id="family-texts" class="texts" aria-live="polite" aria-label="Alerts Ana got"></ol>
+          <ol id="family-texts" class="texts" aria-live="polite" aria-label="Alerts Ana got" data-text-aria-label="try.anaAlertsAria"></ol>
           <p id="email-note" class="note" hidden></p>
         </section>
 
         <section class="phone phone-small" id="danny-phone" aria-labelledby="danny-title">
           <header class="phone-header">
-            <p class="phone-owner" id="danny-title">Danny's phone <span>grandson</span></p>
+            <p class="phone-owner" id="danny-title"><span data-text="demo.dannyPhone">Danny's phone</span> <span class="phone-role" data-text="demo.grandson">grandson</span></p>
             <i data-lucide="user-check" aria-hidden="true"></i>
           </header>
-          <ol id="contact-texts" class="texts" aria-live="polite" aria-label="Texts Danny got"></ol>
+          <ol id="contact-texts" class="texts" aria-live="polite" aria-label="Texts Danny got" data-text-aria-label="demo.dannyTextsAria"></ol>
           <div id="verify-buttons" class="verify-buttons" hidden>
-            <button type="button" id="verify-yes" class="secondary">Yes, it's me</button>
-            <button type="button" id="verify-no" class="danger">No, it's not me</button>
+            <button type="button" id="verify-yes" class="secondary" data-text="demo.yesItsMe">Yes, it's me</button>
+            <button type="button" id="verify-no" class="danger" data-text="demo.noNotMe">No, it's not me</button>
           </div>
         </section>
       </div>
@@ -184,10 +186,16 @@
   </main>
 
   <footer class="footer">
-    <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, <strong>Tavily</strong> and <strong>Twilio</strong>.</p>
-    <p>Calls last up to 5 minutes. We turn your words into text, and never save the audio or your phone number.</p>
+    <div data-lang="en">
+      <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, <strong>Tavily</strong> and <strong>Twilio</strong>.</p>
+      <p>Calls last up to 5 minutes. We turn your words into text, and never save the audio or your phone number.</p>
+    </div>
+    <div data-lang="es" lang="es" hidden>
+      <p>Hecho con <strong>NVIDIA Nemotron</strong> en <strong>Nebius Token Factory</strong>, <strong>Tavily</strong> y <strong>Twilio</strong>.</p>
+      <p>Las llamadas duran hasta 5 minutos. Convertimos sus palabras en texto, y nunca guardamos el audio ni su número de teléfono.</p>
+    </div>
     <p class="footer-links"><a href="/scam-call-protection-for-seniors" data-text="footer.seniors">Protection for seniors</a> · <a href="/family-scam-alerts" data-text="footer.alerts">Family alerts</a> · <a href="/landline-and-cell-phone-scam-protection" data-text="footer.phones">Landline and cell</a> · <a href="/qa" data-text="footer.qa">Q&amp;A</a></p>
-    <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+    <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>
   </footer>
 
   <!-- The header: its words (strings.js, i18n.js), and Supabase and auth.js

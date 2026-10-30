@@ -58,7 +58,7 @@ a {
 
 /* Small capital labels, like the ones in a magazine */
 .eyebrow,
-.phone-owner span,
+.phone-owner .phone-role,
 .caller-label,
 .facts h3,
 .meter-marks,
@@ -275,7 +275,7 @@ a:focus-visible {
   color: var(--ivory);
 }
 
-.phone-owner span {
+.phone-owner .phone-role {
   margin-left: 6px;
   color: var(--muted);
   font-family: var(--sans);

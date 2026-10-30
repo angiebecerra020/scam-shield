@@ -11,7 +11,9 @@
   a list of steps (WALKTHROUGHS below), and each step adds what Ana sees on
   her phone, what Rosa hears and does on hers, and one line saying what's
   happening. The words are copied from the real app (strings.js and
-  app/languages.py), so if those change, change them here too.
+  app/languages.py), in English and Spanish, so if those change, change
+  them here too. The English | Español switch starts the walkthrough over
+  in the new language.
 
   Every phone number here ends in 555-01XX, which is saved for fiction.
 */
@@ -31,7 +33,7 @@ const SCAM_SHIELD_PHONE = "(305) 555-0150";
              "presses" a key or "dials", or an "info" line
     status — the line at the top of Rosa's phone (optional)
 */
-const WALKTHROUGHS = {
+const WALKTHROUGHS_EN = {
   add: {
     title: "Add someone to protect.",
     lead:
@@ -248,9 +250,242 @@ const WALKTHROUGHS = {
   },
 };
 
+// The same walkthroughs in Spanish. The words come from the Spanish in
+// strings.js and app/languages.py.
+const WALKTHROUGHS_ES = {
+  add: {
+    title: "Agregar a alguien para proteger.",
+    lead:
+      "Ana quiere Scam Shield en el teléfono de su mamá Rosa. No escuchamos nada hasta que Rosa diga SÍ en su propio teléfono.",
+    steps: [
+      {
+        note: "Ana escribe el nombre y el número de Rosa en su panel.",
+        ana: [
+          {
+            kind: "screen",
+            title: "Proteja las llamadas de alguien",
+            lines: ["Nombre: Rosa", `Teléfono: ${ROSA_PHONE}`, "Celular · Español"],
+            buttons: [{ text: "Pedirle su permiso", style: "primary" }],
+          },
+        ],
+      },
+      {
+        note: "Scam Shield llama a Rosa para pedirle su permiso.",
+        status: "Scam Shield está llamando",
+        ana: [{ kind: "screen", title: "Configurando Scam Shield para Rosa", lines: ["Le estamos llamando ahora. Esperando a que marque el 1…"] }],
+        rosa: [
+          {
+            kind: "says",
+            body:
+              "Hola Rosa. Le habla Scam Shield. Ana quiere proteger sus llamadas contra estafadores. Escucharíamos sus llamadas, y avisaríamos a Ana si una parece una estafa. Para permitirlo, marque 1. Para negarlo, marque 2.",
+          },
+        ],
+      },
+      {
+        note: "Rosa marca 1 para decir que SÍ.",
+        rosa: [
+          { kind: "presses", body: "1" },
+          { kind: "says", body: "Gracias. Scam Shield ya está activado. Ana terminará de configurarlo. Adiós." },
+        ],
+        status: "Llamada terminada",
+      },
+      {
+        note: "Ana recibe un mensaje, y su panel dice que Rosa está protegida.",
+        ana: [
+          { kind: "text", body: "Scam Shield: Rosa dijo SÍ. Sus llamadas ahora están protegidas." },
+          {
+            kind: "screen",
+            title: "Termine de configurar su teléfono",
+            pill: "Protegido",
+            lines: ["Una última cosa: unos pasos rápidos en su teléfono."],
+            buttons: [{ text: "Ver los pasos", style: "primary" }],
+          },
+        ],
+      },
+      {
+        note: "Ana configura el teléfono de Rosa en 2 pasos: abre la aplicación de Scam Shield y pasa las llamadas por Scam Shield.",
+        ana: [
+          {
+            kind: "screen",
+            title: "Configurar el teléfono de Rosa",
+            lines: ["1. Active la aplicación de Scam Shield", "2. Pase sus llamadas por Scam Shield:"],
+            code: "**21*+13055550150#",
+          },
+        ],
+        rosa: [
+          { kind: "info", body: "El teléfono Scam Shield de Rosa. Listo. Las llamadas sonarán aquí." },
+          { kind: "dials", body: "**21*+13055550150#" },
+        ],
+        status: "Protegido",
+      },
+    ],
+  },
+
+  pause: {
+    title: "Pausar la protección por un tiempo.",
+    lead:
+      "Rosa tiene visitas y hoy no quiere que Scam Shield escuche. Ana puede pausarlo y volver a activarlo con un toque.",
+    steps: [
+      {
+        note: "Rosa está protegida. Ana la ve en su panel.",
+        status: "Protegido",
+        ana: [
+          {
+            kind: "screen",
+            title: "Rosa",
+            pill: "Protegido",
+            lines: ["Las alertas van a Ana."],
+            buttons: [{ text: "Pausar la protección", style: "secondary" }],
+          },
+        ],
+      },
+      {
+        note: "Ana toca Pausar la protección.",
+        status: "En pausa",
+        ana: [
+          {
+            kind: "screen",
+            title: "Rosa",
+            pill: "En pausa",
+            lines: ["La protección está en pausa. Las llamadas de Rosa suenan como siempre, y no estamos escuchando."],
+            buttons: [{ text: "Volver a activar la protección", style: "primary" }],
+          },
+        ],
+        rosa: [{ kind: "info", body: "Las llamadas suenan como siempre. Scam Shield no está escuchando." }],
+      },
+      {
+        note: "Más tarde, Ana toca Volver a activar la protección.",
+        status: "Protegido",
+        ana: [
+          {
+            kind: "screen",
+            title: "Rosa",
+            pill: "Protegido",
+            lines: ["Las alertas van a Ana."],
+            buttons: [{ text: "Pausar la protección", style: "secondary" }],
+          },
+        ],
+        rosa: [{ kind: "info", body: "Scam Shield vuelve a escuchar por si hay estafas." }],
+      },
+    ],
+  },
+
+  remove: {
+    title: "Eliminar a alguien.",
+    lead: "Ana ya no necesita Scam Shield en el teléfono de Rosa. La elimina desde su panel.",
+    steps: [
+      {
+        note: "Ana toca Eliminar en la tarjeta de Rosa.",
+        status: "Protegido",
+        ana: [
+          {
+            kind: "screen",
+            title: "Rosa",
+            pill: "Protegido",
+            lines: ["Las alertas van a Ana."],
+            buttons: [{ text: "Eliminar", style: "danger" }],
+          },
+        ],
+      },
+      {
+        note: "El panel le pregunta si está segura, ahí mismo en la tarjeta.",
+        ana: [
+          {
+            kind: "screen",
+            title: "Rosa",
+            lines: [
+              "¿Está seguro de que quiere eliminar a Rosa? Esto borra a esta persona y todas sus llamadas, y Scam Shield deja de protegerle. No se puede deshacer.",
+            ],
+            buttons: [
+              { text: "Sí, eliminar", style: "danger" },
+              { text: "Mantenerle", style: "secondary" },
+            ],
+          },
+        ],
+      },
+      {
+        note: "Ana toca Sí, eliminar. Scam Shield deja de escuchar enseguida, y las llamadas de Rosa siguen sonando.",
+        status: "Sin protección",
+        ana: [
+          {
+            kind: "screen",
+            title: "Su familia",
+            lines: [
+              "Se eliminó a Rosa, y Scam Shield no está escuchando. Sus llamadas siguen sonando como siempre. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
+            ],
+          },
+        ],
+        rosa: [{ kind: "info", body: "Scam Shield no está escuchando. Las llamadas siguen sonando como siempre." }],
+      },
+      {
+        note: "En el teléfono de Rosa, Ana marca ##21# para desactivar el desvío de llamadas. Ahora las llamadas van directo a Rosa.",
+        status: "Las llamadas suenan como siempre",
+        rosa: [
+          { kind: "dials", body: "##21#" },
+          { kind: "info", body: "El desvío de llamadas está desactivado." },
+        ],
+      },
+    ],
+  },
+
+  optout: {
+    title: "Rosa lo apaga ella misma.",
+    lead:
+      "Es el teléfono de Rosa, así que Rosa siempre decide. Puede apagar Scam Shield en cualquier momento con una llamada, sin preguntarle a Ana.",
+    steps: [
+      {
+        note: "Rosa llama al número de Scam Shield desde su propio teléfono.",
+        status: `Llamando al ${SCAM_SHIELD_PHONE}`,
+        ana: [{ kind: "screen", title: "Rosa", pill: "Protegido", lines: ["Las alertas van a Ana."] }],
+        rosa: [
+          { kind: "dials", body: SCAM_SHIELD_PHONE },
+          {
+            kind: "says",
+            body:
+              "Hola Rosa. Le habla Scam Shield. Ana configuró Scam Shield para escuchar sus llamadas y avisarle si hay una estafa. Si quiere cancelar Scam Shield para que deje de escuchar sus conversaciones, marque 2. Para mantenerlo activado, marque 1.",
+          },
+        ],
+      },
+      {
+        note: "Rosa marca 2. Scam Shield deja de escuchar enseguida.",
+        status: "Llamada terminada",
+        rosa: [
+          { kind: "presses", body: "2" },
+          {
+            kind: "says",
+            body: "Scam Shield está cancelado. Ya no escucharemos sus llamadas. Le avisamos a Ana. Adiós.",
+          },
+        ],
+      },
+      {
+        note: "Ana recibe un mensaje, y la tarjeta de Rosa dice Apagado.",
+        status: "Sin protección",
+        ana: [
+          { kind: "text", body: "Scam Shield: Rosa apagó Scam Shield. Ya no vigilamos sus llamadas." },
+          { kind: "screen", title: "Rosa", pill: "Apagado", lines: ["Apagó Scam Shield."] },
+        ],
+      },
+    ],
+  },
+};
+
+// The walkthroughs in each language.
+const WALKTHROUGHS = { en: WALKTHROUGHS_EN, es: WALKTHROUGHS_ES };
+
+/**
+ * One walkthrough, in the language the page is showing.
+ *
+ * Input:  scene — a walkthrough key like "add"
+ * Output: the walkthrough, or undefined if there's no such one
+ * Example: in Spanish, walkthroughFor("add").title  gives you  "Agregar a alguien para proteger."
+ */
+function walkthroughFor(scene) {
+  return (WALKTHROUGHS[currentLanguage] || WALKTHROUGHS.en)[scene];
+}
+
 // What we remember while the page is open.
 const flow = {
-  scene: "call",   // which tab is showing: "call" (demo.js) or a WALKTHROUGHS key
+  scene: "call",   // which tab is showing: "call" (demo.js) or a walkthrough key like "add"
   nextStep: 0,     // which step of the walkthrough comes next
   playing: false,  // true while Play is running
   run: 0,          // goes up on every Play and Start over, so an old Play stops
@@ -281,7 +516,7 @@ function makeFlowTag(tag, className = "", text = "") {
 function anaItem(item) {
   if (item.kind === "text") {
     const text = makeFlowTag("li");
-    text.append(makeFlowTag("span", "flow-who", "Text from Scam Shield"), item.body);
+    text.append(makeFlowTag("span", "flow-who", t("flow.textFrom")), item.body);
     return text;
   }
 
@@ -321,7 +556,7 @@ function rosaItem(item) {
   }
   const fromRosa = item.kind === "presses" || item.kind === "dials";
   const line = makeFlowTag("li", fromRosa ? "senior" : "caller");
-  const who = { says: "Scam Shield", presses: "Rosa presses", dials: "Rosa dials" }[item.kind];
+  const who = { says: "Scam Shield", presses: t("flow.rosaPresses"), dials: t("flow.rosaDials") }[item.kind];
   line.appendChild(makeFlowTag("span", "who", who));
   line.appendChild(makeFlowTag("span", fromRosa ? "flow-code" : "", item.body));
   return line;
@@ -347,7 +582,7 @@ function addToFeed(listId, element) {
  * Example: in "Add someone", the 3rd tap shows Rosa pressing 1
  */
 function showNextStep() {
-  const walkthrough = WALKTHROUGHS[flow.scene];
+  const walkthrough = walkthroughFor(flow.scene);
   const current = walkthrough.steps[flow.nextStep];
   if (!current) {
     return false;
@@ -404,14 +639,14 @@ async function playFlow() {
  * Example: Start over  gives you  empty phones and every step waiting in the middle
  */
 function resetFlow() {
-  const walkthrough = WALKTHROUGHS[flow.scene];
+  const walkthrough = walkthroughFor(flow.scene);
   flow.run += 1;
   flow.nextStep = 0;
   flow.playing = false;
   byId("flow-title").textContent = walkthrough.title;
   byId("flow-lead").textContent = walkthrough.lead;
-  byId("flow-rosa-status").textContent = "Waiting";
-  byId("flow-ana").replaceChildren(makeFlowTag("li", "empty", "Press Play or Next step to start."));
+  byId("flow-rosa-status").textContent = t("demo.waiting");
+  byId("flow-ana").replaceChildren(makeFlowTag("li", "empty", t("flow.pressPlay")));
   byId("flow-rosa").replaceChildren();
   byId("flow-notes").replaceChildren(...walkthrough.steps.map((step) => makeFlowTag("li", "", step.note)));
   updateFlowButtons();
@@ -423,9 +658,9 @@ function resetFlow() {
  * Example: at the last step, Next step turns off
  */
 function updateFlowButtons() {
-  const walkthrough = WALKTHROUGHS[flow.scene];
+  const walkthrough = walkthroughFor(flow.scene);
   const done = !walkthrough || flow.nextStep >= walkthrough.steps.length;
-  byId("flow-play").querySelector("span").textContent = flow.playing ? "Pause" : "Play";
+  byId("flow-play").querySelector("span").textContent = t(flow.playing ? "demo.pause" : "demo.play");
   byId("flow-play").disabled = done && !flow.playing;
   byId("flow-step").disabled = flow.playing || done;
 }
@@ -437,7 +672,7 @@ function updateFlowButtons() {
  * Example: showScene("remove")  gives you  the "Remove someone" walkthrough
  */
 function showScene(scene) {
-  if (scene !== "call" && !WALKTHROUGHS[scene]) {
+  if (scene !== "call" && !walkthroughFor(scene)) {
     scene = "call";
   }
   flow.scene = scene;
@@ -474,5 +709,11 @@ byId("flow-play").addEventListener("click", playFlow);
 byId("flow-step").addEventListener("click", showNextStep);
 byId("flow-restart").addEventListener("click", resetFlow);
 window.addEventListener("hashchange", () => showScene(window.location.hash.slice(1)));
+// A walkthrough starts over in the new language when they flip the switch.
+document.addEventListener("language-switched", () => {
+  if (flow.scene !== "call") {
+    resetFlow();
+  }
+});
 
 showScene(window.location.hash.slice(1) || "call");

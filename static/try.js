@@ -12,17 +12,20 @@
 
   Everything the AI or the caller says gets put on the page as plain text,
   never as HTML, so a weird answer can never break the page.
+
+  Our own words come from strings.js (keys starting with "try." or "demo."),
+  so the English | Español switch changes them, even in the middle of a call.
 */
 
 // How often we ask the server what's new on the call (milliseconds).
 const CHECK_EVERY_MS = 1000;
 
-// The words we show for each verdict.
+// The strings.js key for the words we show for each verdict.
 const VERDICT_WORDS = {
-  safe: "Looks safe",
-  suspicious: "Suspicious",
-  likely_scam: "Likely a scam",
-  unknown: "Couldn't check this part",
+  safe: "demo.verdictSafe",
+  suspicious: "demo.verdictSuspicious",
+  likely_scam: "demo.verdictScam",
+  unknown: "demo.verdictUnknown",
 };
 
 // Nicer names for the Nemotron models, for the line under the score.
@@ -37,11 +40,11 @@ const OFFICIAL_SITES = ["aarp.org", "bbb.org"];
 
 // What we say about the email to Ana, for each way it can go.
 const EMAIL_NOTES = {
-  sent: "We also emailed this alert to you.",
-  failed: "We couldn't send the email this time.",
-  not_set_up: "Email alerts aren't turned on yet.",
-  limit: "We've sent a lot of emails today, so we skipped this one.",
-  bad_address: "That email address didn't work.",
+  sent: "try.emailSent",
+  failed: "try.emailFailed",
+  not_set_up: "try.emailOff",
+  limit: "try.emailLimit",
+  bad_address: "try.emailBad",
 };
 
 // Everything we remember while the page is open.
@@ -55,6 +58,8 @@ const state = {
   warningsShown: 0,
   askedDanny: false,
   answeredDanny: false,
+  lastView: null,    // the last news from the server, to write the status again in a new language
+  lastLatest: null,  // the AI's last answer, for the same reason
 };
 
 /**
@@ -91,7 +96,7 @@ async function api(url, body) {
     }
     return { ok: response.ok, status: response.status, data };
   } catch (problem) {
-    return { ok: false, status: 0, data: { error: "We couldn't reach the server. Check your connection and try again." } };
+    return { ok: false, status: 0, data: { error: t("demo.cantReach") } };
   }
 }
 
@@ -131,12 +136,13 @@ function formatPhone(phone) {
 /**
  * Puts a gray "nothing here yet" line in a list.
  *
- * Example: showEmpty("family-texts", "No alerts yet")
+ * Input:  listId; key — the strings.js key for the words
+ * Example: showEmpty("family-texts", "try.noAlerts")
  */
-function showEmpty(listId, text) {
+function showEmpty(listId, key) {
   const item = document.createElement("li");
   item.className = "empty";
-  item.textContent = text;
+  setText(item, key);
   byId(listId).replaceChildren(item);
 }
 
@@ -147,24 +153,24 @@ function showEmpty(listId, text) {
  */
 function resetScreen() {
   showError("");
-  setCallStatus("Waiting", false);
+  setCallStatus("demo.waiting", false);
   byId("transcript").replaceChildren();
   byId("senior-warning").hidden = true;
 
   byId("ai").dataset.verdict = "waiting";
   byId("score").textContent = "0";
   byId("meter-fill").style.width = "0%";
-  byId("verdict").textContent = "Start talking to see the score";
+  setText(byId("verdict"), "try.startTalking");
   byId("trail").replaceChildren();
   byId("thinking").hidden = true;
-  byId("claimed").textContent = "Nobody yet";
-  showEmpty("reasons", "Nothing worrying yet");
-  byId("research-note").textContent = "Once the call seems suspicious, Tavily looks for matching scam warnings.";
+  setText(byId("claimed"), "demo.nobodyYet");
+  showEmpty("reasons", "demo.nothingWorrying");
+  setText(byId("research-note"), "try.researchNote");
   byId("sources").replaceChildren();
-  byId("model-line").textContent = "";
+  setPlainText(byId("model-line"), "");
 
-  showEmpty("family-texts", "No alerts yet");
-  showEmpty("contact-texts", "No texts yet");
+  showEmpty("family-texts", "try.noAlerts");
+  showEmpty("contact-texts", "demo.noTexts");
   byId("email-note").hidden = true;
   byId("verify-buttons").hidden = true;
 
@@ -175,16 +181,19 @@ function resetScreen() {
   state.warningsShown = 0;
   state.askedDanny = false;
   state.answeredDanny = false;
+  state.lastView = null;
+  state.lastLatest = null;
 }
 
 /**
  * Updates the little status at the top of Rosa's phone.
  *
- * Example: setCallStatus("On the call", true) shows it in gold
+ * Input:  key — the strings.js key for the words; live — true shows it in gold
+ * Example: setCallStatus("demo.onTheCall", true) says "On the call" in gold
  */
-function setCallStatus(text, live) {
+function setCallStatus(key, live) {
   const status = byId("call-status");
-  status.textContent = text;
+  setText(status, key);
   status.classList.toggle("live", live);
 }
 
@@ -209,17 +218,17 @@ function showStatus(view) {
   line.classList.toggle("live", view.status === "live");
 
   if (view.status === "waiting") {
-    line.textContent = "Waiting for your call";
-    setCallStatus("Waiting", false);
+    setText(line, "try.waitingForCall");
+    setCallStatus("demo.waiting", false);
   } else if (view.status === "live") {
-    line.textContent = `On the call, ${clock(view.seconds_left || 0)} left`;
-    setCallStatus("On the call", true);
+    setText(line, "try.onTheCallLeft", { time: clock(view.seconds_left || 0) });
+    setCallStatus("demo.onTheCall", true);
   } else if (view.status === "ended") {
-    line.textContent = "The call ended. Get a new code to try again.";
-    setCallStatus("Call ended", false);
+    setText(line, "try.callEndedTryAgain");
+    setCallStatus("demo.callEnded", false);
   } else {
-    line.textContent = "This code ran out. Get a new one to try again.";
-    setCallStatus("Waiting", false);
+    setText(line, "try.codeRanOut");
+    setCallStatus("demo.waiting", false);
   }
 }
 
@@ -234,7 +243,7 @@ function addLine(line) {
 
   const who = document.createElement("span");
   who.className = "who";
-  who.textContent = "You";
+  setText(who, "try.you");
 
   const words = document.createElement("span");
   words.textContent = line.text;
@@ -257,11 +266,19 @@ function showResult(latest) {
   byId("ai").dataset.verdict = result.verdict;
   byId("score").textContent = score === null ? "?" : String(score);
   byId("meter-fill").style.width = `${score === null ? 0 : score}%`;
-  byId("verdict").textContent = VERDICT_WORDS[result.verdict] || result.verdict;
-  byId("claimed").textContent = result.claimed_identity || "Nobody yet";
+  if (VERDICT_WORDS[result.verdict]) {
+    setText(byId("verdict"), VERDICT_WORDS[result.verdict]);
+  } else {
+    setPlainText(byId("verdict"), result.verdict);
+  }
+  if (result.claimed_identity) {
+    setPlainText(byId("claimed"), result.claimed_identity);
+  } else {
+    setText(byId("claimed"), "demo.nobodyYet");
+  }
 
   if (result.reasons.length === 0) {
-    showEmpty("reasons", "Nothing worrying yet");
+    showEmpty("reasons", "demo.nothingWorrying");
   } else {
     const reasons = byId("reasons");
     reasons.replaceChildren();
@@ -273,9 +290,18 @@ function showResult(latest) {
   }
 
   addToTrail(latest.line, score, result.verdict);
+  state.lastLatest = latest;
+  showModelLine(latest);
+}
 
+/**
+ * Says which Nemotron model checked the call, and how fast.
+ *
+ * Example: "Checked by NVIDIA Nemotron 3.5 Lightning on Nebius Token Factory in 0.8 seconds"
+ */
+function showModelLine(latest) {
   const model = MODEL_NAMES[latest.model] || latest.model;
-  byId("model-line").textContent = `Checked by ${model} on Nebius Token Factory in ${latest.seconds.toFixed(1)} seconds`;
+  setText(byId("model-line"), "demo.checkedBy", { model, seconds: latest.seconds.toFixed(1) });
 }
 
 /**
@@ -287,7 +313,7 @@ function addToTrail(lineNumber, score, verdict) {
   const bar = document.createElement("li");
   bar.className = verdict;
   bar.style.height = `${Math.max(score || 0, 8)}%`;
-  bar.title = `After sentence ${lineNumber}: ${score === null ? "couldn't check" : score}`;
+  bar.title = t("try.afterSentence", { line: lineNumber, score: score === null ? t("demo.couldntCheck") : score });
   byId("trail").appendChild(bar);
 }
 
@@ -327,7 +353,7 @@ function addSource(source) {
   if (isOfficial(source.url)) {
     const official = document.createElement("span");
     official.className = "official";
-    official.textContent = "Official source";
+    setText(official, "demo.official");
     site.appendChild(official);
   }
 
@@ -352,8 +378,7 @@ function showResearch(research) {
     return;
   }
   const sources = research.news.sources;
-  byId("research-note").textContent =
-    sources.length > 0 ? "Here are warnings about this kind of scam:" : "We didn't find matching warnings this time.";
+  setText(byId("research-note"), sources.length > 0 ? "demo.warningsHere" : "try.noWarnings");
   byId("sources").replaceChildren();
   for (const source of sources) {
     addSource(source);
@@ -417,7 +442,10 @@ function showEmail(email) {
   if (!email.asked || !email.status) {
     return;
   }
-  note.textContent = EMAIL_NOTES[email.status] || "";
+  if (!EMAIL_NOTES[email.status]) {
+    return;
+  }
+  setText(note, EMAIL_NOTES[email.status]);
   note.hidden = false;
 }
 
@@ -455,6 +483,7 @@ function showWarning(view) {
  * Example: show(view) after each check adds new sentences, the score, and any alerts
  */
 function show(view) {
+  state.lastView = view;
   showStatus(view);
 
   for (const line of view.lines.slice(state.linesShown)) {
@@ -509,7 +538,7 @@ async function checkForNews() {
   const { ok, status, data } = await api(`/api/line/${encodeURIComponent(state.ticketId)}`);
   if (!ok) {
     stopChecking();
-    showError(status === 404 ? "This code is gone. Get a new one to try again." : data.error);
+    showError(status === 404 ? t("try.codeGone") : translateServerMessage(data.error));
     byId("get-code").disabled = false;
     return;
   }
@@ -572,7 +601,7 @@ async function getCode(event) {
     email: byId("email").value.trim(),
   });
   if (!ok) {
-    showError(data.error || "We couldn't get a code. Please try again.");
+    showError(translateServerMessage(data.error) || t("try.cantGetCode"));
     button.disabled = false;
     return;
   }
@@ -598,7 +627,7 @@ async function answerAsDanny(answer) {
 
   const { ok, data } = await api(`/api/line/${encodeURIComponent(state.ticketId)}/answer`, { answer });
   if (!ok) {
-    showError(data.error || "We couldn't send Danny's answer.");
+    showError(translateServerMessage(data.error) || t("demo.cantSendDanny"));
     buttons.hidden = false;
     return;
   }
@@ -623,7 +652,7 @@ async function resumeTicket() {
   const { ok, data } = await api(`/api/line/${encodeURIComponent(ticketId)}`);
   if (!ok) {
     state.ticketId = null;
-    showError("That call is gone. Get a new code to try again.");
+    showError(t("try.callGone"));
     return;
   }
   showDialCard(data);
@@ -638,6 +667,20 @@ byId("code-form").addEventListener("submit", getCode);
 byId("verify-yes").addEventListener("click", () => answerAsDanny("yes"));
 byId("verify-no").addEventListener("click", () => answerAsDanny("no"));
 
+// translatePage() already changed our words with a data-text key. These are
+// the ones with blanks filled in.
+document.addEventListener("language-switched", () => {
+  if (state.lastView) {
+    showStatus(state.lastView);
+  }
+  if (state.lastLatest) {
+    showModelLine(state.lastLatest);
+  }
+});
+
+// You speak, and Ana reads, the page's language, to start with.
+byId("language").value = currentLanguage;
+byId("family-language").value = currentLanguage;
 resetScreen();
 drawIcons();
 resumeTicket();

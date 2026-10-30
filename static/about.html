@@ -8,7 +8,9 @@
   It reuses the home page's look (styles.css + theme.css) and watch.js for
   the YouTube video.
 
-  This page is in English only for now.
+  It's in English and Spanish: short words come from strings.js ("about."
+  keys), and longer text with links or bold words in it has an English and
+  a Spanish block (data-lang), and i18n.js shows the right one.
 
   TO ADD THE VIDEO: put the YouTube video's ID in data-video-id below (the
   part after "v=" in the YouTube link). Until then, it shows "coming soon".
@@ -46,110 +48,164 @@
   <main>
     <!-- The video first: it's the fastest way to get the whole idea -->
     <section class="watch-hero">
-      <p class="badge badge-alert">About us</p>
-      <h1>Scam Shield stops scam calls <span class="text-red">while they happen.</span></h1>
+      <p class="badge badge-alert" data-text="nav.about">About us</p>
+      <h1><span data-text="about.title1">Scam Shield stops scam calls</span> <span class="text-red" data-text="about.title2">while they happen.</span></h1>
 
       <div id="video-frame" class="video-frame" data-video-id="T3n1JPgdZ7M">
         <div class="video-soon">
           <img src="/static/icons/favicon.svg" alt="" width="72" height="72">
-          <p class="video-soon-title">Our video is on its way</p>
-          <p>While it uploads, watch a scam get caught in the live demo. No sign up needed.</p>
-          <a class="button" href="/demo">Watch the live demo</a>
+          <p class="video-soon-title" data-text="about.videoSoon">Our video is on its way</p>
+          <p data-text="about.videoSoonText">While it uploads, watch a scam get caught in the live demo. No sign up needed.</p>
+          <a class="button" href="/demo" data-text="landing.ctaDemo">Watch the live demo</a>
         </div>
       </div>
     </section>
 
     <!-- Our mission -->
     <section class="section coming-soon" aria-labelledby="mission-title">
-      <h2 id="mission-title">Our mission</h2>
-      <p>Catch scam calls while they happen, and bring the family in before the money leaves, always with the senior's permission and in their language.</p>
+      <h2 id="mission-title" data-text="about.missionTitle">Our mission</h2>
+      <p data-text="about.mission">Catch scam calls while they happen, and bring the family in before the money leaves, always with the senior's permission and in their language.</p>
     </section>
 
     <!-- 3 things to try, in order -->
     <section class="section" aria-labelledby="try-title">
-      <h2 id="try-title">Try it in 3 steps</h2>
+      <h2 id="try-title" data-text="about.tryTitle">Try it in 3 steps</h2>
       <ol class="step-cards">
         <li>
-          <h3>Watch a scam get caught</h3>
-          <p>Open the <a href="/demo">live demo</a> and press Play. Every line goes to NVIDIA Nemotron while the call is still going, and the risk climbs in real time.</p>
+          <h3 data-text="about.try1Title">Watch a scam get caught</h3>
+          <div data-lang="en">
+            <p>Open the <a href="/demo">live demo</a> and press Play. Every line goes to NVIDIA Nemotron while the call is still going, and the risk climbs in real time.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p>Abra la <a href="/demo">demo en vivo</a> y toque Reproducir. Cada frase va a NVIDIA Nemotron mientras la llamada sigue, y el riesgo sube en tiempo real.</p>
+          </div>
         </li>
         <li>
-          <h3>Play the scammer yourself</h3>
-          <p>Open <a href="/try">Test it</a> for your 4 digit code, then call <strong>(570) 532-5081</strong> and try to fool it. Scam Shield warns you on the call.</p>
+          <h3 data-text="about.try2Title">Play the scammer yourself</h3>
+          <div data-lang="en">
+            <p>Open <a href="/try">Test it</a> for your 4 digit code, then call <strong>(570) 532-5081</strong> and try to fool it. Scam Shield warns you on the call.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p>Abra <a href="/try">Pruébelo</a> para recibir su código de 4 dígitos, luego llame al <strong>(570) 532-5081</strong> e intente engañarlo. Scam Shield le avisa en la llamada.</p>
+          </div>
         </li>
         <li>
-          <h3>Read the code</h3>
-          <p>Everything is open source on <a href="https://github.com/angiebecerra020/scam-shield" target="_blank" rel="noopener">GitHub</a>, with 335 automated tests.</p>
+          <h3 data-text="about.try3Title">Read the code</h3>
+          <div data-lang="en">
+            <p>Everything is open source on <a href="https://github.com/angiebecerra020/scam-shield" target="_blank" rel="noopener">GitHub</a>, with 335 automated tests.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p>Todo es de código abierto en <a href="https://github.com/angiebecerra020/scam-shield" target="_blank" rel="noopener">GitHub</a>, con 335 pruebas automáticas.</p>
+          </div>
         </li>
       </ol>
     </section>
 
     <!-- Why we built it: the family story behind Scam Shield -->
     <section class="section" aria-labelledby="story-title">
-      <h2 id="story-title">Why we built it</h2>
-      <div class="about-story">
+      <h2 id="story-title" data-text="about.storyTitle">Why we built it</h2>
+      <div class="about-story" data-lang="en">
         <p>Scam Shield started with a family story. Years ago, a grandmother in our family answered a call from a man selling insurance. He was courteous, patient and convincing.</p>
         <p>By the time the call ended, part of the retirement savings she had spent her life building was gone.</p>
         <p>The authorities intervened, and the family was fortunate. But the stress of those days stayed with all of us. She wasn't careless. She was trusting, and that trust is exactly what phone scammers exploit.</p>
         <p><strong>Scam Shield is the protection we wish she had had:</strong> a service that listens only with the senior's permission, recognizes scam tactics while the call is still happening, and brings the family in before any money is lost.</p>
       </div>
+      <div class="about-story" data-lang="es" lang="es" hidden>
+        <p>Scam Shield nació de una historia familiar. Hace años, una abuela de nuestra familia contestó la llamada de un hombre que vendía seguros. Era amable, paciente y convincente.</p>
+        <p>Cuando terminó la llamada, parte de los ahorros para la jubilación que ella había construido toda su vida ya no estaban.</p>
+        <p>Las autoridades intervinieron, y la familia tuvo suerte. Pero el estrés de esos días se quedó con todos nosotros. Ella no fue descuidada. Fue confiada, y esa confianza es justo lo que aprovechan los estafadores por teléfono.</p>
+        <p><strong>Scam Shield es la protección que nos hubiera gustado que ella tuviera:</strong> un servicio que escucha solo con el permiso de la persona mayor, reconoce las tácticas de estafa mientras la llamada sigue, y trae a la familia antes de que se pierda el dinero.</p>
+      </div>
     </section>
 
     <!-- How it works, under the hood -->
     <section class="section" aria-labelledby="tech-title">
-      <h2 id="tech-title">How we use NVIDIA Nemotron, Tavily and Twilio</h2>
+      <h2 id="tech-title" data-text="about.techTitle">How we use NVIDIA Nemotron, Tavily and Twilio</h2>
       <div class="feature-grid">
         <article class="feature">
-          <h3>NVIDIA Nemotron on Nebius Token Factory</h3>
-          <p>Every new sentence of the call goes to <strong>Nemotron 3.5 Lightning</strong> through Token Factory's OpenAI compatible API. We picked the fast model on purpose: a warning only helps if it arrives during the call.</p>
+          <h3 data-text="about.tech1Title">NVIDIA Nemotron on Nebius Token Factory</h3>
+          <div data-lang="en">
+            <p>Every new sentence of the call goes to <strong>Nemotron 3.5 Lightning</strong> through Token Factory's OpenAI compatible API. We picked the fast model on purpose: a warning only helps if it arrives during the call.</p>
           <p>Nemotron returns a risk score from 0 to 100, a verdict, the reasons (gift cards, secrecy, urgency, a fake grandchild), who the caller claims to be, and the family's alert, written in the family's own language.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p>Cada frase nueva de la llamada va a <strong>Nemotron 3.5 Lightning</strong> por la API compatible con OpenAI de Token Factory. Elegimos el modelo rápido a propósito: un aviso solo ayuda si llega durante la llamada.</p>
+            <p>Nemotron devuelve una calificación de riesgo del 0 al 100, un veredicto, las razones (tarjetas de regalo, secretos, prisa, un nieto falso), quién dice ser la persona que llama, y la alerta para la familia, escrita en su propio idioma.</p>
+          </div>
         </article>
         <article class="feature">
-          <h3>Tavily, live web search</h3>
-          <p>When Nemotron says a call looks risky, Tavily runs two searches while the call is still going: <strong>has this number been reported as a scam?</strong> and <strong>what scams match what the caller just said?</strong> We build that second search from Nemotron's own reasons.</p>
+          <h3 data-text="about.tech2Title">Tavily, live web search</h3>
+          <div data-lang="en">
+            <p>When Nemotron says a call looks risky, Tavily runs two searches while the call is still going: <strong>has this number been reported as a scam?</strong> and <strong>what scams match what the caller just said?</strong> We build that second search from Nemotron's own reasons.</p>
           <p>The family sees the real sources on the dashboard. Calls that look safe skip the news search, so we don't waste credits.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p>Cuando Nemotron dice que una llamada parece riesgosa, Tavily hace dos búsquedas mientras la llamada sigue: <strong>¿este número ha sido reportado como estafa?</strong> y <strong>¿qué estafas coinciden con lo que acaba de decir quien llama?</strong> Armamos esa segunda búsqueda con las propias razones de Nemotron.</p>
+            <p>La familia ve las fuentes reales en su panel. Las llamadas que parecen seguras se saltan la búsqueda de noticias, para no gastar créditos.</p>
+          </div>
         </article>
         <article class="feature">
-          <h3>Twilio, the phone line</h3>
-          <p>The senior says yes first, by pressing 1 on our call. Then their phone forwards calls they decline or miss to Scam Shield, or they add us to a call in 2 taps (Add call, then Merge).</p>
+          <h3 data-text="about.tech3Title">Twilio, the phone line</h3>
+          <div data-lang="en">
+            <p>The senior says yes first, by pressing 1 on our call. Then their phone forwards calls they decline or miss to Scam Shield, or they add us to a call in 2 taps (Add call, then Merge).</p>
           <p>Twilio's real time transcription sends us the words, and a conference room lets the family join the call with one tap.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p>Primero la persona mayor dice que sí, marcando 1 en nuestra llamada. Luego su teléfono desvía a Scam Shield las llamadas que rechaza o no contesta, o nos agrega a una llamada en 2 toques (Agregar llamada, luego Unir).</p>
+            <p>La transcripción en tiempo real de Twilio nos envía las palabras, y una sala de conferencia deja que la familia se una a la llamada con un toque.</p>
+          </div>
         </article>
         <article class="feature">
-          <h3>Built to be trusted</h3>
-          <p>FastAPI on Render, Supabase logins, 335 automated tests. We never record calls or save the words. A silent caller gets warned at 10 seconds and hung up at 20. Demo mode keeps a scripted call working for anyone, with no real phone.</p>
+          <h3 data-text="about.tech4Title">Built to be trusted</h3>
+          <p data-text="about.tech4">FastAPI on Render, Supabase logins, 335 automated tests. We never record calls or save the words. A silent caller gets warned at 10 seconds and hung up at 20. Demo mode keeps a scripted call working for anyone, with no real phone.</p>
         </article>
       </div>
     </section>
 
     <!-- Who we are -->
     <section class="section" aria-labelledby="team-title">
-      <h2 id="team-title">Who we are</h2>
+      <h2 id="team-title" data-text="about.teamTitle">Who we are</h2>
       <div class="feature-grid">
         <article class="feature team-card">
           <img class="team-photo" src="/static/team/angie.jpg" alt="Angie Becerra smiling, in a red striped shirt" width="160" height="160" loading="lazy">
           <h3>Angie Becerra</h3>
-          <p><strong>Product lead.</strong> Order Manager working in automation and AI integration, helping people bridge the gap between automation and AI agents. She led Scam Shield's product, UI/UX, the flow of the site and real phone calls.</p>
+          <div data-lang="en">
+            <p><strong>Product lead.</strong> Order Manager working in automation and AI integration, helping people bridge the gap between automation and AI agents. She led Scam Shield's product, UI/UX, the flow of the site and real phone calls.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p><strong>Líder de producto.</strong> Gerente de pedidos que trabaja en automatización e integración de IA, ayudando a las personas a unir la automatización con los agentes de IA. Dirigió el producto, el diseño UI/UX, el recorrido del sitio y las llamadas reales de Scam Shield.</p>
+          </div>
           <p><a href="https://www.linkedin.com/in/angie-becerra-740b34205/" target="_blank" rel="noopener">LinkedIn</a></p>
         </article>
         <article class="feature team-card">
           <img class="team-photo" src="/static/team/cassandra.jpg" alt="Cassandra Morales in her University of Central Florida graduation cap and gown" width="160" height="160" loading="lazy">
           <h3>Cassandra Morales</h3>
-          <p><strong>Lead builder.</strong> Software engineer, founder of the award winning OttoTrade, and UCF Information Technology graduate. She built Scam Shield's engine, database and testing, from the Nemotron scoring to the family dashboard.</p>
+          <div data-lang="en">
+            <p><strong>Lead builder.</strong> Software engineer, founder of the award winning OttoTrade, and UCF Information Technology graduate. She built Scam Shield's engine, database and testing, from the Nemotron scoring to the family dashboard.</p>
+          </div>
+          <div data-lang="es" lang="es" hidden>
+            <p><strong>Desarrolladora principal.</strong> Ingeniera de software, fundadora de OttoTrade, un proyecto premiado, y graduada en Tecnologías de la Información de UCF. Construyó el motor, la base de datos y las pruebas de Scam Shield, desde la calificación con Nemotron hasta el panel de la familia.</p>
+          </div>
           <p><a href="https://www.linkedin.com/in/cassandramrles/" target="_blank" rel="noopener">LinkedIn</a></p>
         </article>
       </div>
-      <ul class="reasons about-bullets">
+      <ul class="reasons about-bullets" data-lang="en">
         <li><strong>We build for the people technology leaves behind,</strong> starting with the ones who raised us.</li>
         <li><strong>We ship, not slides:</strong> real phone calls, a live site, 335 automated tests, in English and Spanish.</li>
         <li><strong>People and code, side by side:</strong> one of us turns real problems into automation, the other turns ideas into working software.</li>
+      </ul>
+      <ul class="reasons about-bullets" data-lang="es" lang="es" hidden>
+        <li><strong>Construimos para las personas que la tecnología deja atrás,</strong> empezando por quienes nos criaron.</li>
+        <li><strong>Entregamos, no solo presentamos:</strong> llamadas reales, un sitio en vivo, 335 pruebas automáticas, en inglés y español.</li>
+        <li><strong>Personas y código, lado a lado:</strong> una convierte problemas reales en automatización, la otra convierte ideas en software que funciona.</li>
       </ul>
     </section>
   </main>
 
   <footer class="site-footer">
-    <p>Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
-    <p>We only listen with permission. Our demos use acted, simulated calls.</p>
-    <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+    <p data-text="landing.footer1">Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p data-text="landing.footer2">We only listen with permission. Our demos use acted, simulated calls.</p>
+    <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
   <script src="/static/strings.js"></script>

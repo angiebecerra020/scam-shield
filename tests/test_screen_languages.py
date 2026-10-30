@@ -79,6 +79,12 @@ def test_every_key_the_pages_use_exists():
         used |= set(re.findall(r'\bt\("([a-z]+\.[A-Za-z0-9]+)"', script.read_text()))
         # Keys kept in lists, like { text: "nav.demo" } or label: "report.choiceNone"
         used |= set(re.findall(r'(?:text|label|means|title|hint|button): "([a-z]+\.[A-Za-z0-9]+)"', script.read_text()))
+        # Keys handed to helpers, like setText(status, "demo.waiting") or showEmpty("reasons", "demo.nothingWorrying")
+        used |= set(re.findall(r'(?:setText|showEmpty)\([^,()]+, "([a-z]+\.[A-Za-z0-9]+)"', script.read_text()))
+        used |= set(re.findall(r'setCallStatus\("([a-z]+\.[A-Za-z0-9]+)"', script.read_text()))
+        # Keys picked with ?:, like t(playing ? "demo.pause" : "demo.play"), and kept in
+        # tables, like likely_scam: "demo.verdictScam"
+        used |= set(re.findall(r'[?:] "((?:demo|try|flow)\.[A-Za-z0-9]+)"', script.read_text()))
     missing = used - known
     assert missing == set()
 
@@ -89,3 +95,29 @@ def test_every_page_loads_the_words_first(path, page_script):
     page = client.get(path).text
 
     assert page.index("/static/strings.js") < page.index("/static/i18n.js") < page.index(page_script)
+
+
+@pytest.mark.parametrize("page", ["about.html", "try.html", "demo.html"])
+def test_language_blocks_come_in_pairs(page):
+    """Longer text with links in it has an English block and a Spanish block
+    (data-lang). Every English block has a Spanish one, and the Spanish ones
+    start hidden, so nobody sees both before i18n.js runs."""
+    html = (STATIC / page).read_text()
+    english = re.findall(r'<[^>]*data-lang="en"[^>]*>', html)
+    spanish = re.findall(r'<[^>]*data-lang="es"[^>]*>', html)
+
+    assert len(english) > 0
+    assert len(english) == len(spanish)
+    for tag in spanish:
+        assert "hidden" in tag
+
+
+@pytest.mark.parametrize("page", ["about.html", "try.html", "demo.html"])
+def test_tab_pages_follow_the_language_switch(page):
+    """About us, Test it and Live demo load the words and the language switch,
+    so they change to Spanish with the rest of the site."""
+    html = (STATIC / page).read_text()
+
+    assert "/static/strings.js" in html
+    assert "/static/i18n.js" in html
+    assert html.count("data-text=") >= 20

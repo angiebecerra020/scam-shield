@@ -9,6 +9,8 @@
     - picks the language: the one they chose before, or else their browser's
     - fills in every element with a data-text="key" attribute, and
       data-text-aria-label="key" for words only screen readers hear
+    - shows only the blocks for this language, for longer text with links
+      and bold words in it: <div data-lang="en"> and <div data-lang="es" hidden>
     - gives our scripts t("key"), the words for that key in this language
     - makes the English | Español switch, and remembers the choice in the
       browser. Pages that build words themselves listen for the
@@ -83,8 +85,39 @@ function formatWhen(text) {
 }
 
 /**
- * Fill in every element on the page that has a data-text key, plus the
- * page's own language tag (so screen readers use the right voice).
+ * Put words from strings.js on the page in a way that follows the language
+ * switch: the key is kept on the element (data-text), so translatePage()
+ * changes it too. Words with blanks filled in can't be kept that way, so
+ * the page's script writes those again when the language changes.
+ *
+ * Input:  element; key — like "demo.waiting"; details — the blanks, if any
+ * Example: setText(byId("call-status"), "demo.waiting")  gives you  "Waiting",
+ *          and "Esperando" after switching to Spanish
+ */
+function setText(element, key, details) {
+  element.textContent = t(key, details);
+  if (details === undefined) {
+    element.dataset.text = key;
+  } else {
+    delete element.dataset.text;
+  }
+}
+
+/**
+ * Put words on the page that aren't ours to translate (like what the AI
+ * said), so the language switch leaves them alone.
+ *
+ * Example: setPlainText(byId("claimed"), "grandson Danny")
+ */
+function setPlainText(element, text) {
+  element.textContent = text;
+  delete element.dataset.text;
+}
+
+/**
+ * Fill in every element on the page that has a data-text key, show only the
+ * data-lang blocks for this language, and set the page's own language tag
+ * (so screen readers use the right voice).
  *
  * Example: in Spanish, <h1 data-text="dash.title"> becomes "Panel de la familia"
  */
@@ -92,6 +125,9 @@ function translatePage() {
   document.documentElement.lang = currentLanguage;
   for (const element of document.querySelectorAll("[data-text]")) {
     element.textContent = t(element.dataset.text);
+  }
+  for (const block of document.querySelectorAll("[data-lang]")) {
+    block.hidden = block.dataset.lang !== currentLanguage;
   }
   for (const element of document.querySelectorAll("[data-text-aria-label]")) {
     element.setAttribute("aria-label", t(element.dataset.textAriaLabel));

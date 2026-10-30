@@ -47,34 +47,30 @@
 
   <main>
     <section class="intro">
-      <p class="eyebrow">Live demo</p>
+      <p class="eyebrow" data-text="nav.demo">Live demo</p>
 
       <!-- Which demo to show. demo-walkthroughs.js switches between them,
            and /demo#add (and so on) opens one straight away. -->
-      <div class="scene-tabs" role="tablist" aria-label="Pick a demo">
-        <button type="button" role="tab" class="scene-tab" data-scene="call" aria-selected="true">A scam call</button>
-        <button type="button" role="tab" class="scene-tab" data-scene="add" aria-selected="false">Add someone</button>
-        <button type="button" role="tab" class="scene-tab" data-scene="pause" aria-selected="false">Pause protection</button>
-        <button type="button" role="tab" class="scene-tab" data-scene="remove" aria-selected="false">Remove someone</button>
-        <button type="button" role="tab" class="scene-tab" data-scene="optout" aria-selected="false">They turn it off</button>
+      <div class="scene-tabs" role="tablist" aria-label="Pick a demo" data-text-aria-label="demo.pickDemo">
+        <button type="button" role="tab" class="scene-tab" data-scene="call" aria-selected="true" data-text="demo.tabCall">A scam call</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="add" aria-selected="false" data-text="demo.tabAdd">Add someone</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="pause" aria-selected="false" data-text="demo.tabPause">Pause protection</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="remove" aria-selected="false" data-text="demo.tabRemove">Remove someone</button>
+        <button type="button" role="tab" class="scene-tab" data-scene="optout" aria-selected="false" data-text="demo.tabOptout">They turn it off</button>
       </div>
 
       <!-- The scam call (demo.js) -->
       <div id="call-intro">
-        <h1>Watch AI catch a scam phone call, as it happens.</h1>
-        <p class="lead">
-          Pick a call and press Play. Every line goes to NVIDIA Nemotron while the call is still going,
-          and the family gets warned the moment it looks like a scam. These are scripted calls with
-          made up people, so no real phone is involved.
-        </p>
+        <h1 data-text="demo.title">Watch AI catch a scam phone call, as it happens.</h1>
+        <p class="lead" data-text="demo.lead">Pick a call and press Play. Every line goes to NVIDIA Nemotron while the call is still going, and the family gets warned the moment it looks like a scam. These are scripted calls with made up people, so no real phone is involved.</p>
 
         <div class="controls">
           <label class="field">
-            <span>The call</span>
+            <span data-text="demo.theCall">The call</span>
             <select id="call-picker"></select>
           </label>
           <label class="field field-small">
-            <span>Ana reads</span>
+            <span data-text="demo.anaReads">Ana reads</span>
             <select id="family-language">
               <option value="en">English</option>
               <option value="es">Español</option>
@@ -82,8 +78,8 @@
           </label>
           <div class="buttons">
             <button type="button" id="play" class="primary"><i data-lucide="play" aria-hidden="true"></i> <span>Play</span></button>
-            <button type="button" id="step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span>Next line</span></button>
-            <button type="button" id="restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span>Start over</span></button>
+            <button type="button" id="step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span data-text="demo.nextLine">Next line</span></button>
+            <button type="button" id="restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span data-text="demo.startOver">Start over</span></button>
             <button type="button" id="sound" class="icon-button" aria-pressed="true" aria-label="Spoken warnings are on. Turn them off.">
               <i data-lucide="volume-2" aria-hidden="true"></i>
             </button>
@@ -98,8 +94,8 @@
         <p id="flow-lead" class="lead"></p>
         <div class="buttons">
           <button type="button" id="flow-play" class="primary"><i data-lucide="play" aria-hidden="true"></i> <span>Play</span></button>
-          <button type="button" id="flow-step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span>Next step</span></button>
-          <button type="button" id="flow-restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span>Start over</span></button>
+          <button type="button" id="flow-step" class="secondary"><i data-lucide="step-forward" aria-hidden="true"></i> <span data-text="demo.nextStep">Next step</span></button>
+          <button type="button" id="flow-restart" class="secondary"><i data-lucide="rotate-ccw" aria-hidden="true"></i> <span data-text="demo.startOver">Start over</span></button>
         </div>
       </div>
     </section>
@@ -108,17 +104,17 @@
       <!-- Rosa's phone: the call itself, line by line, and her warning -->
       <section class="phone" aria-labelledby="rosa-title">
         <header class="phone-header">
-          <p class="phone-owner" id="rosa-title">Rosa's phone <span>grandma</span></p>
-          <p class="call-status" id="call-status">Waiting</p>
+          <p class="phone-owner" id="rosa-title"><span data-text="demo.rosaPhone">Rosa's phone</span> <span class="phone-role" data-text="demo.grandma">grandma</span></p>
+          <p class="call-status" id="call-status" data-text="demo.waiting">Waiting</p>
         </header>
         <div class="caller-card">
           <i data-lucide="phone-incoming" aria-hidden="true"></i>
           <div>
-            <p class="caller-label">Incoming call</p>
-            <p class="caller-number" id="caller-number">No call yet</p>
+            <p class="caller-label" data-text="demo.incoming">Incoming call</p>
+            <p class="caller-number" id="caller-number" data-text="demo.noCallYet">No call yet</p>
           </div>
         </div>
-        <ol id="transcript" class="transcript" aria-live="polite" aria-label="What's being said on the call"></ol>
+        <ol id="transcript" class="transcript" aria-live="polite" aria-label="What's being said on the call" data-text-aria-label="demo.transcriptAria"></ol>
         <div id="senior-warning" class="senior-warning" role="alert" hidden>
           <i data-lucide="triangle-alert" aria-hidden="true"></i>
           <p id="senior-warning-text"></p>
@@ -127,32 +123,32 @@
 
       <!-- What Nemotron sees: the risk, the reasons, and what Tavily found -->
       <section class="ai" id="ai" data-verdict="waiting" aria-labelledby="ai-title" aria-busy="false">
-        <p class="eyebrow">What the AI sees</p>
-        <h2 id="ai-title">Scam risk</h2>
+        <p class="eyebrow" data-text="demo.aiSees">What the AI sees</p>
+        <h2 id="ai-title" data-text="demo.scamRisk">Scam risk</h2>
 
         <div class="score">
           <p class="score-number"><span id="score">0</span><small>/100</small></p>
-          <p class="verdict" id="verdict">Press Play to start the call</p>
+          <p class="verdict" id="verdict" data-text="demo.pressPlay">Press Play to start the call</p>
         </div>
 
         <div class="meter" aria-hidden="true">
           <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
-          <div class="meter-marks"><span class="mark-suspicious">40 suspicious</span><span class="mark-alert">70 family alerted</span></div>
+          <div class="meter-marks"><span class="mark-suspicious" data-text="demo.mark40">40 suspicious</span><span class="mark-alert" data-text="demo.mark70">70 family alerted</span></div>
         </div>
 
-        <ol id="trail" class="trail" aria-label="The score after each line"></ol>
+        <ol id="trail" class="trail" aria-label="The score after each line" data-text-aria-label="demo.trailAria"></ol>
 
-        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> Nemotron is reading the call</p>
+        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> <span data-text="demo.thinking">Nemotron is reading the call</span></p>
 
         <div class="facts">
-          <h3>Who they say they are</h3>
-          <p id="claimed" class="claimed">Nobody yet</p>
+          <h3 data-text="demo.whoTheySay">Who they say they are</h3>
+          <p id="claimed" class="claimed" data-text="demo.nobodyYet">Nobody yet</p>
 
-          <h3>Why</h3>
+          <h3 data-text="demo.why">Why</h3>
           <ul id="reasons" class="reasons"></ul>
 
-          <h3><i data-lucide="search" aria-hidden="true"></i> What the web says</h3>
-          <p id="research-note" class="note">Once the call seems suspicious, Tavily checks the caller's number and looks for matching scam warnings.</p>
+          <h3><i data-lucide="search" aria-hidden="true"></i> <span data-text="demo.webSays">What the web says</span></h3>
+          <p id="research-note" class="note" data-text="demo.researchNote">Once the call seems suspicious, Tavily checks the caller's number and looks for matching scam warnings.</p>
           <ul id="sources" class="sources"></ul>
         </div>
 
@@ -163,21 +159,21 @@
       <div class="family">
         <section class="phone phone-small" id="ana-phone" aria-labelledby="ana-title">
           <header class="phone-header">
-            <p class="phone-owner" id="ana-title">Ana's phone <span>daughter</span></p>
+            <p class="phone-owner" id="ana-title"><span data-text="demo.anaPhone">Ana's phone</span> <span class="phone-role" data-text="demo.daughter">daughter</span></p>
             <i data-lucide="message-square" aria-hidden="true"></i>
           </header>
-          <ol id="family-texts" class="texts" aria-live="polite" aria-label="Texts Ana got"></ol>
+          <ol id="family-texts" class="texts" aria-live="polite" aria-label="Texts Ana got" data-text-aria-label="demo.anaTextsAria"></ol>
         </section>
 
         <section class="phone phone-small" id="danny-phone" aria-labelledby="danny-title">
           <header class="phone-header">
-            <p class="phone-owner" id="danny-title">Danny's phone <span>grandson</span></p>
+            <p class="phone-owner" id="danny-title"><span data-text="demo.dannyPhone">Danny's phone</span> <span class="phone-role" data-text="demo.grandson">grandson</span></p>
             <i data-lucide="user-check" aria-hidden="true"></i>
           </header>
-          <ol id="contact-texts" class="texts" aria-live="polite" aria-label="Texts Danny got"></ol>
+          <ol id="contact-texts" class="texts" aria-live="polite" aria-label="Texts Danny got" data-text-aria-label="demo.dannyTextsAria"></ol>
           <div id="verify-buttons" class="verify-buttons" hidden>
-            <button type="button" id="verify-yes" class="secondary">Yes, it's me</button>
-            <button type="button" id="verify-no" class="danger">No, it's not me</button>
+            <button type="button" id="verify-yes" class="secondary" data-text="demo.yesItsMe">Yes, it's me</button>
+            <button type="button" id="verify-no" class="danger" data-text="demo.noNotMe">No, it's not me</button>
           </div>
         </section>
       </div>
@@ -187,33 +183,39 @@
     <div class="stage" id="flow-stage" hidden>
       <section class="phone" aria-labelledby="flow-ana-title">
         <header class="phone-header">
-          <p class="phone-owner" id="flow-ana-title">Ana's phone <span>daughter</span></p>
+          <p class="phone-owner" id="flow-ana-title"><span data-text="demo.anaPhone">Ana's phone</span> <span class="phone-role" data-text="demo.daughter">daughter</span></p>
           <i data-lucide="layout-dashboard" aria-hidden="true"></i>
         </header>
-        <ol id="flow-ana" class="texts flow-feed" aria-live="polite" aria-label="What Ana sees"></ol>
+        <ol id="flow-ana" class="texts flow-feed" aria-live="polite" aria-label="What Ana sees" data-text-aria-label="flow.anaAria"></ol>
       </section>
 
       <section class="ai flow-story" aria-labelledby="flow-story-title">
-        <p class="eyebrow">What's happening</p>
-        <h2 id="flow-story-title">Step by step</h2>
+        <p class="eyebrow" data-text="flow.happening">What's happening</p>
+        <h2 id="flow-story-title" data-text="flow.stepByStep">Step by step</h2>
         <ol id="flow-notes" class="flow-notes"></ol>
       </section>
 
       <section class="phone" aria-labelledby="flow-rosa-title">
         <header class="phone-header">
-          <p class="phone-owner" id="flow-rosa-title">Rosa's phone <span>grandma</span></p>
+          <p class="phone-owner" id="flow-rosa-title"><span data-text="demo.rosaPhone">Rosa's phone</span> <span class="phone-role" data-text="demo.grandma">grandma</span></p>
           <p class="call-status" id="flow-rosa-status">Waiting</p>
         </header>
-        <ol id="flow-rosa" class="transcript flow-feed" aria-live="polite" aria-label="What Rosa hears and does"></ol>
+        <ol id="flow-rosa" class="transcript flow-feed" aria-live="polite" aria-label="What Rosa hears and does" data-text-aria-label="flow.rosaAria"></ol>
       </section>
     </div>
   </main>
 
   <footer class="footer">
-    <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, and <strong>Tavily</strong>.</p>
-    <p>Scripted calls with made up people. Every phone number here is fake.</p>
+    <div data-lang="en">
+      <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, and <strong>Tavily</strong>.</p>
+      <p>Scripted calls with made up people. Every phone number here is fake.</p>
+    </div>
+    <div data-lang="es" lang="es" hidden>
+      <p>Hecho con <strong>NVIDIA Nemotron</strong> en <strong>Nebius Token Factory</strong>, y <strong>Tavily</strong>.</p>
+      <p>Llamadas actuadas con personas inventadas. Todos los números de teléfono aquí son falsos.</p>
+    </div>
     <p class="footer-links"><a href="/scam-call-protection-for-seniors" data-text="footer.seniors">Protection for seniors</a> · <a href="/family-scam-alerts" data-text="footer.alerts">Family alerts</a> · <a href="/landline-and-cell-phone-scam-protection" data-text="footer.phones">Landline and cell</a> · <a href="/qa" data-text="footer.qa">Q&amp;A</a></p>
-    <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+    <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>
   </footer>
 
   <!-- The header: its words (strings.js, i18n.js), and Supabase and auth.js

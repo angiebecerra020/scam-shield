@@ -13,6 +13,10 @@
 
   Everything the AI or a test call says gets put on the page as plain text,
   never as HTML, so a weird answer can never break the page.
+
+  Our own words come from strings.js (keys starting with "demo."), so the
+  English | Español switch changes them, even in the middle of a call. What
+  the AI and the call itself say stay in the call's own language.
 */
 
 // How long we wait between lines while playing (milliseconds), so it feels like a real call.
@@ -21,12 +25,12 @@ const PAUSE_BETWEEN_LINES_MS = 900;
 // How long the "someone is talking" dots show before each line.
 const TYPING_MS = 650;
 
-// The words we show for each verdict.
+// The strings.js key for the words we show for each verdict.
 const VERDICT_WORDS = {
-  safe: "Looks safe",
-  suspicious: "Suspicious",
-  likely_scam: "Likely a scam",
-  unknown: "Couldn't check this part",
+  safe: "demo.verdictSafe",
+  suspicious: "demo.verdictSuspicious",
+  likely_scam: "demo.verdictScam",
+  unknown: "demo.verdictUnknown",
 };
 
 // Nicer names for the Nemotron models, for the line under the score.
@@ -47,6 +51,9 @@ const state = {
   busy: false,      // true while we're showing a line or waiting on the AI
   soundOn: true,    // spoken warnings for Rosa
   askedDanny: false,
+  calls: [],        // the list of test calls, for the picker
+  lastCheck: null,  // the AI's last answer, to write its words again in a new language
+  lastResearch: null, // what Tavily last found, for the same reason
 };
 
 /**
@@ -92,7 +99,7 @@ async function api(url, body) {
     }
     return { ok: response.ok, data };
   } catch (problem) {
-    return { ok: false, data: { error: "We couldn't reach the server. Check your connection and try again." } };
+    return { ok: false, data: { error: t("demo.cantReach") } };
   }
 }
 
@@ -124,7 +131,7 @@ function drawIcons() {
 function formatPhone(phone) {
   const digits = (phone || "").replace(/\D/g, "").slice(-10);
   if (digits.length !== 10) {
-    return phone || "Unknown number";
+    return phone || t("demo.unknownNumber");
   }
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
@@ -132,12 +139,13 @@ function formatPhone(phone) {
 /**
  * Puts a gray "nothing here yet" line in a list.
  *
- * Example: showEmpty("family-texts", "No texts yet")
+ * Input:  listId; key — the strings.js key for the words
+ * Example: showEmpty("family-texts", "demo.noTexts")
  */
-function showEmpty(listId, text) {
+function showEmpty(listId, key) {
   const item = document.createElement("li");
   item.className = "empty";
-  item.textContent = text;
+  setText(item, key);
   byId(listId).replaceChildren(item);
 }
 
@@ -149,19 +157,30 @@ function showEmpty(listId, text) {
 async function loadCalls() {
   const { ok, data } = await api("/api/demo/calls");
   if (!ok) {
-    showError(data.error || "We couldn't load the demo calls.");
+    showError(data.error || t("demo.cantLoad"));
     return;
   }
+  state.calls = data;
+  fillPicker("scam_grandparent_en");
+}
 
+/**
+ * Puts the test calls in the picker, in groups, with our words in the
+ * page's language. We fill it again when the language changes.
+ *
+ * Input:  chosen — the call to keep picked
+ * Example: in Spanish, the groups say "Llamadas de estafa" and "Llamadas normales"
+ */
+function fillPicker(chosen) {
   const scams = document.createElement("optgroup");
-  scams.label = "Scam calls";
+  scams.label = t("demo.scamCalls");
   const normal = document.createElement("optgroup");
-  normal.label = "Normal calls";
+  normal.label = t("demo.normalCalls");
 
-  for (const call of data) {
+  for (const call of state.calls) {
     const option = document.createElement("option");
     option.value = call.id;
-    const language = call.language === "es" ? "Spanish" : "English";
+    const language = t(call.language === "es" ? "demo.spanish" : "demo.english");
     option.textContent = `${call.title} (${language})`;
     if (call.expected === "scam") {
       scams.appendChild(option);
@@ -172,7 +191,7 @@ async function loadCalls() {
 
   const picker = byId("call-picker");
   picker.replaceChildren(scams, normal);
-  picker.value = "scam_grandparent_en";
+  picker.value = chosen;
 }
 
 /**
@@ -182,8 +201,8 @@ async function loadCalls() {
  */
 function resetScreen() {
   showError("");
-  byId("caller-number").textContent = "No call yet";
-  setCallStatus("Waiting", false);
+  setText(byId("caller-number"), "demo.noCallYet");
+  setCallStatus("demo.waiting", false);
   byId("transcript").replaceChildren();
   byId("senior-warning").hidden = true;
 
@@ -191,20 +210,21 @@ function resetScreen() {
   ai.dataset.verdict = "waiting";
   byId("score").textContent = "0";
   byId("meter-fill").style.width = "0%";
-  byId("verdict").textContent = "Press Play to start the call";
+  setText(byId("verdict"), "demo.pressPlay");
   byId("trail").replaceChildren();
   byId("thinking").hidden = true;
-  byId("claimed").textContent = "Nobody yet";
-  showEmpty("reasons", "Nothing worrying yet");
-  byId("research-note").textContent =
-    "Once the call seems suspicious, Tavily checks the caller's number and looks for matching scam warnings.";
+  setText(byId("claimed"), "demo.nobodyYet");
+  showEmpty("reasons", "demo.nothingWorrying");
+  setText(byId("research-note"), "demo.researchNote");
   byId("sources").replaceChildren();
-  byId("model-line").textContent = "";
+  setPlainText(byId("model-line"), "");
 
-  showEmpty("family-texts", "No texts yet");
-  showEmpty("contact-texts", "No texts yet");
+  showEmpty("family-texts", "demo.noTexts");
+  showEmpty("contact-texts", "demo.noTexts");
   byId("verify-buttons").hidden = true;
   state.askedDanny = false;
+  state.lastCheck = null;
+  state.lastResearch = null;
 
   if ("speechSynthesis" in window) {
     window.speechSynthesis.cancel();
@@ -214,11 +234,12 @@ function resetScreen() {
 /**
  * Updates the little status at the top of Rosa's phone.
  *
- * Example: setCallStatus("On the call", true) shows it in gold
+ * Input:  key — the strings.js key for the words; live — true shows it in gold
+ * Example: setCallStatus("demo.onTheCall", true) says "On the call" in gold
  */
-function setCallStatus(text, live) {
+function setCallStatus(key, live) {
   const status = byId("call-status");
-  status.textContent = text;
+  setText(status, key);
   status.classList.toggle("live", live);
 }
 
@@ -236,14 +257,14 @@ async function startCall() {
     family_language: familyLanguage,
   });
   if (!ok) {
-    showError(data.error || "We couldn't start the call.");
+    showError(data.error || t("demo.cantStart"));
     return false;
   }
 
   state.call = data;
   state.nextLine = 0;
-  byId("caller-number").textContent = formatPhone(data.caller_number);
-  setCallStatus("On the call", true);
+  setPlainText(byId("caller-number"), formatPhone(data.caller_number));
+  setCallStatus("demo.onTheCall", true);
   return true;
 }
 
@@ -277,7 +298,11 @@ function addLine(line) {
 
   const who = document.createElement("span");
   who.className = "who";
-  who.textContent = line.speaker === "caller" ? "Caller" : "Rosa";
+  if (line.speaker === "caller") {
+    setText(who, "demo.caller");
+  } else {
+    who.textContent = "Rosa";
+  }
 
   const words = document.createElement("span");
   words.textContent = line.text;
@@ -296,9 +321,9 @@ function addLine(line) {
 function endCall() {
   const item = document.createElement("li");
   item.className = "ended";
-  item.textContent = "The call ended";
+  setText(item, "demo.theCallEnded");
   byId("transcript").appendChild(item);
-  setCallStatus("Call ended", false);
+  setCallStatus("demo.callEnded", false);
   state.playing = false;
 }
 
@@ -324,11 +349,19 @@ function showResult(data) {
   byId("ai").dataset.verdict = result.verdict;
   byId("score").textContent = score === null ? "?" : String(score);
   byId("meter-fill").style.width = `${score === null ? 0 : score}%`;
-  byId("verdict").textContent = VERDICT_WORDS[result.verdict] || result.verdict;
-  byId("claimed").textContent = result.claimed_identity || "Nobody yet";
+  if (VERDICT_WORDS[result.verdict]) {
+    setText(byId("verdict"), VERDICT_WORDS[result.verdict]);
+  } else {
+    setPlainText(byId("verdict"), result.verdict);
+  }
+  if (result.claimed_identity) {
+    setPlainText(byId("claimed"), result.claimed_identity);
+  } else {
+    setText(byId("claimed"), "demo.nobodyYet");
+  }
 
   if (result.reasons.length === 0) {
-    showEmpty("reasons", "Nothing worrying yet");
+    showEmpty("reasons", "demo.nothingWorrying");
   } else {
     const reasons = byId("reasons");
     reasons.replaceChildren();
@@ -340,9 +373,18 @@ function showResult(data) {
   }
 
   addToTrail(data.line, score, result.verdict);
+  state.lastCheck = data;
+  showModelLine(data);
+}
 
+/**
+ * Says which Nemotron model checked the call, and how fast.
+ *
+ * Example: "Checked by NVIDIA Nemotron 3.5 Lightning on Nebius Token Factory in 0.8 seconds"
+ */
+function showModelLine(data) {
   const model = MODEL_NAMES[data.model] || data.model;
-  byId("model-line").textContent = `Checked by ${model} on Nebius Token Factory in ${data.seconds.toFixed(1)} seconds`;
+  setText(byId("model-line"), "demo.checkedBy", { model, seconds: data.seconds.toFixed(1) });
 }
 
 /**
@@ -354,7 +396,7 @@ function addToTrail(lineNumber, score, verdict) {
   const bar = document.createElement("li");
   bar.className = verdict;
   bar.style.height = `${Math.max(score || 0, 8)}%`;
-  bar.title = `After line ${lineNumber}: ${score === null ? "couldn't check" : score}`;
+  bar.title = t("demo.afterLine", { line: lineNumber, score: score === null ? t("demo.couldntCheck") : score });
   byId("trail").appendChild(bar);
 }
 
@@ -394,7 +436,7 @@ function addSource(source) {
   if (isOfficial(source.url)) {
     const official = document.createElement("span");
     official.className = "official";
-    official.textContent = "Official source";
+    setText(official, "demo.official");
     site.appendChild(official);
   }
 
@@ -419,21 +461,28 @@ function showResearch(research) {
   }
 
   const caller = research.caller;
-  const notes = [];
-  if (caller.reported_as_scam) {
-    notes.push("This number shows up in scam reports.");
-  } else {
-    notes.push("We didn't find scam reports about this number.");
-  }
-  if (research.news.sources.length > 0) {
-    notes.push("Here are warnings about this kind of scam:");
-  }
-  byId("research-note").textContent = notes.join(" ");
+  state.lastResearch = research;
+  showResearchNote(research);
 
   byId("sources").replaceChildren();
   for (const source of caller.sources.concat(research.news.sources)) {
     addSource(source);
   }
+}
+
+/**
+ * Says what Tavily found about the caller's number, and whether there are
+ * scam warnings below. It's two sentences, so we write it again when the
+ * language changes.
+ *
+ * Example: "We didn't find scam reports about this number. Here are warnings about this kind of scam:"
+ */
+function showResearchNote(research) {
+  const notes = [t(research.caller.reported_as_scam ? "demo.numberReported" : "demo.numberClean")];
+  if (research.news.sources.length > 0) {
+    notes.push(t("demo.warningsHere"));
+  }
+  setPlainText(byId("research-note"), notes.join(" "));
 }
 
 /**
@@ -466,7 +515,7 @@ function addText(listId, body, kind) {
       link.href = part;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = "Join the call";
+      setText(link, "demo.joinCall");
       item.appendChild(link);
     } else if (part) {
       item.appendChild(document.createTextNode(part));
@@ -519,7 +568,7 @@ async function answerAsDanny(answer) {
 
   const { ok, data } = await api(`/api/demo/live/${state.call.call_id}/answer`, { answer });
   if (!ok) {
-    showError(data.error || "We couldn't send Danny's answer.");
+    showError(data.error || t("demo.cantSendDanny"));
     buttons.hidden = false;
     return;
   }
@@ -569,10 +618,7 @@ function toggleSound() {
   state.soundOn = !state.soundOn;
   const button = byId("sound");
   button.setAttribute("aria-pressed", state.soundOn ? "true" : "false");
-  button.setAttribute(
-    "aria-label",
-    state.soundOn ? "Spoken warnings are on. Turn them off." : "Spoken warnings are off. Turn them on."
-  );
+  labelSoundButton();
   const icon = document.createElement("i");
   icon.dataset.lucide = state.soundOn ? "volume-2" : "volume-x";
   icon.setAttribute("aria-hidden", "true");
@@ -581,6 +627,15 @@ function toggleSound() {
   if (!state.soundOn && "speechSynthesis" in window) {
     window.speechSynthesis.cancel();
   }
+}
+
+/**
+ * Tells screen readers what the speaker button does, in the page's language.
+ *
+ * Example: with sound on  gives you  "Spoken warnings are on. Turn them off."
+ */
+function labelSoundButton() {
+  byId("sound").setAttribute("aria-label", t(state.soundOn ? "demo.soundOn" : "demo.soundOff"));
 }
 
 /**
@@ -594,7 +649,7 @@ async function runCheck(lineNumber) {
   setThinking(false);
 
   if (!ok) {
-    showError(data.error || "We couldn't check that line.");
+    showError(data.error || t("demo.cantCheck"));
     state.playing = false;
     return;
   }
@@ -692,7 +747,7 @@ function startOver() {
  * Example: while playing, the Play button says Pause and Next line is turned off
  */
 function updateButtons() {
-  byId("play").querySelector("span").textContent = state.playing ? "Pause" : "Play";
+  byId("play").querySelector("span").textContent = t(state.playing ? "demo.pause" : "demo.play");
   byId("step").disabled = state.playing || state.busy;
 }
 
@@ -705,6 +760,24 @@ byId("verify-no").addEventListener("click", () => answerAsDanny("no"));
 byId("call-picker").addEventListener("change", startOver);
 byId("family-language").addEventListener("change", startOver);
 
+// translatePage() already changed our words with a data-text key. These are
+// the ones with blanks filled in, or made of more than one sentence.
+document.addEventListener("language-switched", () => {
+  fillPicker(byId("call-picker").value);
+  labelSoundButton();
+  updateButtons();
+  if (state.lastCheck) {
+    showModelLine(state.lastCheck);
+  }
+  if (state.lastResearch) {
+    showResearchNote(state.lastResearch);
+  }
+});
+
+// Ana reads the page's language, to start with.
+byId("family-language").value = currentLanguage;
 resetScreen();
+labelSoundButton();
+updateButtons();
 loadCalls();
 drawIcons();
