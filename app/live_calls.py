@@ -115,6 +115,7 @@ def check_call(call_id: str) -> None:
     """
     Reads the call so far with every check, again until we've read every
     sentence. Runs in the background after Twilio sends us new words.
+    Skips the check until the caller has said MIN_WORDS words in all.
 
     Example:
         check_call("c1") after the caller says "I'm in jail, I need bail money"
