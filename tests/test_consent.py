@@ -327,3 +327,18 @@ def test_the_same_family_cant_sign_up_the_same_senior_twice():
 
     with pytest.raises(consent.EnrollmentError, match="already protect"):
         consent.start_enrollment("Rosa", "305-555-0100", "Ana", "305-555-0101", owner_id="ana")
+
+
+def test_only_us_and_canada_numbers_get_a_consent_call():
+    """No calls to overseas or premium numbers on our Twilio bill."""
+    with pytest.raises(consent.EnrollmentError, match="US and Canada"):
+        consent.start_enrollment("Rosa", "+44 20 7946 0958", "Ana", "305-555-0101", owner_id="ana")
+
+
+def test_one_account_can_sign_up_5_people_a_day():
+    """Every sign up is a real phone call, so one account can't call 100 strangers."""
+    for number in range(5):
+        consent.start_enrollment("Rosa", f"305-555-010{number}", "Ana", "305-555-0199", owner_id="ana")
+
+    with pytest.raises(consent.EnrollmentError, match="5 people today"):
+        consent.start_enrollment("Rosa", "305-555-0109", "Ana", "305-555-0199", owner_id="ana")

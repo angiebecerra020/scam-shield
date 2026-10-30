@@ -317,3 +317,17 @@ def test_signing_someone_up_sends_a_welcome_email_with_the_setup_video(inbox):
 def test_no_email_means_no_welcome_email(inbox):
     assert email_alerts.send_welcome_email({"family_email": None}) == "no_email"
     assert inbox == []
+
+
+def test_with_real_calls_on_fake_twilio_requests_are_refused(monkeypatch):
+    """The live site is in demo mode with real calls on. A request without
+    Twilio's signature must not be able to cancel a senior or fake their YES."""
+    monkeypatch.setenv("DEMO_MODE", "true")
+    monkeypatch.setenv("REAL_CALLS", "true")
+    save_grandma()
+
+    fake = client.post("/twilio/line/incoming", data={"CallSid": "CA1", "From": GRANDMA})
+    real = twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": GRANDMA})
+
+    assert fake.status_code == 403
+    assert real.status_code == 200

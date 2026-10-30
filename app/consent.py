@@ -87,6 +87,9 @@ ASK_AGAIN_AFTER_NO = timedelta(days=30)
 NO_LIMIT = 3
 # Where families write to us about the 30 day wait.
 CONTACT_EMAIL = "scam.shield.demo@gmail.com"
+# Every sign up places a real phone call, so one account can only ask this
+# many seniors a day. It stops someone from using us to call strangers.
+SIGNUPS_PER_DAY = 5
 
 # Words we accept as an answer. Replies are cleaned up first (see clean_reply),
 # so "Yes!", "  yes " and "Sí" all match.
@@ -198,6 +201,31 @@ def expire_old_requests(enrollments: list[dict]) -> list[dict]:
             storage.set_enrollment_status(enrollment["id"], "expired", answered=False)
             enrollment["status"] = "expired"
     return enrollments
+
+
+def check_daily_limit(owner_id: str | None) -> None:
+    """
+    Stops one account from signing up more than SIGNUPS_PER_DAY seniors a day,
+    since every sign up makes a real phone call.
+
+    Input:  owner_id, who's signing someone up (None when login is off)
+    Raises: EnrollmentError when they've hit the limit today
+
+    Example:
+        check_daily_limit("ana") after Ana's 5th sign up today raises the error
+    """
+    if owner_id is None:
+        return
+    since = datetime.now(timezone.utc) - timedelta(days=1)
+    today = [
+        enrollment
+        for enrollment in storage.find_enrollments_for_owner(owner_id)
+        if storage.parse_time(enrollment["created_at"]) > since
+    ]
+    if len(today) >= SIGNUPS_PER_DAY:
+        raise EnrollmentError(
+            "You've signed up 5 people today. Please try again tomorrow.", 429
+        )
 
 
 def same_family(enrollment: dict, owner_id: str | None) -> bool:
@@ -333,6 +361,12 @@ def start_enrollment(
 
     if enrollment["senior_phone"] == enrollment["family_phone"]:
         raise EnrollmentError("The senior's phone and your phone must be different.", 400)
+
+    # We only call US and Canada numbers. That keeps our calls (and costs)
+    # where our families are, and stops calls to premium or overseas numbers.
+    if not enrollment["senior_phone"].startswith("+1") or not enrollment["family_phone"].startswith("+1"):
+        raise EnrollmentError("Right now Scam Shield works with US and Canada phone numbers only.", 400)
+    check_daily_limit(owner_id)
 
     check_allowed_to_ask(enrollment["senior_phone"], owner_id)
     storage.save_enrollment(enrollment)

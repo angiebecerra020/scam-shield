@@ -8,7 +8,10 @@ with our auth token; this file checks that signature before main.py trusts
 the request.
 
 In demo mode we skip the check, so the demo and the tests can pretend to be
-Twilio. Demo mode never sends real texts or calls, so nothing real is at risk.
+Twilio, but ONLY while real calls are off. The live site runs in demo mode
+with REAL_CALLS on (real consent calls, real protected calls), and there a
+fake request could cancel a real senior or fake their YES. So as soon as
+real calls are on, every Twilio request has to carry Twilio's signature.
 """
 
 from fastapi import Request
@@ -47,13 +50,15 @@ def is_from_twilio(request: Request, form: dict) -> bool:
     Output: True if it's safe to act on the request
 
     Examples:
-        DEMO_MODE=true                               ->  True
+        DEMO_MODE=true, real calls off               ->  True
+        DEMO_MODE=true, REAL_CALLS=true, no signature ->  False
         live mode, real Twilio signature             ->  True
         live mode, missing or wrong signature        ->  False
     """
     settings = get_settings()
 
-    if settings.demo_mode:
+    real_phones_on = settings.real_calls or settings.real_consent_calls
+    if settings.demo_mode and not real_phones_on:
         return True
 
     # Without an auth token we can't check anything, so we refuse.

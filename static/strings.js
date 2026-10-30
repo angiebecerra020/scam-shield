@@ -1171,6 +1171,8 @@ const SERVER_MESSAGES_ES = {
   "The senior's phone and your phone must be different.":
     "El teléfono de la persona protegida y el suyo deben ser diferentes.",
   "You already protect this person with Scam Shield.": "Usted ya protege a esta persona con Scam Shield.",
+  "Right now Scam Shield works with US and Canada phone numbers only.": "Por ahora Scam Shield solo funciona con números de teléfono de EE. UU. y Canadá.",
+  "You've signed up 5 people today. Please try again tomorrow.": "Hoy ya registró a 5 personas. Por favor intente de nuevo mañana.",
   "This person said no 3 times, so we won't ask them again for 30 days. Think it was a mistake? Email us at scam.shield.demo@gmail.com.": "Esta persona dijo que no 3 veces, así que no le preguntaremos de nuevo por 30 días. ¿Cree que fue un error? Escríbanos a scam.shield.demo@gmail.com.",
   "This person is already signed up, but protection is paused. You can turn it back on from the dashboard.":
     "Esta persona ya está registrada, pero la protección está en pausa. Puede volver a activarla desde el panel.",
