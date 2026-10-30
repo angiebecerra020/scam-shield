@@ -36,14 +36,23 @@ def test_one_job_pages_skip_the_header(path):
 
 
 def test_nav_script_has_the_links():
-    """nav.js has the Home, Live demo, Test it, Q&A and Dashboard tabs."""
+    """nav.js has the tabs in order: Home, About us, Dashboard, Q&A, Test it,
+    Live demo. Profile and How to set up live in the dashboard instead."""
     script = client.get("/static/nav.js").text
+    tabs = ['"/"', '"/about"', '"/dashboard"', '"/qa"', '"/try"', '"/demo"']
 
-    assert '{ href: "/", text: "nav.home" }' in script
-    assert '"/demo"' in script
-    assert '"/try"' in script
-    assert '"/qa"' in script
-    assert '"/dashboard"' in script
+    positions = [script.index(f"href: {tab}") for tab in tabs]
+    assert positions == sorted(positions)
+    assert '"/profile"' not in script
+    assert '"/how-to"' not in script
+
+
+def test_dashboard_links_to_profile_and_setup():
+    """The dashboard has the Profile link and the How to set up button."""
+    html = client.get("/dashboard").text
+
+    assert 'href="/profile"' in html
+    assert 'href="/how-to"' in html
 
 
 @pytest.mark.parametrize(

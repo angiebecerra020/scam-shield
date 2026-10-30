@@ -1,6 +1,6 @@
 /*
   nav.js — The header at the top of every page: the logo, the tabs
-  (Home, Live demo, Test it, Q&A, Dashboard), and Log in / Log out.
+  (Home, About us, Dashboard, Q&A, Test it, Live demo), and Log in / Log out.
 
   How it fits in: the home page, login, dashboard, demo player, "Call it
   yourself", Q&A, privacy, terms and 404 pages each have an empty
@@ -8,8 +8,9 @@
   We build the header here, so it's written in one place and every page gets
   the same one. To add a tab, add it to NAV_LINKS below.
 
-  When someone is logged in, a Profile tab shows up after Dashboard, and
-  Log out sits at the right. It links to their profile (profile.html).
+  When someone is logged in, Log out sits at the right. Their profile and
+  the "How to set up" page are linked from inside the dashboard (index.html),
+  not from here.
 
   The tabs always show, even on a phone (they get their own row under the
   logo), so nobody has to hunt behind a menu to find a page.
@@ -26,12 +27,12 @@
 // The tabs in the header, in order. "text" is the key for its words in strings.js.
 const NAV_LINKS = [
   // A plain "Home" link too, since not everyone knows the logo goes home.
-  { href: "/about", text: "nav.about" },
   { href: "/", text: "nav.home" },
-  { href: "/demo", text: "nav.demo" },
-  { href: "/try", text: "nav.try" },
-  { href: "/qa", text: "nav.qa" },
+  { href: "/about", text: "nav.about" },
   { href: "/dashboard", text: "nav.dashboard" },
+  { href: "/qa", text: "nav.qa" },
+  { href: "/try", text: "nav.try" },
+  { href: "/demo", text: "nav.demo" },
 ];
 
 /**
@@ -53,18 +54,16 @@ function navLink(link) {
 }
 
 /**
- * Add Log in, or the Profile tab and Log out, to the header, depending on
- * whether someone is logged in.
+ * Add Log in or Log out to the header, depending on whether someone is logged in.
  *
  * We can only tell on pages that load auth.js. When login is turned off
  * (no Supabase settings), there's nothing to log in to, so we add nothing.
  *
  * Input:  tools — the element holding the language switch
- *         tabs — the row of tabs (Home, Live demo, ...)
- * Output: nothing; it adds the tab, link or button.
- * Example: Ana is logged in  gives you  a "Profile" tab and a "Log out" button at the end of the header
+ * Output: nothing; it adds the link or button.
+ * Example: Ana is logged in  gives you  a "Log out" button at the end of the header
  */
-async function addAccountLink(tools, tabs) {
+async function addAccountLink(tools) {
   // We're already on the login page, so a "Log in" link would go nowhere.
   if (window.location.pathname === "/login" || typeof getAuthClient !== "function") {
     return;
@@ -91,10 +90,6 @@ async function addAccountLink(tools, tabs) {
     return;
   }
 
-  // Only once they're logged in, since there's no profile to see before that.
-  tabs.appendChild(navLink({ href: "/how-to", text: "nav.howTo" }));
-  tabs.appendChild(navLink({ href: "/profile", text: "nav.profile" }));
-
   const logOutButton = document.createElement("button");
   logOutButton.type = "button";
   logOutButton.className = "account-link";
@@ -108,7 +103,7 @@ async function addAccountLink(tools, tabs) {
  *
  * Input:  nothing (it fills in <header id="site-header">)
  * Output: nothing; it updates the page.
- * Example: open any page  gives you  "Scam Shield   Home  Live demo  Test it  Q&A  Dashboard   Español  Log in"
+ * Example: open any page  gives you  "Scam Shield   Home  About us  Dashboard  Q&A  Test it  Live demo   Español  Log in"
  */
 function buildHeader() {
   const header = document.getElementById("site-header");
@@ -142,7 +137,7 @@ function buildHeader() {
   // bigger screens.
   header.replaceChildren(brand, tools, tabs);
   translatePage();
-  addAccountLink(tools, tabs);
+  addAccountLink(tools);
 }
 
 // Build the header again in the new language when they flip the switch.

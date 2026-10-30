@@ -46,11 +46,15 @@
     <!-- Who's logged in. Hidden when login is off. (Log out is in the header.) -->
     <div id="account-bar" class="account-bar" hidden>
       <span><span data-text="dash.loggedInAs">Logged in as</span> <strong id="account-email"></strong></span>
+      <!-- Their profile, at the right end of the bar (it used to be a header tab) -->
+      <a href="/profile" data-text="nav.profile">Profile</a>
     </div>
 
     <!-- The logo is in the header, so the card says which page this is -->
     <h1 data-text="dash.title">Family dashboard</h1>
     <p class="tagline" data-text="dash.tagline">The people you protect, and the calls they got.</p>
+    <!-- The step by step setup video and steps (how-to.html). It used to be a header tab. -->
+    <p><a class="button button-outline" href="/how-to" data-text="nav.howTo">How to set up</a></p>
 
     <!-- Everyone this family protects, with their past calls (family.js).
          Hidden until we know there's someone to show. -->
