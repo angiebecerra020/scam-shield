@@ -36,7 +36,7 @@ function makeTag(tag, className = "", text = "") {
 /**
  * A code to dial (or type), in big letters so it's easy to copy by eye.
  *
- * Example: dialCode("**21*+15555550150#")  gives you  <p class="dial-code">**21*+15555550150#</p>
+ * Example: dialCode("**004*+15555550150#")  gives you  <p class="dial-code">**004*+15555550150#</p>
  */
 function dialCode(code) {
   return makeTag("p", "dial-code", code);
@@ -79,29 +79,25 @@ function copyButton(link) {
 }
 
 /**
- * The 2 steps for a cell phone: turn on our calling app, then forward calls.
+ * The steps for a cell phone: forward the calls they decline or miss, then
+ * how a call works from now on. No app to open: Scam Shield rings their
+ * real phone (see calls.ring_senior_phone on the server).
  *
  * Input:  name, setup (from the server), number (the Scam Shield number)
  * Output: the <li> steps
  */
 function cellSteps(name, setup, number) {
-  const link = makeTag("a", "setup-link", setup.app_link);
-  link.href = setup.app_link;
-  link.target = "_blank";
-
   return [
-    step(t("setup.cellStep1Title"), [
-      makeTag("p", "", t("setup.cellStep1a", { name })),
-      link,
-      copyButton(setup.app_link),
-      makeTag("p", "", t("setup.cellStep1b", { button: t("phone.turnOn") })),
-      makeTag("p", "hint", t("setup.cellStep1c")),
-    ]),
     step(t("setup.cellStep2Title"), [
       makeTag("p", "", t("setup.cellStep2a")),
-      dialCode(`**21*${number}#`),
+      dialCode(`**004*${number}#`),
       makeTag("p", "hint", t("setup.verizon")),
-      dialCode(`*72${number}`),
+      dialCode(`*71${number}`),
+    ]),
+    step(t("setup.cellStep1Title"), [
+      makeTag("p", "", t("setup.cellStep1a", { name })),
+      makeTag("p", "", t("setup.cellStep1b")),
+      makeTag("p", "hint", t("setup.cellStep1c")),
     ]),
   ];
 }

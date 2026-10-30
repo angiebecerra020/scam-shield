@@ -16,7 +16,7 @@ import pytest
 from fastapi.testclient import TestClient
 from twilio.request_validator import RequestValidator
 
-from app import call_monitor, detector, email_alerts, live_calls, phone_line, research, storage
+from app import call_monitor, calls, detector, email_alerts, live_calls, phone_line, research, storage
 from app.main import app
 
 client = TestClient(app)
@@ -124,7 +124,7 @@ def test_scam_words_on_a_real_call_email_the_family(inbox):
         {
             "TranscriptionEvent": "transcription-content",
             "Final": "true",
-            "TranscriptionData": json.dumps({"transcript": "Grandma, I'm in jail. Buy gift cards."}),
+            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
         },
     )
 
@@ -133,6 +133,25 @@ def test_scam_words_on_a_real_call_email_the_family(inbox):
     assert inbox[0]["To"] == "ana@example.com"
     assert "/join/" in inbox[0].get_content()
     assert "made up" not in inbox[0].get_content()
+
+
+def test_a_few_words_dont_set_off_an_alert(inbox):
+    """A quiet call ("Hello? Hi") doesn't get scored, so noise can't email the family."""
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Hello? Hi."}),
+        },
+    )
+
+    assert storage.get_call(call["id"]).get("risk_score") is None
+    assert inbox == []
 
 
 def test_fake_transcripts_are_refused():
@@ -158,3 +177,84 @@ def test_sign_up_takes_an_optional_email():
     assert good.status_code == 201
     assert storage.get_enrollment(good.json()["id"])["family_email"] == "ana@example.com"
     assert bad.status_code == 400
+
+
+def forwarded_call_for_grandma():
+    """A scammer's call reaches Grandma's phone, she misses it, and it comes to us."""
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+    return storage.find_calls_for_enrollment("rosa")[0]
+
+
+def test_grandma_hears_press_1_or_2_when_we_call_her():
+    """We ring Grandma's real phone, and she gets asked if she wants Scam Shield."""
+    call = forwarded_call_for_grandma()
+
+    response = twilio_post(f"/twilio/protected/screen?call_id={call['id']}", {"CallSid": "CA9"})
+
+    assert "Press 1" in response.text
+    assert "5 5 5, 5 5 5, 0 1 9 9" in response.text
+
+
+def test_pressing_1_puts_grandma_in_the_call_with_scam_shield_listening():
+    call = forwarded_call_for_grandma()
+
+    response = twilio_post(f"/twilio/protected/choice?call_id={call['id']}", {"Digits": "1"})
+
+    assert "Scam Shield is listening" in response.text
+    assert call["conference_name"] in response.text
+    live_calls.stop_silence_watch(call["id"])
+
+
+def test_pressing_2_connects_the_call_but_ignores_every_word(inbox):
+    """Press 2 means the call goes through, and we don't score or keep anything."""
+    call = forwarded_call_for_grandma()
+
+    response = twilio_post(f"/twilio/protected/choice?call_id={call['id']}", {"Digits": "2"})
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
+        },
+    )
+
+    assert call["conference_name"] in response.text
+    assert storage.get_call(call["id"]).get("risk_score") is None
+    assert inbox == []
+    live_calls.UNPROTECTED.clear()
+
+
+def test_our_call_bouncing_back_gets_rejected_instead_of_looping():
+    """If Grandma misses our call, her phone forwards it back. We stop it there."""
+    call = forwarded_call_for_grandma()
+    calls.RINGING_SENIORS["rosa"] = call["id"]
+
+    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA2", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+
+    assert "<Reject" in response.text
+    calls.RINGING_SENIORS.clear()
+
+
+def test_a_silent_caller_gets_hung_up_and_the_family_gets_an_email(inbox):
+    call = forwarded_call_for_grandma()
+
+    live_calls.end_silent_call(call["id"])
+
+    assert storage.get_call(call["id"])["status"] != "live"
+    assert len(inbox) == 1
+    assert "silent" in inbox[0]["Subject"]
+
+
+def test_the_callers_first_words_stop_the_silence_timers():
+    call = forwarded_call_for_grandma()
+    live_calls.start_silence_watch(call["id"])
+
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {"TranscriptionEvent": "transcription-content", "Final": "true",
+         "TranscriptionData": json.dumps({"transcript": "Hi there"})},
+    )
+
+    assert call["id"] not in live_calls.SILENCE_TIMERS
