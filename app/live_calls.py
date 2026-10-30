@@ -42,6 +42,12 @@ LINES: dict[str, list[str]] = {}
 CHECKED: dict[str, int] = {}
 LOCKS: dict[str, threading.Lock] = {}
 
+# We wait until the caller has said at least this many words before scoring.
+# With only "Hello? Hi" (or a bit of noise Twilio misheard), Nemotron has to
+# guess, and it guessed "grandparent scam" on a quiet test call. 10 words is
+# about one real sentence, so real scams still get caught fast.
+MIN_WORDS = 10
+
 # Sign-ups whose calls really get forwarded to us. Demo sign-ups never do.
 REAL_STATUSES = ("active", "paused", "pending")
 
@@ -118,8 +124,13 @@ def check_call(call_id: str) -> None:
         while CHECKED.get(call_id, 0) < len(LINES.get(call_id, [])):
             count = len(LINES[call_id])
             turns = []
+            word_count = 0
             for words in LINES[call_id][:count]:
                 turns.append(f"Caller: {words}")
+                word_count += len(words.split())
+            if word_count < MIN_WORDS:
+                # Not enough to judge yet. The next sentence brings us back here.
+                return
             try:
                 call_monitor.check_live_call(call_id, "\n".join(turns))
             except ValueError:
@@ -158,6 +169,9 @@ async def receive_words(request: Request, background: BackgroundTasks, call_id: 
     if event == "transcription-content" and form.get("Final", "").lower() == "true":
         words = read_words(form.get("TranscriptionData", ""))
         if words:
+            # Shows up in the Render logs, so we can check what Twilio heard.
+            # Fine for now because our test calls are acted, never real people.
+            print(f"[live call {call_id}] Caller said: {words}")
             LINES.setdefault(call_id, []).append(words)
             background.add_task(check_call, call_id)
     elif event == "transcription-stopped":

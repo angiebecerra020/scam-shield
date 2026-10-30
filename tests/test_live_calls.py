@@ -124,7 +124,7 @@ def test_scam_words_on_a_real_call_email_the_family(inbox):
         {
             "TranscriptionEvent": "transcription-content",
             "Final": "true",
-            "TranscriptionData": json.dumps({"transcript": "Grandma, I'm in jail. Buy gift cards."}),
+            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
         },
     )
 
@@ -133,6 +133,25 @@ def test_scam_words_on_a_real_call_email_the_family(inbox):
     assert inbox[0]["To"] == "ana@example.com"
     assert "/join/" in inbox[0].get_content()
     assert "made up" not in inbox[0].get_content()
+
+
+def test_a_few_words_dont_set_off_an_alert(inbox):
+    """A quiet call ("Hello? Hi") doesn't get scored, so noise can't email the family."""
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Hello? Hi."}),
+        },
+    )
+
+    assert storage.get_call(call["id"]).get("risk_score") is None
+    assert inbox == []
 
 
 def test_fake_transcripts_are_refused():
