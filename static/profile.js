@@ -92,8 +92,6 @@ async function saveProfile(event) {
     return;
   }
   fillForm(data.profile);
-  // The header says "Logged in as <name>", so draw it again with the new name.
-  buildHeader();
   savedKey = "profile.saved";
   savedElement.textContent = t(savedKey);
 }

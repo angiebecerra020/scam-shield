@@ -26,7 +26,7 @@ const STRINGS = {
     "nav.dashboard": "Dashboard",
     "nav.logIn": "Log in",
     "nav.logOut": "Log out",
-    "nav.loggedInAs": "Logged in as {name}",
+    "nav.profile": "Profile",
     "nav.main": "Main",
 
     // Things that can go wrong anywhere (busy.js)
@@ -354,7 +354,7 @@ const STRINGS = {
     "nav.dashboard": "Panel",
     "nav.logIn": "Iniciar sesión",
     "nav.logOut": "Cerrar sesión",
-    "nav.loggedInAs": "Sesión de {name}",
+    "nav.profile": "Perfil",
     "nav.main": "Principal",
 
     "error.offline": "No pudimos conectar con Scam Shield. Revise su internet e intente de nuevo.",

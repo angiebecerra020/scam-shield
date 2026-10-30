@@ -8,9 +8,8 @@
   We build the header here, so it's written in one place and every page gets
   the same one. To add a tab, add it to NAV_LINKS below.
 
-  When someone is logged in, "Logged in as Ana" sits next to Log out, with
-  the name from their profile (or their email before they have one). It
-  links to their profile (profile.html).
+  When someone is logged in, a Profile tab shows up after Dashboard, and
+  Log out sits at the right. It links to their profile (profile.html).
 
   The tabs always show, even on a phone (they get their own row under the
   logo), so nobody has to hunt behind a menu to find a page.
@@ -52,40 +51,18 @@ function navLink(link) {
 }
 
 /**
- * The logged in person's name from their profile (GET /api/profile), or
- * their email if they haven't saved a profile yet.
- *
- * Input:  session — from getSession() in auth.js
- * Output: the name to show
- * Example: Ana saved her profile  gives you  "Ana"
- *          a brand-new account  gives you  "ana@example.com"
- */
-async function myName(session) {
-  try {
-    const response = await fetch("/api/profile", {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    const data = await response.json();
-    if (response.ok && data.profile !== null) {
-      return data.profile.name;
-    }
-  } catch (error) {
-    // The server didn't answer. The email still says who they are.
-  }
-  return session.user.email;
-}
-
-/**
- * Add Log in or Log out to the header, depending on whether someone is logged in.
+ * Add Log in, or the Profile tab and Log out, to the header, depending on
+ * whether someone is logged in.
  *
  * We can only tell on pages that load auth.js. When login is turned off
  * (no Supabase settings), there's nothing to log in to, so we add nothing.
  *
  * Input:  tools — the element holding the language switch
- * Output: nothing; it adds the link or button.
- * Example: Ana is logged in  gives you  "Logged in as Ana" and a "Log out" button at the end of the header
+ *         tabs — the row of tabs (Home, Live demo, ...)
+ * Output: nothing; it adds the tab, link or button.
+ * Example: Ana is logged in  gives you  a "Profile" tab and a "Log out" button at the end of the header
  */
-async function addAccountLink(tools) {
+async function addAccountLink(tools, tabs) {
   // We're already on the login page, so a "Log in" link would go nowhere.
   if (window.location.pathname === "/login" || typeof getAuthClient !== "function") {
     return;
@@ -112,14 +89,8 @@ async function addAccountLink(tools) {
     return;
   }
 
-  const profileLink = document.createElement("a");
-  profileLink.href = "/profile";
-  profileLink.className = "account-link account-name";
-  profileLink.textContent = t("nav.loggedInAs", { name: await myName(session) });
-  if (window.location.pathname === "/profile") {
-    profileLink.setAttribute("aria-current", "page");
-  }
-  tools.appendChild(profileLink);
+  // Only once they're logged in, since there's no profile to see before that.
+  tabs.appendChild(navLink({ href: "/profile", text: "nav.profile" }));
 
   const logOutButton = document.createElement("button");
   logOutButton.type = "button";
@@ -168,7 +139,7 @@ function buildHeader() {
   // bigger screens.
   header.replaceChildren(brand, tools, tabs);
   translatePage();
-  addAccountLink(tools);
+  addAccountLink(tools, tabs);
 }
 
 // Build the header again in the new language when they flip the switch.
