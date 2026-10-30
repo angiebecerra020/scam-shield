@@ -80,6 +80,8 @@ SCREEN_WORDS = {
         "unprotected": "Connecting you now.",
         "silence": "Careful. This caller hasn't said anything. Silent calls are often scams. "
         "Please don't talk to them. We'll end this call soon.",
+        "scam": "Scam Shield warning. This call looks like a scam. Don't send money or gift cards, "
+        "and don't share any numbers or passwords. It's OK to hang up. Your family has been told.",
     },
     "es": {
         "question": "Hola, habla Scam Shield. Tiene una llamada del {caller}. "
@@ -88,6 +90,8 @@ SCREEN_WORDS = {
         "unprotected": "Le conectamos ahora.",
         "silence": "Cuidado. Esta persona no ha dicho nada. Las llamadas en silencio suelen ser estafas. "
         "Por favor no hable con ella. Vamos a terminar esta llamada pronto.",
+        "scam": "Aviso de Scam Shield. Esta llamada parece una estafa. No envíe dinero ni tarjetas de regalo, "
+        "y no comparta números ni contraseñas. Puede colgar. Ya le avisamos a su familia.",
     },
 }
 
@@ -176,10 +180,14 @@ def check_call(call_id: str) -> None:
                 # Not enough to judge yet. The next sentence brings us back here.
                 return
             try:
-                call_monitor.check_live_call(call_id, "\n".join(turns))
+                checked = call_monitor.check_live_call(call_id, "\n".join(turns))
             except ValueError:
                 # The call isn't in storage anymore (the family removed the senior).
-                pass
+                checked = {}
+            if checked.get("alert_sent_now"):
+                # The family just got the alert, so the senior hears it too, right
+                # on the call, before they send a dime.
+                warn_senior(call_id)
             CHECKED[call_id] = count
 
 
@@ -402,24 +410,50 @@ def warn_about_silence(call_id: str) -> None:
         print(f"[live call {call_id}] Couldn't play the silence warning: {problem}")
 
 
-def announce_link(call_id: str) -> str:
+def warn_senior(call_id: str) -> None:
     """
-    The web address Twilio reads the silence warning from.
+    Says the scam warning out loud to everyone on the call, the moment the
+    family gets the alert: "Scam Shield warning. This call looks like a scam..."
+
+    Example:
+        warn_senior("c1") right after Nemotron scores the call 92
+    """
+    call = storage.get_call(call_id)
+    if call is None or call["status"] != "live":
+        return
+    try:
+        room = find_conference(call)
+        if room is not None:
+            room.update(announce_url=announce_link(call_id, "scam"))
+    except Exception as problem:
+        # A failed warning should never crash the server mid call.
+        print(f"[live call {call_id}] Couldn't play the scam warning: {problem}")
+
+
+def announce_link(call_id: str, kind: str = "silence") -> str:
+    """
+    The web address Twilio reads a warning from: "silence" or "scam".
 
     Example:
         announce_link("c1") gives you ".../twilio/protected/silence?call_id=c1"
+        announce_link("c1", "scam") gives you ".../twilio/protected/silence?call_id=c1&kind=scam"
     """
     base = get_settings().public_base_url.rstrip("/")
-    return f"{base}/twilio/protected/silence?call_id={call_id}"
+    link = f"{base}/twilio/protected/silence?call_id={call_id}"
+    if kind != "silence":
+        link += f"&kind={kind}"
+    return link
 
 
 @router.post("/twilio/protected/silence")
-async def silence_message(request: Request, call_id: str = ""):
+async def silence_message(request: Request, call_id: str = "", kind: str = "silence"):
     """
-    The words Twilio plays into a silent call.
+    The words Twilio plays into a call: the silent call warning, or (with
+    kind=scam) the scam warning.
 
     Example:
         Rosa hears "Careful. This caller hasn't said anything..."
+        with kind=scam, Rosa hears "Scam Shield warning. This call looks like a scam..."
     """
     form = await read_twilio_form(request)
     if form is None:
@@ -427,7 +461,8 @@ async def silence_message(request: Request, call_id: str = ""):
     response = VoiceResponse()
     call = storage.get_call(call_id)
     if call is not None:
-        response.say(screen_words(call)["silence"])
+        words = screen_words(call)
+        response.say(words["scam"] if kind == "scam" else words["silence"])
     return twiml_response(response)
 
 

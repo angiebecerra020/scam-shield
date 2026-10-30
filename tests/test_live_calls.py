@@ -365,3 +365,33 @@ def test_an_added_call_has_no_hold_music():
     response = twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
 
     assert 'waitUrl=""' in response.text
+
+
+def test_when_the_family_is_alerted_the_senior_hears_the_warning_too(inbox, monkeypatch):
+    """The alert goes to the family AND Scam Shield says it out loud on the call."""
+    warned = []
+    monkeypatch.setattr(live_calls, "warn_senior", warned.append)
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
+        },
+    )
+
+    assert warned == [call["id"]]
+
+
+def test_the_scam_warning_words():
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    response = twilio_post(f"/twilio/protected/silence?call_id={call['id']}&kind=scam", {})
+
+    assert "This call looks like a scam" in response.text
