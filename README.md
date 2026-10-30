@@ -320,13 +320,13 @@ With `DEMO_MODE=false`, every webhook must carry Twilio's signature, so nobody c
 
 ## Team
 
-- **Angie Becerra**: product lead, UI/UX and the flow of the site
+- **Angie Becerra**: product lead, Twilio and Tavily
   - Started the project: the FastAPI server, settings, and the tests that run on GitHub for every change
   - The scam brain: the Nemotron detector, Tavily caller research, the 20 test calls and the accuracy results
   - The family alert at a score of 70, the demo player ("Is it really you?" and Grandma's spoken warning), and the "Test it" phone line with live transcription and alert emails
   - Real protected calls end to end, real consent calls on the live site, and the Call again and Remove buttons
   - Hosting on Render, one look for every page, and the privacy, terms and 404 pages
-- **Cassandra Morales**: lead builder: the engine, database and testing
+- **Cassandra Morales**: lead builder: the engine, database, testing, UI/UX and the flow of the site
   - Consent: the senior's "press 1 to allow" call, the area code check, and "call us and press 2 to cancel"
   - 3-way calls: the conference rooms, the "Join call" link, and the alert phone call where the family presses 1 to join
   - Cell phones and landlines: the calling app, the landline adapter, the real caller's number, and the setup steps page
