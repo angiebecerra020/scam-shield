@@ -588,6 +588,7 @@ def send_family_alert(call: dict) -> None:
         from_=settings.twilio_phone_number,
         url=public_url(f"/twilio/family-alert?call_id={call['id']}"),
     )
+    print(f"[alert {call['id']}] Alert call placed to the family")
 
 
 def joinable_call(call_id: str) -> tuple[dict | None, dict | None]:

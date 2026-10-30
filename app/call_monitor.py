@@ -104,9 +104,16 @@ def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
         now. Why we're worried: The caller says they are grandson Danny...
         To join the call, press 1."
     """
-    calls.send_family_alert(call)
+    try:
+        calls.send_family_alert(call)
+    except Exception as problem:
+        # A failed alert call (a Twilio error, a bad number) must never stop
+        # the emails below, or the family hears nothing at all.
+        print(f"[alert {call['id']}] Couldn't make the alert call: {problem}")
     # Email too, if the family gave us an address, with a "Join call" link.
-    if enrollment.get("family_email"):
+    if not enrollment.get("family_email"):
+        print(f"[alert {call['id']}] No family email saved, so no alert email")
+    else:
         subject, body = email_alerts.alert_email(
             enrollment["family_language"],
             enrollment["senior_name"],
@@ -115,7 +122,8 @@ def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
             calls.join_link(call),
             real_call=True,
         )
-        email_alerts.send_email(enrollment["family_email"], subject, body)
+        sent = email_alerts.send_email(enrollment["family_email"], subject, body)
+        print(f"[alert {call['id']}] Alert email: {sent}")
     alert_other_families(call, enrollment, detector_result)
     ALERTED_CALL_IDS.add(call["id"])
     storage.mark_call_alerted(call["id"])
@@ -202,6 +210,14 @@ def check_live_call(call_id: str, transcript: str) -> dict:
     if found:
         storage.save_call_sources(call_id, all_sources(found))
 
+    # Only the score and status, never the call's words (our privacy promise).
+    print(
+        f"[live call {call_id}] score {result.get('risk_score')}, "
+        f"call {call['status']}, senior {enrollment['status'] if enrollment else 'missing'}"
+    )
+    if result.get("risk_score") is None:
+        # Nemotron couldn't check it. The reason says why (a timeout, a missing key).
+        print(f"[live call {call_id}] Couldn't score it: {(result.get('reasons') or ['?'])[0]}")
     alert_sent_now = False
     if should_alert(call, enrollment, result):
         send_alerts(call, enrollment, result)
