@@ -81,9 +81,9 @@ def test_protected_call_goes_into_a_conference_room_and_rings_the_senior():
     assert "<Conference" in response.text
     assert 'endConferenceOnExit="true"' in response.text
     assert len(calls.DEMO_CALL_LOG) == 1
-    # We ring her real cell. Her phone only forwards calls she declines or
-    # misses, so this doesn't loop (calls.RINGING_SENIORS stops a bounce).
-    assert calls.DEMO_CALL_LOG[0]["to"] == SENIOR_PHONE
+    # We ring her Scam Shield page (the calling app) first. Her real phone
+    # is the backup if the page doesn't answer (see the no answer test).
+    assert calls.DEMO_CALL_LOG[0]["to"].startswith("client:senior-")
     assert calls.DEMO_CALL_LOG[0]["who"] == "senior"
 
 
@@ -120,23 +120,25 @@ def test_live_mode_passes_the_call_token_to_twilio(monkeypatch):
     enrollment = storage.find_active_enrollments()[0]
     sent = {}
 
-    class FakeCalls:
+    class FakeParticipants:
         def create(self, **options):
             sent.update(options)
 
     class FakeTwilio:
-        calls = FakeCalls()
+        def conferences(self, name):
+            sent["conference"] = name
+            fake = type("FakeConference", (), {})()
+            fake.participants = FakeParticipants()
+            return fake
 
     monkeypatch.setattr(calls, "twilio_client", lambda: FakeTwilio())
     monkeypatch.setenv("DEMO_MODE", "false")
 
     calls.start_protected_call(enrollment, SCAMMER_PHONE, "CA123", call_token="tok123")
 
-    assert sent["to"] == SENIOR_PHONE
+    assert sent["to"] == f"client:{enrollment['device_id']}"
     assert sent["from_"] == SCAMMER_PHONE
     assert sent["call_token"] == "tok123"
-    assert "/twilio/protected/screen?call_id=" in sent["url"]
-    calls.RINGING_SENIORS.clear()
 
 
 def test_senior_who_hasnt_said_yes_gets_a_normal_call():
@@ -297,14 +299,18 @@ def test_link_stops_working_if_senior_turns_scam_shield_off():
     assert client.post(f"/api/join/{token}").status_code == 403
 
 
-def test_senior_not_answering_ends_the_call():
+def test_page_not_answering_calls_her_real_phone_then_ends_the_call():
+    """Page closed: we call her real phone. She misses that too: the call ends."""
     sign_up_senior()
     started = scam_call_starts()
+    status_url = f"/twilio/senior-status?call_id={started['call_id']}"
 
-    client.post(
-        f"/twilio/senior-status?call_id={started['call_id']}",
-        data={"CallStatus": "no-answer"},
-    )
+    client.post(status_url, data={"CallStatus": "no-answer"})
+
+    assert storage.get_call(started["call_id"])["status"] == "live"
+    assert calls.DEMO_CALL_LOG[-1]["to"] == SENIOR_PHONE
+
+    client.post(status_url, data={"CallStatus": "no-answer"})
 
     assert storage.get_call(started["call_id"])["status"] == "ended"
 

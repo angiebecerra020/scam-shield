@@ -66,6 +66,10 @@ SENIOR_RING_SECONDS = 25
 # OUR call too, it bounces right back here. This is how we spot that and
 # stop it, instead of ringing them in a loop forever.
 RINGING_SENIORS: dict[str, str] = {}
+
+# Calls where we already tried the backup (ringing the senior's real phone),
+# so we only try it once.
+BACKUP_TRIED: set[str] = set()
 # Wait this long before ringing the family again if they tap the link twice.
 FAMILY_RING_COOLDOWN = timedelta(seconds=60)
 # How many of the detector's reasons we read out on the alert call.
@@ -271,9 +275,9 @@ def start_protected_call(
     if not ring_senior:
         return call
 
-    if enrollment["phone_type"] == "cell":
-        ring_senior_phone(call, enrollment, caller_id_for(caller, call_token))
-        return call
+    # Cell phones ring the Scam Shield page first (the calling app). If the
+    # page is closed, or they don't answer, handle_senior_status() calls
+    # their real phone as a backup, so the call still gets through.
 
     ring_into_conference(
         to=device_address(enrollment),
@@ -449,6 +453,16 @@ def handle_senior_status(call_id: str, call_status: str) -> None:
     if call is None or call["status"] != "live":
         return
 
+    if call_id not in BACKUP_TRIED:
+        enrollment = storage.get_enrollment(call["enrollment_id"])
+        if enrollment is not None and enrollment["phone_type"] == "cell":
+            # The Scam Shield page didn't answer (closed, or they rejected
+            # it). Call their real phone instead: press 1 or press 2.
+            BACKUP_TRIED.add(call_id)
+            ring_senior_phone(call, enrollment, caller_id_for(call["caller_number"], None))
+            return
+
+    BACKUP_TRIED.discard(call_id)
     storage.mark_call_ended(call_id)
     settings = get_settings()
     if settings.demo_mode and not settings.real_calls:

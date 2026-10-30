@@ -286,3 +286,16 @@ input::placeholder {
   gap: 12px;
   margin-top: 28px;
 }
+
+/* "Keep Scam Shield open" banner: gold, easy to spot, big enough for seniors */
+.keep-open-banner {
+  background: rgba(201, 162, 39, 0.15);
+  border: 2px solid #C9A227;
+  border-radius: 12px;
+  color: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 12px 0;
+  padding: 12px 16px;
+}

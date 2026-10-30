@@ -79,20 +79,31 @@ function copyButton(link) {
 }
 
 /**
- * The steps for a cell phone: forward the calls they decline or miss, then
- * how a call works from now on. No app to open: Scam Shield rings their
- * real phone (see calls.ring_senior_phone on the server).
+ * The 3 steps for a cell phone: forward the calls they decline or miss, open
+ * the Scam Shield page and keep it open, then how a call works. If the page
+ * is closed, Scam Shield calls their real phone instead (calls.py).
  *
  * Input:  name, setup (from the server), number (the Scam Shield number)
  * Output: the <li> steps
  */
 function cellSteps(name, setup, number) {
+  const link = makeTag("a", "setup-link", setup.app_link);
+  link.href = setup.app_link;
+  link.target = "_blank";
+
   return [
     step(t("setup.cellStep2Title"), [
       makeTag("p", "", t("setup.cellStep2a")),
       dialCode(`**004*${number}#`),
       makeTag("p", "hint", t("setup.verizon")),
       dialCode(`*71${number}`),
+    ]),
+    step(t("setup.cellPageTitle"), [
+      makeTag("p", "", t("setup.cellPageA", { name })),
+      link,
+      copyButton(setup.app_link),
+      makeTag("p", "", t("setup.cellPageB", { button: t("phone.turnOn") })),
+      makeTag("p", "keep-open-banner", t("banner.keepOpen")),
     ]),
     step(t("setup.cellStep1Title"), [
       makeTag("p", "", t("setup.cellStep1a", { name })),
