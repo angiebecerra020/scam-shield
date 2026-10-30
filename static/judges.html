@@ -1,0 +1,169 @@
+<!--
+  judges.html — The "For the judges" page: start here if you're judging
+  Scam Shield for the Nebius x NVIDIA Global AI Hackathon.
+
+  How it fits in: app/site_pages.py sends this page at /judges, and it's the
+  first tab in the header (nav.js). It leads with our main video, then a
+  3 step path to try it, then who we are and why, then exactly how we use
+  NVIDIA Nemotron, Tavily and Twilio. It reuses the home page's look
+  (styles.css + theme.css) and watch.js for the YouTube video.
+
+  This page is for judges, so it's in English only.
+
+  TO ADD THE VIDEO: put the YouTube video's ID in data-video-id below (the
+  part after "v=" in the YouTube link). Until then, it shows "coming soon".
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>For the judges · Scam Shield</title>
+  <meta name="description" content="Start here if you're judging Scam Shield: our video, a 3 step way to try it, who we are, and how we use NVIDIA Nemotron on Nebius Token Factory, Tavily and Twilio.">
+  <link rel="canonical" href="https://scam-shield-86hy.onrender.com/judges">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scam Shield">
+  <meta property="og:title" content="Scam Shield: for the judges">
+  <meta property="og:description" content="Scam Shield stops scam calls to seniors while they happen. Built with NVIDIA Nemotron on Nebius Token Factory, Tavily and Twilio.">
+  <meta property="og:url" content="https://scam-shield-86hy.onrender.com/judges">
+  <meta property="og:image" content="https://scam-shield-86hy.onrender.com/static/icons/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/header.css">
+</head>
+<body class="landing">
+  <!-- The header with the logo and tabs. nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <!-- The video first: it's the fastest way to get the whole idea -->
+    <section class="watch-hero">
+      <p class="badge badge-alert">For the judges · Nebius x NVIDIA Global AI Hackathon</p>
+      <h1>Scam Shield stops scam calls <span class="text-red">while they happen.</span></h1>
+      <p class="lead">Thank you for judging! Here's everything in one place: our 2 minute video, a 3 step way to try it yourself, who we are, and how we built it.</p>
+
+      <div id="video-frame" class="video-frame" data-video-id="">
+        <div class="video-soon">
+          <img src="/static/icons/favicon.svg" alt="" width="72" height="72">
+          <p class="video-soon-title">Our video is on its way</p>
+          <p>While it uploads, watch a scam get caught in the live demo. No sign up needed.</p>
+          <a class="button" href="/demo">Watch the live demo</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- The judge's path: 3 things to try, in order -->
+    <section class="section" aria-labelledby="try-title">
+      <h2 id="try-title">Try it in 3 steps</h2>
+      <ol class="step-cards">
+        <li>
+          <h3>Watch a scam get caught</h3>
+          <p>Open the <a href="/demo">live demo</a> and press Play. Every line goes to NVIDIA Nemotron while the call is still going, and the risk climbs in real time.</p>
+        </li>
+        <li>
+          <h3>Play the scammer yourself</h3>
+          <p>Open <a href="/try">Call it yourself</a> for your 4 digit code, then call <strong>(570) 532-5081</strong> and try to fool it. Scam Shield warns you on the call.</p>
+        </li>
+        <li>
+          <h3>Read the code</h3>
+          <p>Everything is open source on <a href="https://github.com/angiebecerra020/scam-shield" target="_blank" rel="noopener">GitHub</a>, with 335 automated tests.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Why we built it: Angie's grandmother -->
+    <section class="section" aria-labelledby="story-title">
+      <h2 id="story-title">Why we built it</h2>
+      <div class="judges-story">
+        <p>Years ago, my grandmother picked up the phone. The man on the other end was polite. Patient. He was selling insurance, and he sounded like someone she could trust.</p>
+        <p>He wasn't. When the call was over, part of the retirement she had spent her whole life saving was gone.</p>
+        <p>The authorities stepped in, and we were lucky. But I'll never forget how stressful those days were for her, and for all of us. She wasn't careless. She was kind. And that's exactly what scammers count on.</p>
+        <p><strong>Scam Shield is what I wish she'd had:</strong> something that listens with her permission, notices the tricks while the call is still happening, and brings her family in before the money leaves.</p>
+        <p class="judges-signature">Angie Becerra</p>
+      </div>
+    </section>
+
+    <!-- Who we are -->
+    <section class="section" aria-labelledby="team-title">
+      <h2 id="team-title">Who we are</h2>
+      <div class="feature-grid">
+        <article class="feature">
+          <h3>Angie Becerra</h3>
+          <p><strong>Product lead.</strong> Order Manager working in automation and AI integration, helping people bridge the gap between automation and AI agents. She led Scam Shield's product, testing and real phone calls.</p>
+          <p><a href="https://www.linkedin.com/in/angie-becerra-740b34205/" target="_blank" rel="noopener">LinkedIn</a></p>
+        </article>
+        <article class="feature">
+          <h3>Cassandra Morales</h3>
+          <p><strong>Lead builder.</strong> Software engineer, founder of OttoTrade (Best FinTech Hack at BloomKnights), and UCF Information Technology graduate. She built Scam Shield's engine, from the Nemotron scoring to the family dashboard.</p>
+          <p><a href="https://www.linkedin.com/in/cassandramrles/" target="_blank" rel="noopener">LinkedIn</a></p>
+        </article>
+      </div>
+      <ul class="reasons judges-bullets">
+        <li><strong>We build for the people technology leaves behind,</strong> starting with the ones who raised us.</li>
+        <li><strong>We ship, not slides:</strong> real phone calls, a live site, 335 automated tests, in English, Spanish and Haitian Creole.</li>
+        <li><strong>People and code, side by side:</strong> one of us turns real problems into automation, the other turns ideas into working software.</li>
+      </ul>
+    </section>
+
+    <!-- Vision, mission, and why we want to win -->
+    <section class="section coming-soon" aria-labelledby="mission-title">
+      <h2 id="mission-title">Our vision and mission</h2>
+      <p><strong>Vision:</strong> no one should lose their life's savings to a phone call.</p>
+      <p><strong>Mission:</strong> catch scam calls while they happen, and bring the family in before the money leaves, always with the senior's permission and in their language.</p>
+      <p><strong>Why we want to win:</strong> winning means Scam Shield 2.0 gets built, the real app that protects every call without a page left open. It means more families get the tool my grandmother never had. And it means two builders get to keep doing the work we care about most.</p>
+    </section>
+
+    <!-- How it works, for the Technical Implementation score -->
+    <section class="section" aria-labelledby="tech-title">
+      <h2 id="tech-title">How we use NVIDIA Nemotron, Tavily and Twilio</h2>
+      <div class="feature-grid">
+        <article class="feature">
+          <h3>NVIDIA Nemotron on Nebius Token Factory</h3>
+          <p>Every new sentence of the call goes to <strong>Nemotron 3.5 Lightning</strong> through Token Factory's OpenAI compatible API. We picked the fast model on purpose: a warning only helps if it arrives during the call.</p>
+          <p>Nemotron returns a risk score from 0 to 100, a verdict, the reasons (gift cards, secrecy, urgency, a fake grandchild), who the caller claims to be, and the family's alert, written in the family's own language.</p>
+        </article>
+        <article class="feature">
+          <h3>Tavily, live web search</h3>
+          <p>When Nemotron says a call looks risky, Tavily runs two searches while the call is still going: <strong>has this number been reported as a scam?</strong> and <strong>what scams match what the caller just said?</strong> We build that second search from Nemotron's own reasons.</p>
+          <p>The family sees the real sources on the dashboard. Calls that look safe skip the news search, so we don't waste credits.</p>
+        </article>
+        <article class="feature">
+          <h3>Twilio, the phone line</h3>
+          <p>The senior says yes first, by pressing 1 on our call. Then their phone forwards calls they decline or miss to Scam Shield, or they add us to a call in 2 taps (Add call, then Merge).</p>
+          <p>Twilio's real time transcription sends us the words, and a conference room lets the family join the call with one tap.</p>
+        </article>
+        <article class="feature">
+          <h3>Built to be trusted</h3>
+          <p>FastAPI on Render, Supabase logins, 335 automated tests. We never record calls or save the words. A silent caller gets warned at 10 seconds and hung up at 20. Demo mode keeps a scripted call working for anyone, with no real phone.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section cta">
+      <h2>Thank you for your time.</h2>
+      <a class="button" href="/demo">Watch the live demo</a>
+      <a class="button button-outline" href="https://github.com/angiebecerra020/scam-shield" target="_blank" rel="noopener">See the code</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p>We only listen with permission. Our demos use acted, simulated calls.</p>
+    <p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/nav.js"></script>
+  <script src="/static/watch.js"></script>
+</body>
+</html>

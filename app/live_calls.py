@@ -220,9 +220,8 @@ async def receive_words(request: Request, background: BackgroundTasks, call_id: 
         if words:
             # The caller is talking, so this isn't a silent call.
             stop_silence_watch(call_id)
-            # Shows up in the Render logs, so we can check what Twilio heard.
-            # Fine for now because our test calls are acted, never real people.
-            print(f"[live call {call_id}] Caller said: {words}")
+            # We don't print or save the words anywhere. They stay in memory
+            # until the call ends (our privacy promise).
             LINES.setdefault(call_id, []).append(words)
             background.add_task(check_call, call_id)
     elif event == "transcription-stopped":

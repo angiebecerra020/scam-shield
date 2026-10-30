@@ -26,6 +26,7 @@
 // The tabs in the header, in order. "text" is the key for its words in strings.js.
 const NAV_LINKS = [
   // A plain "Home" link too, since not everyone knows the logo goes home.
+  { href: "/judges", text: "nav.judges" },
   { href: "/", text: "nav.home" },
   { href: "/demo", text: "nav.demo" },
   { href: "/try", text: "nav.try" },

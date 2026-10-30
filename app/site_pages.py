@@ -25,6 +25,7 @@ PUBLIC_PAGES = [
     "/",
     "/demo",
     "/try",
+    "/judges",
     "/watch",
     "/qa",
     "/scam-call-protection-for-seniors",
@@ -102,6 +103,18 @@ def add_site_extras(app: FastAPI) -> None:
         for name, value in SAFETY_HEADERS.items():
             response.headers.setdefault(name, value)
         return response
+
+
+@router.get("/judges")
+def show_judges_page() -> FileResponse:
+    """
+    The "For the judges" page: our video, how to try it, who we are, and
+    how we use Nemotron, Tavily and Twilio.
+
+    Example:
+        Open http://localhost:8000/judges
+    """
+    return FileResponse(STATIC / "judges.html")
 
 
 @router.get("/watch")

@@ -427,3 +427,22 @@ input::placeholder {
   border-radius: 18px;
   padding: 24px;
 }
+
+/* The "Why we built it" story on the judges page: big, calm, easy to read */
+.judges-story {
+  border-left: 4px solid #C9A227;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  max-width: 760px;
+  padding-left: 20px;
+}
+
+.judges-signature {
+  color: #C9A227;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.3rem;
+}
+
+.judges-bullets {
+  margin-top: 20px;
+}
