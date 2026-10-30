@@ -463,3 +463,70 @@ def end_silent_call(call_id: str) -> None:
             "number works, or trying to record a voice. We ended the call to keep them safe.\n\n"
             "Scam Shield",
         )
+
+
+# What the senior hears when they add Scam Shield to a call, by language.
+ADDED_WORDS = {
+    "en": {
+        "joining": "Scam Shield is joining your call. To turn Scam Shield off instead, press 2.",
+        "listening": "Scam Shield is listening.",
+    },
+    "es": {
+        "joining": "Scam Shield se está uniendo a su llamada. Para apagar Scam Shield, marque 2.",
+        "listening": "Scam Shield está escuchando.",
+    },
+}
+
+# Who the "caller" is when the senior adds us to a call. We don't know the
+# other person's number, so research.py skips the number check.
+ADDED_CALLER = "Unknown"
+
+
+def senior_added_us(enrollment: dict, call_sid: str) -> str:
+    """
+    The senior called our number, usually by tapping "Add call" and "Merge"
+    during a call that feels wrong. We start listening right away.
+
+    On a merged call, the senior's phone sends us BOTH voices, so the caller
+    gets transcribed too. The senior's side goes in a conference room, so the
+    family's "Join call" link works just like on a forwarded call.
+
+    For the first few seconds they can still press 2 to turn Scam Shield off
+    (Cass's cancel menu in consent.py). After that, keys do nothing, so the
+    other person on the call can't turn us off.
+
+    Input:  enrollment, the senior's active sign up
+            call_sid, Twilio's ID for the senior's call to us
+    Output: TwiML: listen, offer press 2, then join the room
+
+    Example:
+        Rosa taps Add call, picks Scam Shield, taps Merge, and hears
+        "Scam Shield is joining your call..." then "Scam Shield is listening."
+    """
+    # Imported here because calls.py imports this file too.
+    from app import calls
+
+    call = calls.start_protected_call(enrollment, ADDED_CALLER, call_sid, ring_senior=False)
+    words = ADDED_WORDS.get(enrollment.get("senior_language"), ADDED_WORDS["en"])
+    base = get_settings().public_base_url.rstrip("/")
+
+    response = VoiceResponse()
+    start_transcription(response, call["id"])
+    gather = response.gather(
+        num_digits=1,
+        timeout=4,
+        action=f"{base}/twilio/senior-menu-answer?enrollment_id={enrollment['id']}",
+    )
+    gather.say(words["joining"])
+    response.say(words["listening"])
+    dial = response.dial()
+    dial.conference(
+        call["conference_name"],
+        start_conference_on_enter=True,
+        # When the senior hangs up, the call is over for everyone.
+        end_conference_on_exit=True,
+        beep=False,
+        status_callback=f"{base}/twilio/conference-status",
+        status_callback_event="end",
+    )
+    return str(response)

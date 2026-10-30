@@ -258,3 +258,46 @@ def test_the_callers_first_words_stop_the_silence_timers():
     )
 
     assert call["id"] not in live_calls.SILENCE_TIMERS
+
+
+def test_grandma_adding_scam_shield_to_a_call_starts_listening():
+    """Grandma taps Add call and Merge: we listen right away and put her in a room."""
+    save_grandma()
+
+    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+
+    assert "<Transcription" in response.text
+    assert "Scam Shield is joining your call" in response.text
+    assert "press 2" in response.text
+    assert "<Conference" in response.text
+    call = storage.find_calls_for_enrollment("rosa")[0]
+    assert call["caller_number"] == live_calls.ADDED_CALLER
+
+
+def test_scam_words_on_an_added_call_email_the_family(inbox):
+    """The merged call gets scored like any protected call."""
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
+        },
+    )
+
+    assert len(inbox) == 1
+    assert "/join/" in inbox[0].get_content()
+
+
+def test_a_paused_grandma_calling_in_still_gets_the_menu():
+    """Paused means we don't listen, so she hears Cass's menu instead."""
+    save_grandma(status="paused")
+
+    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA6", "From": GRANDMA})
+
+    assert "<Transcription" not in response.text
+    assert "<Gather" in response.text

@@ -744,6 +744,14 @@ async def incoming_call(request: Request):
     # A senior we protect calling from their own phone gets the "press 2 to
     # cancel Scam Shield" menu instead of the code question (consent.py).
     senior = consent.find_senior_calling_in(form.get("From", ""))
+    if senior is not None and senior["status"] == "active":
+        # A protected senior calling us is usually adding Scam Shield to a
+        # call ("Add call", then "Merge"). We start listening right away, and
+        # they can still press 2 to cancel (live_calls.senior_added_us).
+        from app import live_calls
+
+        xml = live_calls.senior_added_us(senior, form.get("CallSid", ""))
+        return Response(content=xml, media_type="application/xml")
     if senior is not None:
         return Response(content=consent.senior_menu_twiml(senior["id"]), media_type="application/xml")
 
