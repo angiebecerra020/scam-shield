@@ -60,6 +60,8 @@ class Settings:
     # Real calls for protected seniors (ringing their calling app, joining
     # the family in), even in demo mode. The demo player stays pretend.
     real_calls: bool = False
+    # The backup Nemotron (detector.py). Blank means no backup.
+    nemotron_backup_model: str = ""
 
 
 def read_text_setting(name: str, default: str = "") -> str:
@@ -118,6 +120,10 @@ def get_settings() -> Settings:
         nebius_api_key=read_text_setting("NEBIUS_API_KEY"),
         nebius_base_url=read_text_setting("NEBIUS_BASE_URL"),
         nemotron_model=read_text_setting("NEMOTRON_MODEL"),
+        # Used when the main model doesn't answer in time (detector.py).
+        # If it's not set, we fall back to Nemotron 3 Super, which answers a
+        # scam check in about 2 seconds. Set it to nothing to turn the backup off.
+        nemotron_backup_model=read_text_setting("NEMOTRON_BACKUP_MODEL", "nvidia/nemotron-3-super-120b-a12b"),
         tavily_api_key=read_text_setting("TAVILY_API_KEY"),
         twilio_account_sid=read_text_setting("TWILIO_ACCOUNT_SID"),
         twilio_auth_token=read_text_setting("TWILIO_AUTH_TOKEN"),

@@ -57,6 +57,12 @@ LANGUAGE_NAMES = {
 # slow connection can't freeze the app in the middle of a call.
 REQUEST_TIMEOUT_SECONDS = 15
 
+# The main model (Lightning) usually answers in about 1 second. If it hasn't
+# answered in this many seconds, something's wrong on Nebius's side, so we
+# stop waiting and ask the backup model instead. On Oct 30, 2026 Lightning
+# hung for minutes while Super answered in 2 seconds, and this saved the demo.
+MAIN_MODEL_TIMEOUT_SECONDS = 4
+
 # Long calls make long transcripts. We only send the most recent part, which
 # keeps Nemotron fast and saves our credits. 8,000 characters is about 10
 # minutes of talking.
@@ -247,13 +253,14 @@ def answer_format_attempts() -> list[dict]:
     ]
 
 
-def ask_nemotron(client, model: str, messages: list[dict]) -> str:
+def ask_nemotron(client, model: str, messages: list[dict], timeout: float = REQUEST_TIMEOUT_SECONDS) -> str:
     """
     Sends the messages to Nemotron and gives back its answer as plain text.
 
     Input:  client, from make_client() (the tests pass in a fake one)
             model, the model ID like "nvidia/Nemotron-3_5-Lightning"
             messages, from build_messages()
+            timeout, how many seconds to wait for each try
     Output: whatever Nemotron answered, which is usually JSON
     Raises: the last error if every attempt failed (score_call catches it)
 
@@ -270,7 +277,7 @@ def ask_nemotron(client, model: str, messages: list[dict]) -> str:
                 # A low temperature keeps the scores consistent for the same call.
                 temperature=0.2,
                 max_tokens=600,
-                timeout=REQUEST_TIMEOUT_SECONDS,
+                timeout=timeout,
                 **extra_settings,
             )
             return response.choices[0].message.content or ""
@@ -279,6 +286,53 @@ def ask_nemotron(client, model: str, messages: list[dict]) -> str:
             # error), so we try the next, simpler way of asking.
             last_error = error
     raise last_error
+
+
+def without_retries(client):
+    """
+    The same client, but it won't quietly try again on its own. The openai
+    library normally retries twice, so one stuck model meant 45 seconds of
+    waiting. We'd rather move on to the backup model fast.
+
+    Example:
+        without_retries(client).chat.completions.create(...) tries just once
+    """
+    if hasattr(client, "with_options"):
+        return client.with_options(max_retries=0)
+    # The fake clients in our tests don't have with_options, and don't retry anyway.
+    return client
+
+
+def ask_with_backup(client, settings, messages: list[dict]) -> str:
+    """
+    Asks the main Nemotron model, and if it fails or takes too long, asks the
+    backup model instead.
+
+    Input:  client, from make_client() (the tests pass in a fake one)
+            settings, from get_settings() (the two model IDs)
+            messages, from build_messages()
+    Output: Nemotron's answer as text
+    Raises: the main model's error if both models failed (score_call catches it)
+
+    Example:
+        Lightning hangs, so ask_with_backup(...) gives you Super's answer about
+        8 seconds later instead of an error 45 seconds later
+    """
+    main = settings.nemotron_model
+    backup = settings.nemotron_backup_model
+    tries = [(main, MAIN_MODEL_TIMEOUT_SECONDS if backup and backup != main else REQUEST_TIMEOUT_SECONDS)]
+    if backup and backup != main:
+        tries.append((backup, REQUEST_TIMEOUT_SECONDS))
+
+    first_error = None
+    for model, timeout in tries:
+        try:
+            return ask_nemotron(without_retries(client), model, messages, timeout=timeout)
+        except Exception as error:
+            print(f"[detector] Couldn't reach {model}: {type(error).__name__}: {error}")
+            # We report the main model's problem, since that's the one to fix.
+            first_error = first_error or error
+    raise first_error
 
 
 def find_json_object(text: str) -> dict | None:
@@ -501,11 +555,10 @@ def score_call(transcript: str, language: str = "en", client=None) -> dict:
         client = make_client()
 
     try:
-        answer = ask_nemotron(client, settings.nemotron_model, build_messages(transcript, language))
+        answer = ask_with_backup(client, settings, build_messages(transcript, language))
     except Exception as error:
         # We catch every error here on purpose. A problem reaching Nemotron
         # should never crash the app while someone's on the phone.
-        print(f"[detector] Couldn't reach Nemotron: {type(error).__name__}: {error}")
         return unknown_result(f"Couldn't reach Nemotron ({type(error).__name__}).")
 
     raw = find_json_object(answer)

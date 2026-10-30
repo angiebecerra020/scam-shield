@@ -47,6 +47,8 @@ services:
         value: https://api.tokenfactory.nebius.com/v1/
       - key: NEMOTRON_MODEL
         value: nvidia/Nemotron-3_5-Lightning
+      - key: NEMOTRON_BACKUP_MODEL
+        value: nvidia/nemotron-3-super-120b-a12b
       # Secrets: Render asks for these once, when you create the Blueprint
       - key: NEBIUS_API_KEY
         sync: false

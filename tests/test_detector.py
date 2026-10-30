@@ -281,3 +281,27 @@ def test_a_different_voice_is_not_a_scam_sign():
     """"Danny? You sound different" in the demo call shouldn't show up as a red flag."""
     assert "you sound different" in detector.SYSTEM_PROMPT
     assert "Never list it as a reason" in detector.SYSTEM_PROMPT
+
+
+def test_a_stuck_main_model_falls_back_to_the_backup(monkeypatch):
+    """Lightning times out, so we ask the backup model and still catch the scam."""
+    monkeypatch.setenv("NEMOTRON_MODEL", "main-model")
+    monkeypatch.setenv("NEMOTRON_BACKUP_MODEL", "backup-model")
+    fake = FakeNemotron([TimeoutError("Lightning is stuck"), '{"risk_score": 91, "verdict": "likely_scam", "reasons": ["Gift cards"]}'])
+
+    result = detector.score_call(SCAM_CALL, client=fake)
+
+    assert result["risk_score"] == 91
+    assert [request["model"] for request in fake.requests] == ["main-model", "backup-model"]
+    # The main model only gets a short wait, so the backup answers in time.
+    assert fake.requests[0]["timeout"] == detector.MAIN_MODEL_TIMEOUT_SECONDS
+
+
+def test_no_backup_means_one_try(monkeypatch):
+    monkeypatch.setenv("NEMOTRON_BACKUP_MODEL", "")
+    fake = FakeNemotron([TimeoutError("stuck")])
+
+    result = detector.score_call(SCAM_CALL, client=fake)
+
+    assert result["verdict"] == "unknown"
+    assert len(fake.requests) == 1
