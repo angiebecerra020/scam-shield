@@ -355,3 +355,13 @@ def test_pressing_2_on_an_added_call_still_cancels():
     twilio_post(f"/twilio/protected/added-choice?call_id={call['id']}", {"Digits": "2", "From": GRANDMA})
 
     assert storage.get_enrollment("rosa")["status"] == "revoked"
+
+
+def test_an_added_call_has_no_hold_music():
+    """Twilio plays music to anyone alone in a room. On a merged call that
+    played over Grandma's conversation, so the room has to be silent."""
+    save_grandma()
+
+    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+
+    assert 'waitUrl=""' in response.text

@@ -537,6 +537,10 @@ def add_listening(response: VoiceResponse, call: dict, words: dict) -> None:
     dial = response.dial()
     dial.conference(
         call["conference_name"],
+        # Silence instead of Twilio's hold music. On a merged call the senior's
+        # line is alone in the room until the family joins, and Twilio plays
+        # music to anyone waiting alone, right over the conversation.
+        wait_url="",
         start_conference_on_enter=True,
         # When the senior hangs up, the call is over for everyone.
         end_conference_on_exit=True,
