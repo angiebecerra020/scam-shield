@@ -38,7 +38,7 @@ const STRINGS = {
 
     // The landing page (landing.html)
     "landing.badge": "Live scam call protection",
-    "landing.title1": "Stop scam calls",
+    "landing.title1": "Stop scam calls to seniors",
     "landing.title2": "while they happen.",
     "landing.lead":
       "Scam Shield listens for scam tricks on your loved one's calls, with their OK, and tells you right away, in your language.",
@@ -61,8 +61,9 @@ const STRINGS = {
     "landing.step2":
       "NVIDIA Nemotron scores each call from 0 to 100 and spots tricks like gift cards, secrecy and rush.",
     "landing.step3Title": "You get the alert",
-    "landing.step3": "A text tells you why the call looks risky, with a link to join the call yourself.",
+    "landing.step3": "We call you right away and say why the call looks risky. Press 1 to join the call yourself.",
     "landing.featuresTitle": "Built for families",
+    "landing.learnMore": "Learn more:",
     "landing.feature1Title": "\"Is it really you?\"",
     "landing.feature1": "If a caller says they're family, we text the real person to check.",
     "landing.feature2Title": "Caller check",
@@ -79,10 +80,16 @@ const STRINGS = {
     "landing.privacy": "Privacy",
     "landing.terms": "Terms",
 
+    // The links to the service pages and Q&A in the footer of the public pages
+    "footer.seniors": "Protection for seniors",
+    "footer.alerts": "Family alerts",
+    "footer.phones": "Landline and cell",
+    "footer.qa": "Q&A",
+
     // The Q&A page (qa.html)
-    "qa.title": "Questions & answers · Scam Shield",
+    "qa.title": "Scam Call Protection FAQ for Families · Scam Shield",
     "qa.eyebrow": "Q&A",
-    "qa.heading": "Your questions, answered.",
+    "qa.heading": "Scam call protection: your questions, answered.",
     "qa.lead": "The things families ask us most, in plain words.",
     "qa.q1": "What is Scam Shield?",
     "qa.a1": "Scam Shield listens for scam tricks on your loved one's phone calls, with their OK. If a call looks like a scam, it calls you right away so you can step in while there's still time.",
@@ -104,6 +111,12 @@ const STRINGS = {
     "qa.a9": "Yes. AI can miss a scam or warn about a call that's fine. Always call your family member back on a number you already know. Scam Shield isn't for emergencies: if someone is in danger, call 911.",
     "qa.q10": "How can I try it?",
     "qa.a10": "Watch the live demo, or use Test it to call our number and play the scammer yourself. No account needed.",
+    "qa.q11": "Does it work anywhere in the US?",
+    "qa.a11": "Yes. It works with US phone numbers in every state, on a cell phone or a home landline.",
+    "qa.learnTitle": "Learn more",
+    "qa.learnSeniors": "The scam tricks we listen for",
+    "qa.learnAlerts": "The alert call your family gets",
+    "qa.learnPhones": "How it works on a landline or cell phone",
     "qa.moreTitle": "Still have a question?",
     "qa.more": "Email us at",
 
@@ -393,7 +406,7 @@ const STRINGS = {
     "error.refresh": "No pudimos conectar con el servidor. Por favor recargue la página.",
 
     "landing.badge": "Protección en vivo contra llamadas de estafa",
-    "landing.title1": "Detenga las llamadas de estafa",
+    "landing.title1": "Detenga las llamadas de estafa a personas mayores",
     "landing.title2": "mientras ocurren.",
     "landing.lead":
       "Scam Shield escucha las llamadas de su ser querido, con su permiso, para detectar trucos de estafa, y le avisa a usted enseguida, en su idioma.",
@@ -416,8 +429,9 @@ const STRINGS = {
     "landing.step2":
       "NVIDIA Nemotron califica cada llamada del 0 al 100 y detecta trucos como tarjetas de regalo, secretos y prisa.",
     "landing.step3Title": "Usted recibe la alerta",
-    "landing.step3": "Un mensaje le dice por qué la llamada parece riesgosa, con un enlace para unirse a la llamada.",
+    "landing.step3": "Lo llamamos enseguida y le decimos por qué la llamada parece riesgosa. Marque 1 para unirse a la llamada.",
     "landing.featuresTitle": "Hecho para las familias",
+    "landing.learnMore": "Más información:",
     "landing.feature1Title": "\"¿De verdad eres tú?\"",
     "landing.feature1": "Si alguien dice ser de la familia, le escribimos a la persona real para confirmar.",
     "landing.feature2Title": "Revisión de quién llama",
@@ -434,10 +448,16 @@ const STRINGS = {
     "landing.privacy": "Privacidad",
     "landing.terms": "Términos",
 
+    // Los enlaces a las páginas de servicios y preguntas al pie de las páginas públicas
+    "footer.seniors": "Protección para mayores",
+    "footer.alerts": "Alertas para la familia",
+    "footer.phones": "Teléfono de casa y celular",
+    "footer.qa": "Preguntas",
+
     // La página de preguntas (qa.html)
-    "qa.title": "Preguntas y respuestas · Scam Shield",
+    "qa.title": "Preguntas frecuentes sobre protección contra llamadas de estafa · Scam Shield",
     "qa.eyebrow": "Preguntas",
-    "qa.heading": "Sus preguntas, respondidas.",
+    "qa.heading": "Protección contra llamadas de estafa: sus preguntas, respondidas.",
     "qa.lead": "Lo que las familias más nos preguntan, en palabras sencillas.",
     "qa.q1": "¿Qué es Scam Shield?",
     "qa.a1": "Scam Shield escucha trucos de estafa en las llamadas de su ser querido, con su permiso. Si una llamada parece una estafa, lo llama a usted enseguida para que pueda intervenir a tiempo.",
@@ -459,6 +479,12 @@ const STRINGS = {
     "qa.a9": "Sí. La IA puede no detectar una estafa o avisar de una llamada que está bien. Siempre devuelva la llamada a su familiar a un número que ya conoce. Scam Shield no es para emergencias: si alguien está en peligro, llame al 911.",
     "qa.q10": "¿Cómo lo pruebo?",
     "qa.a10": "Vea la demo en vivo, o use Pruébelo para llamar a nuestro número y hacerse pasar por el estafador. No necesita cuenta.",
+    "qa.q11": "¿Funciona en cualquier parte de EE. UU.?",
+    "qa.a11": "Sí. Funciona con números de teléfono de EE. UU. en todos los estados, en un celular o un teléfono de casa.",
+    "qa.learnTitle": "Más información",
+    "qa.learnSeniors": "Los trucos de estafa que buscamos",
+    "qa.learnAlerts": "La llamada de alerta que recibe su familia",
+    "qa.learnPhones": "Cómo funciona en un teléfono de casa o un celular",
     "qa.moreTitle": "¿Tiene otra pregunta?",
     "qa.more": "Escríbanos a",
 

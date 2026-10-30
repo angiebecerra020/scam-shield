@@ -1,0 +1,126 @@
+<!--
+  family-alerts.html
+
+  The service page for the family alert: the call (and email) the
+  family gets when a call looks like a scam.
+
+  How it fits in: app/site_pages.py sends this page at /family-scam-alerts.
+  It's one of three service pages (seniors.html, family-alerts.html,
+  phones.html) that tell search engines and families what Scam Shield does.
+  Same look as privacy.html. The questions at the bottom are also written in
+  the FAQ schema (the application/ld+json script), so keep the two the same.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family Scam Alerts: Get a Call When a Loved One Is Being Scammed · Scam Shield</title>
+  <meta name="description" content="When a call to your parent or grandparent looks like a scam, Scam Shield phones you right away, tells you why, and lets you press 1 to join the call. English and Spanish.">
+  <link rel="canonical" href="https://scam-shield-86hy.onrender.com/family-scam-alerts">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scam Shield">
+  <meta property="og:title" content="Family Scam Alerts: Get a Call When a Loved One Is Being Scammed · Scam Shield">
+  <meta property="og:description" content="When a call to your parent or grandparent looks like a scam, Scam Shield phones you right away, tells you why, and lets you press 1 to join the call. English and Spanish.">
+  <meta property="og:url" content="https://scam-shield-86hy.onrender.com/family-scam-alerts">
+  <meta property="og:image" content="https://scam-shield-86hy.onrender.com/static/icons/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Scam Shield showing a 92 out of 100 scam risk for a fake grandson call">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How fast is the family alert?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We call you as soon as the scam score reaches 70, while the call is still going."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I join the scam call?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Press 1 on our alert call and you join your loved one's call right away."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do family alerts come in Spanish?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Each person picks English or Spanish, and we call them in their own language."
+      }
+    }
+  ]
+}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/header.css">
+</head>
+<body class="landing">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="page">
+    <p class="eyebrow">Family scam alerts</p>
+    <h1>Get a call the moment your loved one is being scammed.</h1>
+    <p class="lead">Most families only find out about a scam after the money is gone. Scam Shield tells you while the call is still going, so you can step in.</p>
+
+    <h2>How the alert works</h2>
+    <ol>
+      <li><strong>The score hits 70.</strong> NVIDIA Nemotron scores your loved one's call from 0 to 100 while it's going.</li>
+      <li><strong>Your phone rings.</strong> Scam Shield calls you in your language, English or Spanish, and says why we're worried, like "the caller asked for gift cards".</li>
+      <li><strong>Press 1 to join the call.</strong> You're put right into the call, so you can say "Mom, hang up, that's not Danny." Press 2 to hang up.</li>
+      <li><strong>An email too.</strong> If you gave us your email, you also get the alert there, with a link to join the call.</li>
+    </ol>
+
+    <h2>Your family dashboard</h2>
+    <ul>
+      <li>See every protected call: the caller's number, the time, the scam score and the reasons.</li>
+      <li>Tell us "Was this a scam?" so we learn from it.</li>
+      <li>Report a number to be warned about it, or block it.</li>
+      <li>Pause or remove protection anytime.</li>
+    </ul>
+
+    <h2>See it for yourself</h2>
+    <p>Watch the <a href="/demo">live demo</a> to see a family get warned, or use <a href="/try">Test it</a> to call our number and play the scammer. Learn more about <a href="/scam-call-protection-for-seniors">what we listen for</a>.</p>
+
+    <h2>Questions</h2>
+    <h3>How fast is the family alert?</h3>
+    <p>We call you as soon as the scam score reaches 70, while the call is still going.</p>
+    <h3>Can I join the scam call?</h3>
+    <p>Yes. Press 1 on our alert call and you join your loved one&#x27;s call right away.</p>
+    <h3>Do family alerts come in Spanish?</h3>
+    <p>Yes. Each person picks English or Spanish, and we call them in their own language.</p>
+    <p>More answers on our <a href="/qa">Q&amp;A page</a>.</p>
+
+    <div class="actions">
+      <a class="button" href="/login?mode=signup">Protect a loved one</a>
+      <a class="button button-outline" href="/demo">Watch the live demo</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p data-text="landing.footer1">Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p class="footer-links"><a href="/scam-call-protection-for-seniors" data-text="footer.seniors">Protection for seniors</a> · <a href="/family-scam-alerts" data-text="footer.alerts">Family alerts</a> · <a href="/landline-and-cell-phone-scam-protection" data-text="footer.phones">Landline and cell</a> · <a href="/qa" data-text="footer.qa">Q&amp;A</a></p>
+    <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>
+  </footer>
+
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/nav.js"></script>
+</body>
+</html>

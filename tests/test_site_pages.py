@@ -8,6 +8,9 @@ headers. Plus a check that every page has its icon and link preview tags.
 How it fits in: these are quick checks with no AI, no internet and no phones.
 """
 
+import json
+import re
+from html import unescape
 from pathlib import Path
 
 import pytest
@@ -92,7 +95,8 @@ def test_every_answer_has_the_safety_headers():
 @pytest.mark.parametrize(
     "page",
     ["landing.html", "login.html", "index.html", "join.html", "phone.html", "demo.html", "try.html",
-     "qa.html", "privacy.html", "terms.html", "404.html"],
+     "qa.html", "privacy.html", "terms.html", "404.html",
+     "seniors.html", "family-alerts.html", "phones.html"],
 )
 def test_every_page_has_an_icon_and_a_description(page):
     """Every page has the tab icon and a description for search engines."""
@@ -100,6 +104,75 @@ def test_every_page_has_an_icon_and_a_description(page):
 
     assert 'rel="icon"' in html
     assert 'name="description"' in html
+
+
+# The public pages: (path, file). These are the ones search engines should list.
+PUBLIC = [
+    ("/", "landing.html"),
+    ("/demo", "demo.html"),
+    ("/try", "try.html"),
+    ("/qa", "qa.html"),
+    ("/scam-call-protection-for-seniors", "seniors.html"),
+    ("/family-scam-alerts", "family-alerts.html"),
+    ("/landline-and-cell-phone-scam-protection", "phones.html"),
+    ("/login", "login.html"),
+    ("/privacy", "privacy.html"),
+    ("/terms", "terms.html"),
+]
+
+# The service pages and the words each one has to say.
+SERVICE_PAGES = [
+    ("/scam-call-protection-for-seniors", "Scam call protection for seniors"),
+    ("/family-scam-alerts", "Get a call the moment your loved one is being scammed"),
+    ("/landline-and-cell-phone-scam-protection", "Scam call protection for a landline or a cell phone"),
+]
+
+
+@pytest.mark.parametrize("path,words", SERVICE_PAGES)
+def test_service_pages_load(path, words):
+    """The three service pages open, are in the sitemap, and link to the Q&A."""
+    response = client.get(path)
+
+    assert response.status_code == 200
+    assert words in response.text
+    assert 'href="/qa"' in response.text
+    assert f"<loc>http://testserver{path}</loc>" in client.get("/sitemap.xml").text
+
+
+@pytest.mark.parametrize("path,page", PUBLIC)
+def test_public_pages_have_a_canonical_link(path, page):
+    """Each public page tells search engines its one true address, on the live site."""
+    html = (STATIC / page).read_text()
+
+    assert f'<link rel="canonical" href="https://scam-shield-86hy.onrender.com{path}">' in html
+    assert "ity3" not in html
+
+
+@pytest.mark.parametrize("path,page", [entry for entry in PUBLIC if entry[0] != "/login"])
+def test_public_pages_link_to_the_service_pages(path, page):
+    """The footer links every public page to the service pages and the Q&A.
+    (Not the login page: it has no footer, just the form.)"""
+    html = (STATIC / page).read_text()
+
+    for link in ("/scam-call-protection-for-seniors", "/family-scam-alerts",
+                 "/landline-and-cell-phone-scam-protection", "/qa"):
+        assert f'href="{link}"' in html
+
+
+@pytest.mark.parametrize("page", ["qa.html", "seniors.html", "family-alerts.html", "phones.html"])
+def test_faq_schema_matches_the_page(page):
+    """The FAQ schema is real JSON, and every question in it is also on the page,
+    word for word (search engines don't like schema the page doesn't show)."""
+    html = (STATIC / page).read_text()
+    found = re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)
+    schema = json.loads(found.group(1))
+    shown = unescape(html)
+
+    assert schema["@type"] == "FAQPage"
+    assert len(schema["mainEntity"]) >= 3
+    for question in schema["mainEntity"]:
+        assert question["name"] in shown
+        assert question["acceptedAnswer"]["text"] in shown
 
 
 @pytest.mark.parametrize("page", ["landing.html", "demo.html", "try.html", "login.html"])

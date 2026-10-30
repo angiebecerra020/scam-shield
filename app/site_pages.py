@@ -21,7 +21,18 @@ STATIC = PROJECT_ROOT / "static"
 
 # The pages search engines can list. The dashboard, "Join call" links and the
 # senior's calling app stay out, since they're private to each family.
-PUBLIC_PAGES = ["/", "/demo", "/try", "/qa", "/login", "/privacy", "/terms"]
+PUBLIC_PAGES = [
+    "/",
+    "/demo",
+    "/try",
+    "/qa",
+    "/scam-call-protection-for-seniors",
+    "/family-scam-alerts",
+    "/landline-and-cell-phone-scam-protection",
+    "/login",
+    "/privacy",
+    "/terms",
+]
 
 # Paths where the answer is data for our own pages or for Twilio, never a
 # web page. A wrong address there keeps getting the plain JSON error.
@@ -101,6 +112,42 @@ def show_qa_page() -> FileResponse:
         Open http://localhost:8000/qa
     """
     return FileResponse(STATIC / "qa.html")
+
+
+@router.get("/scam-call-protection-for-seniors")
+def show_seniors_page() -> FileResponse:
+    """
+    Sends the service page for seniors: the scam tricks we listen for, and
+    how the senior stays in charge.
+
+    Example:
+        Open http://localhost:8000/scam-call-protection-for-seniors
+    """
+    return FileResponse(STATIC / "seniors.html")
+
+
+@router.get("/family-scam-alerts")
+def show_family_alerts_page() -> FileResponse:
+    """
+    Sends the service page for the family alert: the call (and email) the
+    family gets when a call looks like a scam.
+
+    Example:
+        Open http://localhost:8000/family-scam-alerts
+    """
+    return FileResponse(STATIC / "family-alerts.html")
+
+
+@router.get("/landline-and-cell-phone-scam-protection")
+def show_phones_page() -> FileResponse:
+    """
+    Sends the service page for phones: how Scam Shield works on a cell phone
+    and on a home landline.
+
+    Example:
+        Open http://localhost:8000/landline-and-cell-phone-scam-protection
+    """
+    return FileResponse(STATIC / "phones.html")
 
 
 @router.get("/privacy")

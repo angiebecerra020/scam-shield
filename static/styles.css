@@ -556,6 +556,14 @@ h3 {
   text-align: center;
 }
 
+/* "Learn more:" links under the feature cards on the home page */
+.learn-more {
+  margin-top: 28px;
+  color: var(--color-muted);
+  line-height: 2;
+  text-align: center;
+}
+
 .site-footer {
   padding: 24px 16px 40px;
   border-top: 1px solid #333;

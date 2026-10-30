@@ -222,6 +222,12 @@ input::placeholder {
   color: var(--color-gold);
 }
 
+/* The row of links to the service pages and Q&A. On a phone they wrap,
+   with room between lines so each link is easy to tap. */
+.site-footer .footer-links {
+  line-height: 2;
+}
+
 /* The dashboard's call list and score circles */
 
 .call {
@@ -239,7 +245,7 @@ input::placeholder {
   border-color: var(--line);
 }
 
-/* The privacy, terms and 404 pages: easy to read, one column */
+/* The privacy, terms, Q&A, service and 404 pages: easy to read, one column */
 
 .page {
   max-width: 720px;
@@ -272,8 +278,15 @@ input::placeholder {
   color: var(--color-muted);
 }
 
-.page ul {
+.page ul,
+.page ol {
   padding-left: 1.2em;
+}
+
+/* The questions at the bottom of the service pages */
+.page h3 {
+  margin: 20px 0 4px;
+  font-size: 1.1rem;
 }
 
 .page li {

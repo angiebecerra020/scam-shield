@@ -1044,3 +1044,9 @@ input:focus-visible {
 [hidden] {
   display: none !important;
 }
+
+/* The row of links to the service pages and Q&A in the footer. On a phone
+   they wrap, with room between lines so each link is easy to tap. */
+.footer .footer-links {
+  line-height: 2;
+}
