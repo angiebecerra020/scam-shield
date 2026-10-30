@@ -382,11 +382,13 @@ def find_conference(call: dict):
     Example:
         find_conference(call) gives you Twilio's conference, so we can talk in it
     """
-    rooms = twilio_client().conferences.list(
-        friendly_name=call["conference_name"], status="in-progress", limit=1
-    )
-    if rooms:
-        return rooms[0]
+    # A room with only the senior in it hasn't "started" yet in Twilio's eyes
+    # (status "init"), but we still need to talk in it, so we take any room
+    # that isn't over.
+    rooms = twilio_client().conferences.list(friendly_name=call["conference_name"], limit=5)
+    for room in rooms:
+        if room.status != "completed":
+            return room
     return None
 
 
@@ -421,10 +423,25 @@ def warn_senior(call_id: str) -> None:
     call = storage.get_call(call_id)
     if call is None or call["status"] != "live":
         return
+    link = announce_link(call_id, "scam")
     try:
         room = find_conference(call)
-        if room is not None:
-            room.update(announce_url=announce_link(call_id, "scam"))
+    except Exception as problem:
+        print(f"[live call {call_id}] Couldn't find the room for the scam warning: {problem}")
+        return
+    if room is None:
+        return
+    try:
+        # Everyone in the room hears it.
+        room.update(announce_url=link)
+        return
+    except Exception as problem:
+        print(f"[live call {call_id}] Room announcement didn't work, trying the senior's line: {problem}")
+    try:
+        # A room that hasn't started can't take an announcement, so we play it
+        # straight to the line that called us. On an added call that's the
+        # senior (and on a merged call the other person hears it too).
+        room.participants(call["call_sid"]).update(announce_url=link)
     except Exception as problem:
         # A failed warning should never crash the server mid call.
         print(f"[live call {call_id}] Couldn't play the scam warning: {problem}")
