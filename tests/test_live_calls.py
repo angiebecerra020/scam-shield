@@ -2,8 +2,9 @@
 test_live_calls.py
 
 Tests for real protected calls (app/live_calls.py): a call forwarded from a
-senior who said YES gets the protected flow with live transcription, every
-sentence is scored, and the family gets the alert by email.
+landline senior who said YES gets the protected flow with live transcription,
+every sentence is scored, and the family gets the alert by email. A call
+forwarded from a cell phone is left alone (no ring-back).
 
 How it fits in: we pretend to be Twilio (signed requests), Nemotron and
 Tavily are pretend, and emails land in a list. Demo mode is on, so no real
@@ -69,7 +70,7 @@ def twilio_post(path: str, form: dict):
     return client.post(path, data=form, headers={"X-Twilio-Signature": signature})
 
 
-def save_grandma(status: str = "active") -> None:
+def save_grandma(status: str = "active", phone_type: str = "landline") -> None:
     """Saves Grandma, who said YES, with Ana's email for alerts."""
     storage.save_enrollment(
         {
@@ -78,7 +79,7 @@ def save_grandma(status: str = "active") -> None:
             "senior_phone": GRANDMA,
             "family_name": "Ana",
             "family_phone": "+15555550143",
-            "phone_type": "cell",
+            "phone_type": phone_type,
             "device_id": "senior-test",
             "device_key": "key-test",
             "senior_language": "en",
@@ -177,87 +178,6 @@ def test_sign_up_takes_an_optional_email():
     assert good.status_code == 201
     assert storage.get_enrollment(good.json()["id"])["family_email"] == "ana@example.com"
     assert bad.status_code == 400
-
-
-def forwarded_call_for_grandma():
-    """A scammer's call reaches Grandma's phone, she misses it, and it comes to us."""
-    save_grandma()
-    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
-    return storage.find_calls_for_enrollment("rosa")[0]
-
-
-def test_grandma_hears_press_1_or_2_when_we_call_her():
-    """We ring Grandma's real phone, and she gets asked if she wants Scam Shield."""
-    call = forwarded_call_for_grandma()
-
-    response = twilio_post(f"/twilio/protected/screen?call_id={call['id']}", {"CallSid": "CA9"})
-
-    assert "Press 1" in response.text
-    assert "5 5 5, 5 5 5, 0 1 9 9" in response.text
-
-
-def test_pressing_1_puts_grandma_in_the_call_with_scam_shield_listening():
-    call = forwarded_call_for_grandma()
-
-    response = twilio_post(f"/twilio/protected/choice?call_id={call['id']}", {"Digits": "1"})
-
-    assert "Scam Shield is listening" in response.text
-    assert call["conference_name"] in response.text
-    live_calls.stop_silence_watch(call["id"])
-
-
-def test_pressing_2_connects_the_call_but_ignores_every_word(inbox):
-    """Press 2 means the call goes through, and we don't score or keep anything."""
-    call = forwarded_call_for_grandma()
-
-    response = twilio_post(f"/twilio/protected/choice?call_id={call['id']}", {"Digits": "2"})
-    twilio_post(
-        f"/twilio/protected/transcript?call_id={call['id']}",
-        {
-            "TranscriptionEvent": "transcription-content",
-            "Final": "true",
-            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
-        },
-    )
-
-    assert call["conference_name"] in response.text
-    assert storage.get_call(call["id"]).get("risk_score") is None
-    assert inbox == []
-    live_calls.UNPROTECTED.clear()
-
-
-def test_our_call_bouncing_back_gets_rejected_instead_of_looping():
-    """If Grandma misses our call, her phone forwards it back. We stop it there."""
-    call = forwarded_call_for_grandma()
-    calls.RINGING_SENIORS["rosa"] = call["id"]
-
-    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA2", "From": SCAMMER, "ForwardedFrom": GRANDMA})
-
-    assert "<Reject" in response.text
-    calls.RINGING_SENIORS.clear()
-
-
-def test_a_silent_caller_gets_hung_up_and_the_family_gets_an_email(inbox):
-    call = forwarded_call_for_grandma()
-
-    live_calls.end_silent_call(call["id"])
-
-    assert storage.get_call(call["id"])["status"] != "live"
-    assert len(inbox) == 1
-    assert "silent" in inbox[0]["Subject"]
-
-
-def test_the_callers_first_words_stop_the_silence_timers():
-    call = forwarded_call_for_grandma()
-    live_calls.start_silence_watch(call["id"])
-
-    twilio_post(
-        f"/twilio/protected/transcript?call_id={call['id']}",
-        {"TranscriptionEvent": "transcription-content", "Final": "true",
-         "TranscriptionData": json.dumps({"transcript": "Hi there"})},
-    )
-
-    assert call["id"] not in live_calls.SILENCE_TIMERS
 
 
 def test_grandma_adding_scam_shield_to_a_call_starts_listening():
@@ -448,6 +368,36 @@ def test_the_scam_warning_words():
     twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
     call = storage.find_calls_for_enrollment("rosa")[0]
 
-    response = twilio_post(f"/twilio/protected/silence?call_id={call['id']}&kind=scam", {})
+    response = twilio_post(f"/twilio/protected/warning?call_id={call['id']}", {})
 
     assert "This is a potential scam. We are notifying a family member." in response.text
+
+
+# ----- Cell phones: missed calls are left alone -----
+
+
+def test_a_missed_call_on_a_cell_does_nothing():
+    """An old missed call forward: no ring-back, no listening, nothing saved."""
+    save_grandma(phone_type="cell")
+
+    response = twilio_post(
+        "/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA}
+    )
+
+    assert "can't come to the phone" in response.text
+    assert "<Dial" not in response.text
+    assert "<Transcription" not in response.text
+    assert storage.find_calls_for_enrollment("rosa") == []
+    assert calls.DEMO_CALL_LOG == []
+
+
+def test_a_paused_cell_senior_gets_no_ring_back(inbox):
+    save_grandma(status="paused", phone_type="cell")
+
+    response = twilio_post(
+        "/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA}
+    )
+
+    assert "can't come to the phone" in response.text
+    assert "<Dial" not in response.text
+    assert "<Transcription" not in response.text

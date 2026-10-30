@@ -33,6 +33,8 @@ def sign_up_senior(say_yes: bool = True) -> str:
             "senior_phone": SENIOR_PHONE,
             "family_name": "Ana",
             "family_phone": FAMILY_PHONE,
+            # Landlines get rung into the room. Cell phone missed calls are left alone.
+            "phone_type": "landline",
         },
     )
     enrollment_id = response.json()["id"]
@@ -81,9 +83,8 @@ def test_protected_call_goes_into_a_conference_room_and_rings_the_senior():
     assert "<Conference" in response.text
     assert 'endConferenceOnExit="true"' in response.text
     assert len(calls.DEMO_CALL_LOG) == 1
-    # We ring her Scam Shield page (the calling app) first. Her real phone
-    # is the backup if the page doesn't answer (see the no answer test).
-    assert calls.DEMO_CALL_LOG[0]["to"].startswith("client:senior-")
+    # We ring her home phone through its adapter.
+    assert calls.DEMO_CALL_LOG[0]["to"].startswith("sip:senior-")
     assert calls.DEMO_CALL_LOG[0]["who"] == "senior"
 
 
@@ -136,7 +137,7 @@ def test_live_mode_passes_the_call_token_to_twilio(monkeypatch):
 
     calls.start_protected_call(enrollment, SCAMMER_PHONE, "CA123", call_token="tok123")
 
-    assert sent["to"] == f"client:{enrollment['device_id']}"
+    assert sent["to"].startswith(f"sip:{enrollment['device_id']}@")
     assert sent["from_"] == SCAMMER_PHONE
     assert sent["call_token"] == "tok123"
 
@@ -147,7 +148,7 @@ def test_senior_who_hasnt_said_yes_gets_a_normal_call():
     response = call_comes_in()
 
     assert "<Conference" not in response.text
-    assert "<Client>senior-" in response.text
+    assert "<Sip>sip:senior-" in response.text
     assert SENIOR_PHONE not in response.text
     assert calls.DEMO_CALL_LOG == []
 
@@ -300,20 +301,15 @@ def test_link_stops_working_if_senior_turns_scam_shield_off():
     assert client.post(f"/api/join/{token}").status_code == 404
 
 
-def test_page_not_answering_calls_her_real_phone_then_ends_the_call():
-    """Page closed: we call her real phone. She misses that too: the call ends."""
+def test_senior_not_answering_ends_the_call():
+    """She doesn't pick up: we never ring her again, and the call ends."""
     sign_up_senior()
     started = scam_call_starts()
-    status_url = f"/twilio/senior-status?call_id={started['call_id']}"
 
-    client.post(status_url, data={"CallStatus": "no-answer"})
-
-    assert storage.get_call(started["call_id"])["status"] == "live"
-    assert calls.DEMO_CALL_LOG[-1]["to"] == SENIOR_PHONE
-
-    client.post(status_url, data={"CallStatus": "no-answer"})
+    client.post(f"/twilio/senior-status?call_id={started['call_id']}", data={"CallStatus": "no-answer"})
 
     assert storage.get_call(started["call_id"])["status"] == "ended"
+    assert all(placed["to"] != SENIOR_PHONE for placed in calls.DEMO_CALL_LOG)
 
 
 def test_wrong_link_is_rejected():

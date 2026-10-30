@@ -19,8 +19,8 @@ router = APIRouter()
 
 STATIC = PROJECT_ROOT / "static"
 
-# The pages search engines can list. The dashboard, "Join call" links and the
-# senior's calling app stay out, since they're private to each family.
+# The pages search engines can list. The dashboard and "Join call" links stay
+# out, since they're private to each family.
 PUBLIC_PAGES = [
     "/",
     "/demo",
@@ -251,7 +251,6 @@ def show_robots() -> PlainTextResponse:
         "Disallow: /twilio/",
         "Disallow: /dashboard",
         "Disallow: /join/",
-        "Disallow: /phone/",
         f"Sitemap: {base}/sitemap.xml",
     ]
     return PlainTextResponse("\n".join(lines) + "\n")

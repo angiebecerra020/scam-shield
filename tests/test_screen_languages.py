@@ -31,7 +31,6 @@ PAGES = {
     "/setup/some-id": "/static/setup.js",
     "/profile": "/static/profile.js",
     "/join/some-token": "/static/join.js",
-    "/phone/some-key": "/static/phone.js",
 }
 
 

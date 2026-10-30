@@ -40,8 +40,6 @@ class Settings:
     twilio_account_sid: str
     twilio_auth_token: str
     twilio_phone_number: str
-    twilio_api_key_sid: str
-    twilio_api_key_secret: str
     twilio_sip_domain: str
     test_sms_to_number: str
     demo_mode: bool
@@ -57,8 +55,8 @@ class Settings:
     gmail_app_password: str = ""
     # Real "press 1 to say YES" consent calls, even in demo mode (consent.py).
     real_consent_calls: bool = False
-    # Real calls for protected seniors (ringing their calling app, joining
-    # the family in), even in demo mode. The demo player stays pretend.
+    # Real calls for protected seniors (ringing their landline adapter,
+    # joining the family in), even in demo mode. The demo player stays pretend.
     real_calls: bool = False
     # The backup Nemotron (detector.py). Blank means no backup.
     nemotron_backup_model: str = ""
@@ -128,8 +126,6 @@ def get_settings() -> Settings:
         twilio_account_sid=read_text_setting("TWILIO_ACCOUNT_SID"),
         twilio_auth_token=read_text_setting("TWILIO_AUTH_TOKEN"),
         twilio_phone_number=read_text_setting("TWILIO_PHONE_NUMBER"),
-        twilio_api_key_sid=read_text_setting("TWILIO_API_KEY_SID"),
-        twilio_api_key_secret=read_text_setting("TWILIO_API_KEY_SECRET"),
         twilio_sip_domain=read_text_setting("TWILIO_SIP_DOMAIN"),
         test_sms_to_number=read_text_setting("TEST_SMS_TO_NUMBER"),
         # Demo mode is ON unless someone turns it off. That's the safe choice:

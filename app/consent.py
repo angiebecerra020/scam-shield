@@ -347,10 +347,10 @@ def start_enrollment(
         "family_phone": clean_phone(family_phone, "Your phone"),
         "phone_type": clean_type,
         "ask_by": clean_ask_by(ask_by, clean_type),
-        # The name Twilio knows the senior's calling app or phone adapter by.
+        # The name Twilio knows a landline senior's phone adapter by.
         "device_id": "senior-" + secrets.token_hex(4),
-        # The secret part of the calling-app link. Long and random, because
-        # anyone with the link could answer the senior's calls.
+        # Not used anymore (it was the old calling-app link), but the
+        # database column can't be empty.
         "device_key": secrets.token_urlsafe(24),
         "senior_language": pick_language(senior_language),
         "family_language": pick_language(family_language),
@@ -910,20 +910,17 @@ def setup_details(enrollment: dict) -> dict:
     """
     What the family needs to finish setup once the senior says YES.
 
-    Every senior's number forwards to our Scam Shield number. Then:
-      - cell phone: the senior's phone runs our calling app (the app_link page)
-      - landline:  the senior's phone plugs into an adapter that signs in to
-                   our SIP domain with this username
+    Both get our Scam Shield number: a cell phone senior adds it to a call
+    (Add call, then Merge), and a landline forwards to it. A landline's phone
+    also plugs into an adapter that signs in to our SIP domain with this username.
 
     Example:
-        setup_details(rosa)  ->  {"forward_to": "+15555550150",
-                                  "app_link": "http://.../phone/Xy7..."}
+        setup_details(rosa_landline)  ->  {"forward_to": "+15555550150",
+                                           "adapter_username": "senior-1a2b3c4d", ...}
     """
     settings = get_settings()
     details = {"forward_to": settings.twilio_phone_number}
     if enrollment["phone_type"] == "landline":
         details["adapter_username"] = enrollment["device_id"]
         details["adapter_domain"] = settings.twilio_sip_domain
-    else:
-        details["app_link"] = public_url(f"/phone/{enrollment['device_key']}")
     return details

@@ -84,18 +84,18 @@ const WALKTHROUGHS_EN = {
         ],
       },
       {
-        note: "Ana sets up Rosa's phone in 2 steps: open the Scam Shield app, then send calls through Scam Shield.",
+        note: "Ana sets up Rosa's phone in 2 steps: turn off old call forwarding, then save Scam Shield as a contact.",
         ana: [
           {
             kind: "screen",
             title: "Set up Rosa's phone",
-            lines: ["1. Turn on the Scam Shield app", "2. Send their calls to Scam Shield:"],
-            code: "**21*+13055550150#",
+            lines: ["1. Turn off old call forwarding: ##002#", "2. Save Scam Shield as a contact:"],
+            code: "+13055550150",
           },
         ],
         rosa: [
-          { kind: "info", body: "Rosa's Scam Shield phone. Ready. Calls will ring here." },
-          { kind: "dials", body: "**21*+13055550150#" },
+          { kind: "dials", body: "##002#" },
+          { kind: "info", body: "Contact saved: Scam Shield. If a call seems suspicious: Add call, Scam Shield, Merge." },
         ],
         status: "Protected",
       },
@@ -192,19 +192,11 @@ const WALKTHROUGHS_EN = {
             kind: "screen",
             title: "Your family",
             lines: [
-              "Rosa has been removed, and Scam Shield is no longer monitoring their calls. Their calls will continue to ring normally. To stop forwarding calls to Scam Shield entirely, turn off call forwarding on their phone: dial ##21# (Verizon: *73).",
+              "Rosa has been removed, and Scam Shield is no longer monitoring their calls. If you ever turned on call forwarding on their phone, dial ##002# to turn it off (Verizon: *73).",
             ],
           },
         ],
         rosa: [{ kind: "info", body: "Scam Shield isn't listening. Calls still ring like normal." }],
-      },
-      {
-        note: "On Rosa's phone, Ana dials ##002# to turn off all call forwarding. Now calls go straight to Rosa.",
-        status: "Calls ring like normal",
-        rosa: [
-          { kind: "dials", body: "##002#" },
-          { kind: "info", body: "Call forwarding is off." },
-        ],
       },
     ],
   },
@@ -303,18 +295,18 @@ const WALKTHROUGHS_ES = {
         ],
       },
       {
-        note: "Ana configura el teléfono de Rosa en 2 pasos: abre la aplicación de Scam Shield y pasa las llamadas por Scam Shield.",
+        note: "Ana configura el teléfono de Rosa en 2 pasos: desactiva el desvío de llamadas anterior y guarda Scam Shield como contacto.",
         ana: [
           {
             kind: "screen",
             title: "Configurar el teléfono de Rosa",
-            lines: ["1. Active la aplicación de Scam Shield", "2. Pase sus llamadas por Scam Shield:"],
-            code: "**21*+13055550150#",
+            lines: ["1. Desactive el desvío de llamadas anterior: ##002#", "2. Guarde Scam Shield como contacto:"],
+            code: "+13055550150",
           },
         ],
         rosa: [
-          { kind: "info", body: "El teléfono Scam Shield de Rosa. Listo. Las llamadas sonarán aquí." },
-          { kind: "dials", body: "**21*+13055550150#" },
+          { kind: "dials", body: "##002#" },
+          { kind: "info", body: "Contacto guardado: Scam Shield. Si una llamada parece sospechosa: Agregar llamada, Scam Shield, Combinar." },
         ],
         status: "Protegido",
       },
@@ -411,19 +403,11 @@ const WALKTHROUGHS_ES = {
             kind: "screen",
             title: "Su familia",
             lines: [
-              "Se eliminó a Rosa, y Scam Shield ya no monitorea sus llamadas. Sus llamadas seguirán sonando normalmente. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
+              "Se eliminó a Rosa, y Scam Shield ya no monitorea sus llamadas. Si alguna vez activó el desvío de llamadas en su teléfono, marque ##002# para desactivarlo (Verizon: *73).",
             ],
           },
         ],
         rosa: [{ kind: "info", body: "Scam Shield no está escuchando. Las llamadas siguen sonando como siempre." }],
-      },
-      {
-        note: "En el teléfono de Rosa, Ana marca ##002# para desactivar todo el desvío de llamadas. Ahora las llamadas van directo a Rosa.",
-        status: "Las llamadas suenan como siempre",
-        rosa: [
-          { kind: "dials", body: "##002#" },
-          { kind: "info", body: "El desvío de llamadas está desactivado." },
-        ],
       },
     ],
   },
