@@ -48,7 +48,7 @@
 
     <form id="login-form" class="form">
       <h1 id="login-title" data-text="login.titleLogIn">Welcome back</h1>
-      <p id="login-hint" class="hint" data-text="login.hintLogIn">Log in to see the calls you're protecting.</p>
+      <p id="login-hint" class="hint" data-text="login.hintLogIn">Log in to view the calls you're protecting.</p>
 
       <label><span data-text="login.email">Email</span> <input name="email" type="email" required autocomplete="email"></label>
       <label><span data-text="login.password">Password</span>
@@ -62,8 +62,8 @@
 
     <!-- Shown instead of the form when Supabase isn't set up in .env -->
     <section id="login-off" class="panel" hidden>
-      <p class="badge" data-text="login.offBadge">Login is off</p>
-      <p data-text="login.off">Logins aren't set up on this server yet, so the dashboard is open to anyone.</p>
+      <p class="badge" data-text="login.offBadge">Login disabled</p>
+      <p data-text="login.off">Login is not configured on this server, so the dashboard is open to anyone.</p>
       <a class="button" href="/dashboard" data-text="login.goToDashboard">Go to the dashboard</a>
     </section>
 

@@ -124,7 +124,7 @@ PUBLIC = [
 # The service pages and the words each one has to say.
 SERVICE_PAGES = [
     ("/scam-call-protection-for-seniors", "Scam call protection for seniors"),
-    ("/family-scam-alerts", "Get a call the moment your loved one is being scammed"),
+    ("/family-scam-alerts", "Receive a call the moment your loved one is targeted by a scam"),
     ("/landline-and-cell-phone-scam-protection", "Scam call protection for a landline or a cell phone"),
 ]
 

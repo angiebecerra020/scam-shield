@@ -46,7 +46,7 @@
     <section class="intro">
       <p class="eyebrow" data-text="nav.try">Test it</p>
       <h1 data-text="try.title">Call our AI scam call detector and try to fool it.</h1>
-      <p class="lead" data-text="try.lead">Get a code, call our number from your phone, and play a scammer calling Grandma Rosa. NVIDIA Nemotron reads every sentence while you talk, and you watch it all here. Rosa, Ana and Danny are made up, and we never save the audio.</p>
+      <p class="lead" data-text="try.lead">Get a code, call our number from your phone, and play the role of a scammer calling Grandma Rosa. NVIDIA Nemotron analyzes every sentence as you speak, and you can follow along here. Rosa, Ana and Danny are fictional, and we never save the audio.</p>
 
       <form id="code-form" class="controls">
         <label class="field field-small">
@@ -87,19 +87,19 @@
           <p class="line-status" id="line-status" aria-live="polite" data-text="try.waitingForCall">Waiting for your call</p>
         </div>
         <div class="dial-steps-wrap">
-          <p class="dial-label" data-text="try.ideas">Ideas to try</p>
+          <p class="dial-label" data-text="try.ideas">Suggestions</p>
           <!-- One list per language (i18n.js shows the right one) -->
           <ol class="dial-steps" data-lang="en">
-            <li>Start friendly: <em>"Hi Grandma, it's me, Danny."</em></li>
-            <li>Then the trouble: <em>"I got arrested and I need bail money. Please don't tell Mom."</em></li>
-            <li>Then the ask: <em>"Can you buy gift cards and read me the numbers?"</em></li>
+            <li>Start with a greeting: <em>"Hi Grandma, it's me, Danny."</em></li>
+            <li>Then describe an emergency: <em>"I got arrested and I need bail money. Please don't tell Mom."</em></li>
+            <li>Then make the request: <em>"Can you buy gift cards and read me the numbers?"</em></li>
           </ol>
           <ol class="dial-steps" data-lang="es" lang="es" hidden>
-            <li>Empiece con cariño: <em>"Hola abuela, soy yo, Danny."</em></li>
-            <li>Luego el problema: <em>"Me arrestaron y necesito dinero para la fianza. Por favor no le digas a mamá."</em></li>
-            <li>Luego lo que pide: <em>"¿Puedes comprar tarjetas de regalo y leerme los números?"</em></li>
+            <li>Empiece con un saludo: <em>"Hola abuela, soy yo, Danny."</em></li>
+            <li>Luego describa una emergencia: <em>"Me arrestaron y necesito dinero para la fianza. Por favor no le digas a mamá."</em></li>
+            <li>Luego haga la petición: <em>"¿Puedes comprar tarjetas de regalo y leerme los números?"</em></li>
           </ol>
-          <p class="note" data-text="try.otherWay">Want to test it the other way? Try a normal call, like a pharmacy reminder, and see that it stays calm.</p>
+          <p class="note" data-text="try.otherWay">You can also test a normal call, such as a pharmacy reminder, and confirm that it isn't flagged.</p>
         </div>
       </div>
     </section>
@@ -132,7 +132,7 @@
 
         <div class="score">
           <p class="score-number"><span id="score">0</span><small>/100</small></p>
-          <p class="verdict" id="verdict" data-text="try.startTalking">Start talking to see the score</p>
+          <p class="verdict" id="verdict" data-text="try.startTalking">Start speaking to see the score</p>
         </div>
 
         <div class="meter" aria-hidden="true">
@@ -142,17 +142,17 @@
 
         <ol id="trail" class="trail" aria-label="The score after each sentence" data-text-aria-label="try.trailAria"></ol>
 
-        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> <span data-text="demo.thinking">Nemotron is reading the call</span></p>
+        <p id="thinking" class="thinking" hidden><span class="pulse" aria-hidden="true"></span> <span data-text="demo.thinking">Nemotron is analyzing the call</span></p>
 
         <div class="facts">
           <h3 data-text="demo.whoTheySay">Who they say they are</h3>
-          <p id="claimed" class="claimed" data-text="demo.nobodyYet">Nobody yet</p>
+          <p id="claimed" class="claimed" data-text="demo.nobodyYet">Not stated yet</p>
 
           <h3 data-text="demo.why">Why</h3>
           <ul id="reasons" class="reasons"></ul>
 
           <h3><i data-lucide="search" aria-hidden="true"></i> <span data-text="demo.webSays">What the web says</span></h3>
-          <p id="research-note" class="note" data-text="try.researchNote">Once the call seems suspicious, Tavily looks for matching scam warnings.</p>
+          <p id="research-note" class="note" data-text="try.researchNote">Once a call appears suspicious, Tavily searches for matching scam warnings.</p>
           <ul id="sources" class="sources"></ul>
         </div>
 
@@ -188,11 +188,11 @@
   <footer class="footer">
     <div data-lang="en">
       <p>Built with <strong>NVIDIA Nemotron</strong> on <strong>Nebius Token Factory</strong>, <strong>Tavily</strong> and <strong>Twilio</strong>.</p>
-      <p>Calls last up to 5 minutes. We turn your words into text, and never save the audio or your phone number.</p>
+      <p>Calls last up to 5 minutes. We transcribe your words and never save the audio or your phone number.</p>
     </div>
     <div data-lang="es" lang="es" hidden>
       <p>Hecho con <strong>NVIDIA Nemotron</strong> en <strong>Nebius Token Factory</strong>, <strong>Tavily</strong> y <strong>Twilio</strong>.</p>
-      <p>Las llamadas duran hasta 5 minutos. Convertimos sus palabras en texto, y nunca guardamos el audio ni su número de teléfono.</p>
+      <p>Las llamadas duran hasta 5 minutos. Transcribimos sus palabras y nunca guardamos el audio ni su número de teléfono.</p>
     </div>
     <p class="footer-links"><a href="/scam-call-protection-for-seniors" data-text="footer.seniors">Protection for seniors</a> · <a href="/family-scam-alerts" data-text="footer.alerts">Family alerts</a> · <a href="/landline-and-cell-phone-scam-protection" data-text="footer.phones">Landline and cell</a> · <a href="/qa" data-text="footer.qa">Q&amp;A</a></p>
     <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>

@@ -52,7 +52,7 @@
 
     <!-- The logo is in the header, so the card says which page this is -->
     <h1 data-text="dash.title">Family dashboard</h1>
-    <p class="tagline" data-text="dash.tagline">The people you protect, and the calls they got.</p>
+    <p class="tagline" data-text="dash.tagline">The people you protect and their recent calls.</p>
     <!-- The step by step setup video and steps (how-to.html). It used to be a header tab. -->
     <p><a class="button button-outline" href="/how-to" data-text="nav.howTo">How to set up</a></p>
 
@@ -60,7 +60,7 @@
          Hidden until we know there's someone to show. -->
     <!-- The step by step setup video, folded so it doesn't push the family list down -->
     <details class="panel setup-video">
-      <summary data-text="dash.setupVideo">▶ Watch: how to set up Scam Shield (step by step)</summary>
+      <summary data-text="dash.setupVideo">▶ Watch the step-by-step setup video</summary>
       <div class="video-spot has-video">
         <iframe src="https://www.youtube-nocookie.com/embed/mzDHFMzwzus?rel=0" title="How to set up Scam Shield" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
       </div>
@@ -69,7 +69,7 @@
     <section id="family" class="panel" hidden>
       <h2 data-text="family.title">Your family</h2>
       <!-- Reminds the family that the calling page should stay open -->
-      <p class="keep-open-banner" data-text="banner.keepOpenFamily">📌 For the best protection, keep the Scam Shield page open on their phone. If it's closed, or they reject a call, we call their phone instead.</p>
+      <p class="keep-open-banner" data-text="banner.keepOpenFamily">📌 For the best protection, keep the Scam Shield page open on their phone. If it's closed, or they decline a call, we call their phone instead.</p>
       <div id="family-list"></div>
       <p id="family-error" class="error" role="alert"></p>
       <!-- After a Remove: how to turn off their call forwarding (family.js) -->
@@ -80,10 +80,10 @@
     <!-- Step 1: the family member fills this in -->
     <form id="signup-form" class="form" hidden>
       <h2 data-text="dash.signupTitle">Protect someone's calls</h2>
-      <p class="hint" data-text="dash.signupHint">We'll call them first to ask for their OK. Nothing is listened to until they say YES.</p>
+      <p class="hint" data-text="dash.signupHint">We'll call them first to ask for their consent. Nothing is monitored until they say yes.</p>
 
       <fieldset>
-        <legend data-text="dash.whoProtecting">Who are we protecting?</legend>
+        <legend data-text="dash.whoProtecting">Who are you protecting?</legend>
         <label><span data-text="dash.theirName">Their name</span> <input name="senior_name" required maxlength="40" autocomplete="off"></label>
         <!-- Groups them in "Your family" (family.js). Anyone not on the list is Other. -->
         <label><span data-text="dash.whoToYou">Who are they to you?</span>
@@ -105,7 +105,7 @@
           </select>
         </label>
         <label><span data-text="dash.theirPhone">Their phone</span> <input name="senior_phone" type="tel" required autocomplete="off" placeholder="305-555-0100" aria-describedby="senior-phone-hint"></label>
-        <p id="senior-phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code: all 10 digits.</p>
+        <p id="senior-phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code (10 digits).</p>
         <label><span data-text="dash.phoneKind">What kind of phone is it?</span>
           <select name="phone_type">
             <option value="cell" data-text="dash.cell">Cell phone</option>
@@ -131,10 +131,10 @@
            app.js disables it once there's a profile, so it isn't sent. -->
       <fieldset id="family-fields">
         <legend data-text="dash.whoGetsAlerts">Who gets the alerts?</legend>
-        <p class="hint" data-text="dash.savedOnce">We'll save this to your profile, so you only type it once.</p>
+        <p class="hint" data-text="dash.savedOnce">We'll save this to your profile, so you only need to enter it once.</p>
         <label><span data-text="dash.yourName">Your name</span> <input name="family_name" required maxlength="40" autocomplete="name"></label>
         <label><span data-text="dash.yourPhone">Your phone</span> <input name="family_phone" type="tel" required autocomplete="tel" placeholder="305-555-0100" aria-describedby="family-phone-hint"></label>
-        <p id="family-phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code: all 10 digits.</p>
+        <p id="family-phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code (10 digits).</p>
         <label><span data-text="dash.yourEmail">Your email, for alerts</span> <input name="family_email" type="email" autocomplete="email" placeholder="you@example.com"></label>
         <label><span data-text="dash.yourLanguage">Your language</span>
           <select name="family_language">
@@ -144,7 +144,7 @@
         </label>
       </fieldset>
 
-      <button type="submit" data-text="dash.askButton">Ask them for their OK</button>
+      <button type="submit" data-text="dash.askButton">Request their consent</button>
       <p id="signup-error" class="error" role="alert"></p>
     </form>
 
@@ -162,8 +162,8 @@
       <!-- Step 3: once they say YES, a link to the setup steps (setup.html) -->
       <div id="setup-steps" hidden>
         <h2 data-text="dash.finishTitle">Finish setting up their phone</h2>
-        <p class="hint" data-text="dash.finishHint">One last thing: a few quick steps on their phone.</p>
-        <a id="setup-link" class="button" href="/dashboard" data-text="dash.openSetup">Show me the steps</a>
+        <p class="hint" data-text="dash.finishHint">One final step: a few quick settings on their phone.</p>
+        <a id="setup-link" class="button" href="/dashboard" data-text="dash.openSetup">View setup steps</a>
       </div>
 
     </section>

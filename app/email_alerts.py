@@ -208,7 +208,7 @@ WELCOME_WORDS = {
             "Welcome to Scam Shield! Thank you for looking out for {senior}.\n\n"
             "Here's what happens next:\n"
             "1. We call {senior} to ask for their OK. They press 1 to say yes.\n"
-            "2. Then you finish setting up their phone. It takes about 5 minutes.\n\n"
+            "2. Then you finish setting up their phone. It takes under 5 minutes.\n\n"
             "Watch our step by step video, with every code to dial:\n{link}\n\n"
             "We're here to help,\nAngie and Cass, Scam Shield"
         ),
@@ -220,7 +220,7 @@ WELCOME_WORDS = {
             "¡Bienvenido a Scam Shield! Gracias por cuidar a {senior}.\n\n"
             "Lo que sigue:\n"
             "1. Llamamos a {senior} para pedirle su permiso. Marca 1 para decir que sí.\n"
-            "2. Después usted termina de configurar su teléfono. Toma unos 5 minutos.\n\n"
+            "2. Después usted termina de configurar su teléfono. Toma menos de 5 minutos.\n\n"
             "Vea nuestro video paso a paso, con cada código para marcar:\n{link}\n\n"
             "Estamos para ayudarle,\nAngie y Cass, Scam Shield"
         ),

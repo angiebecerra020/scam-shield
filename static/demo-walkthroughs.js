@@ -175,7 +175,7 @@ const WALKTHROUGHS_EN = {
             kind: "screen",
             title: "Rosa",
             lines: [
-              "Are you sure you want to remove Rosa? This deletes them and all their calls, and Scam Shield stops protecting them. It can't be undone.",
+              "Are you sure you want to remove Rosa? This permanently deletes their information and call history, and Scam Shield will stop protecting them. This cannot be undone.",
             ],
             buttons: [
               { text: "Yes, remove", style: "danger" },
@@ -192,7 +192,7 @@ const WALKTHROUGHS_EN = {
             kind: "screen",
             title: "Your family",
             lines: [
-              "Rosa was removed, and Scam Shield isn't listening. Their calls still ring like normal. To stop their calls going through Scam Shield at all, turn off call forwarding on their phone: dial ##21# (Verizon: *73).",
+              "Rosa has been removed, and Scam Shield is no longer monitoring their calls. Their calls will continue to ring normally. To stop forwarding calls to Scam Shield entirely, turn off call forwarding on their phone: dial ##21# (Verizon: *73).",
             ],
           },
         ],
@@ -394,7 +394,7 @@ const WALKTHROUGHS_ES = {
             kind: "screen",
             title: "Rosa",
             lines: [
-              "¿Está seguro de que quiere eliminar a Rosa? Esto borra a esta persona y todas sus llamadas, y Scam Shield deja de protegerle. No se puede deshacer.",
+              "¿Está seguro de que quiere eliminar a Rosa? Esto borra de forma permanente su información y su historial de llamadas, y Scam Shield dejará de protegerle. No se puede deshacer.",
             ],
             buttons: [
               { text: "Sí, eliminar", style: "danger" },
@@ -411,7 +411,7 @@ const WALKTHROUGHS_ES = {
             kind: "screen",
             title: "Su familia",
             lines: [
-              "Se eliminó a Rosa, y Scam Shield no está escuchando. Sus llamadas siguen sonando como siempre. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
+              "Se eliminó a Rosa, y Scam Shield ya no monitorea sus llamadas. Sus llamadas seguirán sonando normalmente. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
             ],
           },
         ],

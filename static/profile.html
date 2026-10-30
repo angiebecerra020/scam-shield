@@ -36,14 +36,14 @@
   <main class="card" id="profile-page" hidden>
     <a href="/dashboard" class="back-link" data-text="setup.back">← Back to dashboard</a>
     <h1 data-text="profile.title">Your profile</h1>
-    <p class="tagline" data-text="profile.tagline">Type this once. We use it for every person you protect.</p>
+    <p class="tagline" data-text="profile.tagline">Enter this once. We use it for everyone you protect.</p>
 
     <form id="profile-form" class="form">
       <fieldset>
         <legend data-text="dash.whoGetsAlerts">Who gets the alerts?</legend>
         <label><span data-text="dash.yourName">Your name</span> <input name="name" required maxlength="40" autocomplete="name"></label>
         <label><span data-text="dash.yourPhone">Your phone</span> <input name="phone" type="tel" required autocomplete="tel" placeholder="305-555-0100" aria-describedby="phone-hint"></label>
-        <p id="phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code: all 10 digits.</p>
+        <p id="phone-hint" class="hint" data-text="dash.areaCodeHint">Include the area code (10 digits).</p>
         <label><span data-text="dash.yourEmail">Your email, for alerts</span> <input name="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
         <label><span data-text="dash.yourLanguage">Your language</span>
           <select name="language">
@@ -52,7 +52,7 @@
           </select>
         </label>
       </fieldset>
-      <p class="hint" data-text="profile.updatesAll">Saving changes this for everyone you protect, so the next alert goes to your new phone or email.</p>
+      <p class="hint" data-text="profile.updatesAll">Saving updates this for everyone you protect, so future alerts go to your new phone number or email.</p>
       <button type="submit" data-text="profile.save">Save</button>
       <!-- "Saved." or what went wrong (profile.js) -->
       <p id="profile-saved" class="success" aria-live="polite"></p>
