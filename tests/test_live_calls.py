@@ -2,10 +2,8 @@
 test_live_calls.py
 
 Tests for real protected calls (app/live_calls.py): a call forwarded from a
-landline senior who said YES gets the protected flow with live transcription,
-every sentence is scored, and the family gets the alert by email. A call
-forwarded from a cell phone gets our voicemail, and a scam voicemail emails
-the family.
+senior who said YES gets the protected flow with live transcription, every
+sentence is scored, and the family gets the alert by email.
 
 How it fits in: we pretend to be Twilio (signed requests), Nemotron and
 Tavily are pretend, and emails land in a list. Demo mode is on, so no real
@@ -71,7 +69,7 @@ def twilio_post(path: str, form: dict):
     return client.post(path, data=form, headers={"X-Twilio-Signature": signature})
 
 
-def save_grandma(status: str = "active", phone_type: str = "landline") -> None:
+def save_grandma(status: str = "active") -> None:
     """Saves Grandma, who said YES, with Ana's email for alerts."""
     storage.save_enrollment(
         {
@@ -80,7 +78,7 @@ def save_grandma(status: str = "active", phone_type: str = "landline") -> None:
             "senior_phone": GRANDMA,
             "family_name": "Ana",
             "family_phone": "+15555550143",
-            "phone_type": phone_type,
+            "phone_type": "cell",
             "device_id": "senior-test",
             "device_key": "key-test",
             "senior_language": "en",
@@ -179,6 +177,87 @@ def test_sign_up_takes_an_optional_email():
     assert good.status_code == 201
     assert storage.get_enrollment(good.json()["id"])["family_email"] == "ana@example.com"
     assert bad.status_code == 400
+
+
+def forwarded_call_for_grandma():
+    """A scammer's call reaches Grandma's phone, she misses it, and it comes to us."""
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+    return storage.find_calls_for_enrollment("rosa")[0]
+
+
+def test_grandma_hears_press_1_or_2_when_we_call_her():
+    """We ring Grandma's real phone, and she gets asked if she wants Scam Shield."""
+    call = forwarded_call_for_grandma()
+
+    response = twilio_post(f"/twilio/protected/screen?call_id={call['id']}", {"CallSid": "CA9"})
+
+    assert "Press 1" in response.text
+    assert "5 5 5, 5 5 5, 0 1 9 9" in response.text
+
+
+def test_pressing_1_puts_grandma_in_the_call_with_scam_shield_listening():
+    call = forwarded_call_for_grandma()
+
+    response = twilio_post(f"/twilio/protected/choice?call_id={call['id']}", {"Digits": "1"})
+
+    assert "Scam Shield is listening" in response.text
+    assert call["conference_name"] in response.text
+    live_calls.stop_silence_watch(call["id"])
+
+
+def test_pressing_2_connects_the_call_but_ignores_every_word(inbox):
+    """Press 2 means the call goes through, and we don't score or keep anything."""
+    call = forwarded_call_for_grandma()
+
+    response = twilio_post(f"/twilio/protected/choice?call_id={call['id']}", {"Digits": "2"})
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Grandma, it's me. I'm in jail. Buy gift cards and don't tell Mom."}),
+        },
+    )
+
+    assert call["conference_name"] in response.text
+    assert storage.get_call(call["id"]).get("risk_score") is None
+    assert inbox == []
+    live_calls.UNPROTECTED.clear()
+
+
+def test_our_call_bouncing_back_gets_rejected_instead_of_looping():
+    """If Grandma misses our call, her phone forwards it back. We stop it there."""
+    call = forwarded_call_for_grandma()
+    calls.RINGING_SENIORS["rosa"] = call["id"]
+
+    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA2", "From": SCAMMER, "ForwardedFrom": GRANDMA})
+
+    assert "<Reject" in response.text
+    calls.RINGING_SENIORS.clear()
+
+
+def test_a_silent_caller_gets_hung_up_and_the_family_gets_an_email(inbox):
+    call = forwarded_call_for_grandma()
+
+    live_calls.end_silent_call(call["id"])
+
+    assert storage.get_call(call["id"])["status"] != "live"
+    assert len(inbox) == 1
+    assert "silent" in inbox[0]["Subject"]
+
+
+def test_the_callers_first_words_stop_the_silence_timers():
+    call = forwarded_call_for_grandma()
+    live_calls.start_silence_watch(call["id"])
+
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {"TranscriptionEvent": "transcription-content", "Final": "true",
+         "TranscriptionData": json.dumps({"transcript": "Hi there"})},
+    )
+
+    assert call["id"] not in live_calls.SILENCE_TIMERS
 
 
 def test_grandma_adding_scam_shield_to_a_call_starts_listening():
@@ -369,123 +448,6 @@ def test_the_scam_warning_words():
     twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
     call = storage.find_calls_for_enrollment("rosa")[0]
 
-    response = twilio_post(f"/twilio/protected/warning?call_id={call['id']}", {})
+    response = twilio_post(f"/twilio/protected/silence?call_id={call['id']}&kind=scam", {})
 
     assert "This is a potential scam. We are notifying a family member." in response.text
-
-
-# ----- Cell phones: missed calls get our voicemail -----
-
-
-def voicemail_is_left(words: str, caller: str = SCAMMER) -> dict:
-    """A missed call forwarded from Grandma's cell: the caller leaves `words` and hangs up."""
-    save_grandma(phone_type="cell")
-    response = twilio_post(
-        "/twilio/line/incoming", {"CallSid": "CA1", "From": caller, "ForwardedFrom": GRANDMA}
-    )
-    call = storage.find_calls_for_enrollment("rosa")[0]
-    path = f"/twilio/protected/transcript?call_id={call['id']}"
-    twilio_post(
-        path,
-        {
-            "TranscriptionEvent": "transcription-content",
-            "Final": "true",
-            "TranscriptionData": json.dumps({"transcript": words}),
-        },
-    )
-    twilio_post(path, {"TranscriptionEvent": "transcription-stopped"})
-    return {"call": call, "twiml": response.text}
-
-
-SCAM_VOICEMAIL = "Grandma, it's me Danny. I'm in jail. Buy gift cards and call me back, don't tell Mom."
-
-
-def test_a_missed_call_on_a_cell_gets_our_voicemail_not_a_ring_back():
-    """We never ring a cell phone back: the caller gets voicemail, and we transcribe it."""
-    left = voicemail_is_left("Hi Rosa, call me back.")
-
-    assert "can't come to the phone" in left["twiml"]
-    assert "<Transcription" in left["twiml"]
-    assert "<Conference" not in left["twiml"]
-    assert "<Record" not in left["twiml"]
-    assert calls.DEMO_CALL_LOG == []
-
-
-def test_a_scam_voicemail_emails_the_family_with_the_number_and_what_they_wanted(inbox):
-    left = voicemail_is_left(SCAM_VOICEMAIL)
-
-    assert len(inbox) == 1
-    assert inbox[0]["To"] == "ana@example.com"
-    assert "voicemail" in inbox[0]["Subject"]
-    body = inbox[0].get_content()
-    assert SCAMMER in body
-    assert "Asks for gift cards" in body
-    assert "grandson Danny" in body
-    assert storage.get_call(left["call"]["id"])["status"] == "ended"
-    # Nobody gets an alert call: there's no call to join.
-    assert calls.DEMO_CALL_LOG == []
-
-
-def test_a_scam_voicemail_puts_the_number_on_the_list_as_a_potential_scam(inbox):
-    voicemail_is_left(SCAM_VOICEMAIL)
-
-    listed = storage.find_scam_number(None, SCAMMER)
-
-    assert listed is not None
-    assert listed["action"] == "potential"
-
-
-def test_a_number_the_family_blocked_or_warned_about_stays_that_way(inbox):
-    storage.save_scam_number(None, SCAMMER, "warn", "old-call")
-
-    voicemail_is_left(SCAM_VOICEMAIL)
-
-    assert storage.find_scam_number(None, SCAMMER)["action"] == "warn"
-
-
-def test_a_voicemail_is_read_once_when_the_caller_hangs_up(inbox):
-    """No email while they're still talking, so we read the whole message first."""
-    save_grandma(phone_type="cell")
-    twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
-    call = storage.find_calls_for_enrollment("rosa")[0]
-
-    twilio_post(
-        f"/twilio/protected/transcript?call_id={call['id']}",
-        {
-            "TranscriptionEvent": "transcription-content",
-            "Final": "true",
-            "TranscriptionData": json.dumps({"transcript": SCAM_VOICEMAIL}),
-        },
-    )
-
-    assert inbox == []
-
-
-def test_a_safe_voicemail_sends_nothing(inbox, monkeypatch):
-    safe = {**SCAM, "risk_score": 5, "verdict": "safe", "reasons": [], "family_alert_message": None}
-    monkeypatch.setattr(detector, "score_call", lambda transcript, language="en", client=None: dict(safe))
-
-    voicemail_is_left("Hi Rosa, it's the pharmacy. Your prescription is ready.")
-
-    assert inbox == []
-    assert storage.find_scam_number(None, SCAMMER) is None
-
-
-def test_a_hidden_number_still_emails_but_cant_go_on_the_list(inbox):
-    voicemail_is_left(SCAM_VOICEMAIL, caller="Anonymous")
-
-    assert len(inbox) == 1
-    assert "scam list" not in inbox[0].get_content()
-    assert storage.find_scam_number(None, "Anonymous") is None
-
-
-def test_a_paused_cell_senior_gets_no_ring_back_and_no_voicemail(inbox):
-    save_grandma(status="paused", phone_type="cell")
-
-    response = twilio_post(
-        "/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA}
-    )
-
-    assert "can't come to the phone" in response.text
-    assert "<Dial" not in response.text
-    assert "<Transcription" not in response.text

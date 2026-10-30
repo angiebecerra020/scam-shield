@@ -21,16 +21,9 @@ alert email has a "Join call" link too: tapping it makes Twilio ring the
 FAMILY MEMBER'S OWN phone and put them in the room. Everyone hears a short
 tone when they join, so nobody is listening in secret.
 
-A landline senior's calls all forward to us, and we ring their home phone
-through a small adapter (see devices.py), never on their own number: that
-number forwards to us, so ringing it would loop straight back.
-
-A cell phone senior adds Scam Shield to a call themselves (Add call, then
-Merge; see live_calls.senior_added_us). We never ring a cell phone back. If
-an old missed call forward still sends us one of their calls, the caller
-gets Scam Shield's voicemail instead (live_calls.voicemail_twiml): a scam
-voicemail emails the family and puts the number on their list as a
-potential scam.
+We ring the senior on their private DEVICE (a calling app on a cell phone,
+or an adapter on a landline; see devices.py), never on their own number:
+that number forwards to us, so ringing it would loop straight back.
 
 Seniors who haven't said YES get a normal call: we pass it straight to their
 device and don't listen.
@@ -68,8 +61,15 @@ DEMO_CALL_LOG: list[dict] = []
 # How long to ring the senior's phone before giving up (seconds).
 SENIOR_RING_SECONDS = 25
 
-# What a caller hears when the senior can't come to the phone.
-NOT_AVAILABLE = "Sorry, they can't come to the phone right now. Please try again later. Goodbye."
+# Cell phone seniors we're ringing right now: enrollment ID gives you call ID.
+# Their phone forwards calls they don't answer back to us, so if they miss
+# OUR call too, it bounces right back here. This is how we spot that and
+# stop it, instead of ringing them in a loop forever.
+RINGING_SENIORS: dict[str, str] = {}
+
+# Calls where we already tried the backup (ringing the senior's real phone),
+# so we only try it once.
+BACKUP_TRIED: set[str] = set()
 # Wait this long before ringing the family again if they tap the link twice.
 FAMILY_RING_COOLDOWN = timedelta(seconds=60)
 # How many of the detector's reasons we read out on the alert call.
@@ -163,17 +163,13 @@ def handle_incoming_call(
     Output: TwiML: the instructions Twilio follows for this call
 
     What happens:
-      - landline, senior said YES -> caller goes into a conference room, and
-                            we ring the senior's adapter into the same room
+      - senior said YES  -> caller goes into a conference room, and we ring
+                            the senior's device into the same room
                             (a number on the family's scam list is either
                             blocked with a busy signal, or rings while we
                             alert the family right away)
-      - landline, no YES -> we pass the call straight to their adapter,
+      - senior hasn't said YES -> we pass the call straight to their device,
                             without a room and without listening
-      - cell phone, said YES -> Scam Shield's voicemail, and we read the
-                            message for scam signs (a blocked number still
-                            gets a busy signal)
-      - cell phone, no YES -> a short "can't come to the phone" message
       - nobody signed up -> a short message, then hang up
 
     Example:
@@ -188,13 +184,7 @@ def handle_incoming_call(
         response.hangup()
         return str(response)
 
-    is_cell = enrollment["phone_type"] == "cell"
     if enrollment["status"] != "active":
-        if is_cell:
-            # We never ring a cell phone back, and we don't listen without a YES.
-            response.say(NOT_AVAILABLE)
-            response.hangup()
-            return str(response)
         # No YES (or the family paused protection), no listening: connect
         # the call like any normal phone call.
         dial_device(response, enrollment, caller)
@@ -209,19 +199,21 @@ def handle_incoming_call(
         response.reject()
         return str(response)
 
-    # Imported here because live_calls.py uses this file too.
-    from app import live_calls
-
-    if is_cell:
-        # A missed call forwarded from a cell phone: take a voicemail.
-        return live_calls.voicemail_twiml(enrollment, caller, call_sid)
+    if enrollment["id"] in RINGING_SENIORS:
+        # This is our own call to the senior bouncing back because they
+        # didn't pick up. Reject it, so our call ends as "busy" and the
+        # caller hears that the senior can't come to the phone.
+        response.reject()
+        return str(response)
 
     call = start_protected_call(enrollment, caller, call_sid, call_token)
     if reported == "warn":
         warn_about_reported_number(call, enrollment)
 
     # Live transcription, so detector.py can read the call as it happens.
-    # Only calls from seniors who said YES get it (see live_calls.py).
+    # Only calls from seniors who said YES get it (see live_calls.py). We
+    # import it here because live_calls.py uses this file too.
+    from app import live_calls
     live_calls.start_transcription(response, call["id"])
 
     # Without this the caller hears silence while we ring the senior.
@@ -284,6 +276,10 @@ def start_protected_call(
     if not ring_senior:
         return call
 
+    # Cell phones ring the Scam Shield page first (the calling app). If the
+    # page is closed, or they don't answer, handle_senior_status() calls
+    # their real phone as a backup, so the call still gets through.
+
     ring_into_conference(
         to=device_address(enrollment),
         conference_name=call["conference_name"],
@@ -297,6 +293,46 @@ def start_protected_call(
         status_callback=public_url(f"/twilio/senior-status?call_id={call_id}"),
     )
     return call
+
+
+def ring_senior_phone(call: dict, enrollment: dict, caller_id: dict) -> None:
+    """
+    Calls a cell phone senior's REAL phone and asks if they want Scam Shield.
+
+    Their phone only forwards calls they decline or miss (see the setup
+    steps), so ringing their real number doesn't loop back here, and they
+    don't need any app or web page open. When they pick up, Twilio asks
+    live_calls.py what to say: "Press 1 to answer with Scam Shield listening,
+    press 2 to answer without it." Either way, the call goes through.
+
+    Input:  call, the call we just saved
+            enrollment, the senior's sign up
+            caller_id, from caller_id_for(), so they see who's really calling
+    Output: nothing. In demo mode, the call goes in DEMO_CALL_LOG instead.
+
+    Example:
+        ring_senior_phone(call, rosa, {"from_": "+15555550199"})
+        rings Rosa's cell, and she hears the press 1 or press 2 question
+    """
+    settings = get_settings()
+    to = enrollment["senior_phone"]
+
+    if settings.demo_mode and not settings.real_calls:
+        DEMO_CALL_LOG.append(
+            {"to": to, "conference": call["conference_name"], "who": "senior", "shows": caller_id["from_"]}
+        )
+        print(f"[demo mode] would ring the senior at {to} for {call['conference_name']}")
+        return
+
+    RINGING_SENIORS[enrollment["id"]] = call["id"]
+    twilio_client().calls.create(
+        **caller_id,
+        to=to,
+        url=public_url(f"/twilio/protected/screen?call_id={call['id']}"),
+        timeout=SENIOR_RING_SECONDS,
+        status_callback=public_url(f"/twilio/senior-status?call_id={call['id']}"),
+        status_callback_event=["answered", "completed"],
+    )
 
 
 def caller_id_for(caller: str, call_token: str | None) -> dict:
@@ -340,7 +376,8 @@ def ring_into_conference(
     """
     Ask Twilio to call a phone and put whoever answers into a conference room.
 
-    Input:  to              — the phone number or adapter ("sip:...") to ring
+    Input:  to              — the phone number, calling app ("client:...")
+                              or adapter ("sip:...") to ring
             conference_name — which room
             who             — "senior" or "family" (a label for logs)
             start_conference_on_enter, end_conference_on_exit, beep — Twilio's
@@ -404,20 +441,36 @@ def handle_senior_status(call_id: str, call_status: str) -> None:
         handle_senior_status("abc", "no-answer")
         ->  the caller hears "The person you are calling is not available."
     """
+    call = storage.get_call(call_id)
+    if call is not None:
+        # Ringing is over (they picked up, or never will), so a new call
+        # for this senior is a real new call again, not a bounce.
+        if RINGING_SENIORS.get(call["enrollment_id"]) == call_id:
+            RINGING_SENIORS.pop(call["enrollment_id"])
+
     if call_status not in ("busy", "no-answer", "failed", "canceled"):
         return
 
-    call = storage.get_call(call_id)
     if call is None or call["status"] != "live":
         return
 
+    if call_id not in BACKUP_TRIED:
+        enrollment = storage.get_enrollment(call["enrollment_id"])
+        if enrollment is not None and enrollment["phone_type"] == "cell":
+            # The Scam Shield page didn't answer (closed, or they rejected
+            # it). Call their real phone instead: press 1 or press 2.
+            BACKUP_TRIED.add(call_id)
+            ring_senior_phone(call, enrollment, caller_id_for(call["caller_number"], None))
+            return
+
+    BACKUP_TRIED.discard(call_id)
     storage.mark_call_ended(call_id)
     settings = get_settings()
     if settings.demo_mode and not settings.real_calls:
         return
 
     goodbye = VoiceResponse()
-    goodbye.say(NOT_AVAILABLE)
+    goodbye.say("Sorry, they can't come to the phone right now. Please try again later. Goodbye.")
     goodbye.hangup()
     twilio_client().calls(call["call_sid"]).update(twiml=str(goodbye))
 

@@ -36,7 +36,7 @@ function makeTag(tag, className = "", text = "") {
 /**
  * A code to dial (or type), in big letters so it's easy to copy by eye.
  *
- * Example: dialCode("##002#")  gives you  <p class="dial-code">##002#</p>
+ * Example: dialCode("**004*+15555550150#")  gives you  <p class="dial-code">**004*+15555550150#</p>
  */
 function dialCode(code) {
   return makeTag("p", "dial-code", code);
@@ -58,16 +58,65 @@ function step(title, parts) {
 }
 
 /**
- * The 2 steps for a cell phone: turn off any old call forwarding, then save
- * Scam Shield as a contact so they can add it to a call (Add call, then
- * Merge; see live_calls.senior_added_us). We never ring a cell phone back.
+ * A "Copy link" button, for when the family has the link on their own phone
+ * and needs to get it onto the senior's.
  *
- * Input:  name, number (the Scam Shield number)
+ * Example: tap "Copy link"  gives you  the link copied, and the button says "Copied"
+ */
+function copyButton(link) {
+  const button = makeTag("button", "button-small button-outline", t("setup.copyLink"));
+  button.type = "button";
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      button.textContent = t("setup.copied");
+    } catch (problem) {
+      // Some browsers block copying. The link is right there to tap or hold.
+      button.textContent = t("setup.cantCopy");
+    }
+  });
+  return button;
+}
+
+/**
+ * The 4 steps for a cell phone: forward the calls they decline or miss, open
+ * the Scam Shield page and keep it open, then how a call works. If the page
+ * is closed, Scam Shield calls their real phone instead (calls.py).
+ *
+ * Input:  name, setup (from the server), number (the Scam Shield number)
  * Output: the <li> steps
  */
-function cellSteps(name, number) {
+function cellSteps(name, setup, number) {
+  const link = makeTag("a", "setup-link", setup.app_link);
+  link.href = setup.app_link;
+  link.target = "_blank";
+
   return [
-    step(t("setup.cellResetTitle"), [makeTag("p", "", t("setup.cellReset")), dialCode("##002#")]),
+    step(t("setup.cellStep2Title"), [
+      // Phones keep old forwarding (and voicemail grabs declined calls), so we
+      // wipe every forwarding setting first. ##002# works on every GSM carrier.
+      makeTag("p", "", t("setup.cellReset")),
+      dialCode("##002#"),
+      makeTag("p", "", t("setup.cellStep2a")),
+      dialCode(`**004*${number}#`),
+      makeTag("p", "hint", t("setup.verizon")),
+      dialCode(`*71${number}`),
+      makeTag("p", "", t("setup.cellCheck")),
+      dialCode("*#67#"),
+    ]),
+    step(t("setup.cellPageTitle"), [
+      makeTag("p", "", t("setup.cellPageA", { name })),
+      link,
+      copyButton(setup.app_link),
+      makeTag("p", "", t("setup.cellPageB", { button: t("phone.turnOn") })),
+      makeTag("p", "keep-open-banner", t("banner.keepOpen")),
+    ]),
+    step(t("setup.cellStep1Title"), [
+      makeTag("p", "", t("setup.cellStep1a", { name })),
+      makeTag("p", "", t("setup.cellStep1b")),
+      makeTag("p", "hint", t("setup.cellStep1c")),
+    ]),
+    // So they can add us to a call they already picked up (live_calls.senior_added_us).
     step(t("setup.cellContactTitle"), [
       makeTag("p", "", t("setup.cellContactA", { name })),
       dialCode(number),
@@ -129,7 +178,7 @@ function drawSetup() {
   const number = setup.forward_to || t("setup.yourNumber");
   const landline = enrollment.phone_type === "landline";
   message.textContent = t(landline ? "setup.landlineIntro" : "setup.cellIntro", { name });
-  steps.replaceChildren(...(landline ? landlineSteps(name, setup, number) : cellSteps(name, number)));
+  steps.replaceChildren(...(landline ? landlineSteps(name, setup, number) : cellSteps(name, setup, number)));
   document.getElementById("setup-off-text").textContent = t(landline ? "setup.landlineOff" : "setup.cellOff");
 }
 

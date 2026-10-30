@@ -94,8 +94,6 @@ def sign_up_rosa(headers: dict | None = None) -> str:
             "senior_phone": SENIOR_PHONE,
             "family_name": "Ana",
             "family_phone": FAMILY_PHONE,
-            # Landlines get rung into the room. Cell phones get our voicemail.
-            "phone_type": "landline",
         },
         headers=headers or {},
     )
@@ -772,7 +770,6 @@ def test_one_familys_list_doesnt_block_calls_for_another(login_on, monkeypatch, 
             "senior_phone": "+13055550188",
             "family_name": "Bob",
             "family_phone": "+13055550189",
-            "phone_type": "landline",
         },
         headers=as_user("bob-token"),
     )

@@ -245,6 +245,13 @@ a {
   overflow-wrap: anywhere;
 }
 
+/* The calling app link: long, so it can break anywhere */
+.setup-link {
+  display: block;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
 /* Username and domain for the landline adapter */
 .setup-details {
   display: grid;
@@ -266,6 +273,20 @@ a {
 .setup-card-link {
   display: inline-block;
   margin: 8px 0;
+}
+
+/* ----- Calling app (phone.html) ----- */
+
+.caller-number {
+  margin: 8px 0 16px;
+  color: var(--color-gold);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.button-decline {
+  background: var(--color-red);
+  color: var(--color-text);
 }
 
 /* ----- Buttons that are links (a class="button") ----- */

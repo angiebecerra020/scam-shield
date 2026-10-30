@@ -27,9 +27,10 @@ def test_main_pages_have_the_header(path):
     assert "/static/nav.js" in page
 
 
-def test_the_join_call_page_skips_the_header():
-    """The "Join call" page stays without the header."""
-    page = client.get("/join/some-token").text
+@pytest.mark.parametrize("path", ["/join/some-token", "/phone/some-key"])
+def test_one_job_pages_skip_the_header(path):
+    """The "Join call" page and the senior's calling app stay without the header."""
+    page = client.get(path).text
 
     assert "/static/nav.js" not in page
 
@@ -65,6 +66,7 @@ def test_dashboard_links_to_profile_and_setup():
         ("/profile", "/static/profile.js"),
         ("/login", "/static/login.js"),
         ("/join/some-token", "/static/join.js"),
+        ("/phone/some-key", "/static/phone.js"),
     ],
 )
 def test_pages_load_the_loading_and_error_helpers_first(path, page_script):
