@@ -58,6 +58,20 @@
       <p id="profile-saved" class="success" aria-live="polite"></p>
       <p id="profile-error" class="error" role="alert"></p>
     </form>
+
+    <!-- Your login: the email you log in with, and a new password (account.js) -->
+    <section class="panel" id="login-section" hidden>
+      <h2 data-text="account.title">Your login</h2>
+      <p><span data-text="account.email">Login email:</span> <strong id="login-email"></strong></p>
+      <p id="reset-note" class="success" hidden data-text="account.resetNote">You're back in. Choose a new password below.</p>
+      <form id="password-form" class="form">
+        <label><span data-text="account.newPassword">New password</span> <input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+        <label><span data-text="account.confirm">Type it again</span> <input name="confirm" type="password" required minlength="8" autocomplete="new-password"></label>
+        <button type="submit" data-text="account.change">Change password</button>
+        <p id="password-error" class="error" role="alert"></p>
+        <p id="password-message" class="success" aria-live="polite"></p>
+      </form>
+    </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
   <script src="/static/strings.js"></script>
@@ -66,5 +80,6 @@
   <script src="/static/busy.js"></script>
   <script src="/static/nav.js"></script>
   <script src="/static/profile.js"></script>
+  <script src="/static/account.js"></script>
 </body>
 </html>

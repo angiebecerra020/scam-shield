@@ -489,3 +489,150 @@ input::placeholder {
 .setup-video .video-spot {
   margin-top: 12px;
 }
+
+/* The Call Log page (calls.html) */
+.call-stats {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 16px 0;
+}
+
+.call-stat {
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid #C9A227;
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+}
+
+.call-stat p {
+  margin: 0;
+}
+
+.call-stat-number {
+  color: #C9A227;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2rem;
+}
+
+.call-stat-danger {
+  background: rgba(229, 72, 77, 0.12);
+  border-color: #E5484D;
+}
+
+.call-stat-danger .call-stat-number {
+  color: #E5484D;
+}
+
+.call-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.call-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.call-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.call-row-button {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 14px;
+  padding: 12px 0;
+  text-align: left;
+  width: 100%;
+}
+
+.call-score {
+  align-items: center;
+  border: 3px solid #3FB950;
+  border-radius: 50%;
+  color: #3FB950;
+  display: flex;
+  flex: 0 0 52px;
+  font-weight: 700;
+  height: 52px;
+  justify-content: center;
+}
+
+.call-scam .call-score {
+  border-color: #E5484D;
+  color: #E5484D;
+}
+
+.call-unknown .call-score {
+  border-color: #888;
+  color: #888;
+}
+
+.call-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.call-who {
+  font-weight: 600;
+}
+
+.call-status,
+.call-time {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.call-scam .call-status {
+  color: #E5484D;
+  opacity: 1;
+}
+
+.call-details {
+  padding: 0 0 12px 66px;
+}
+
+.call-detail-title {
+  color: #C9A227;
+  font-weight: 600;
+  margin: 8px 0 4px;
+}
+
+@media (max-width: 420px) {
+  .call-stat-number {
+    font-size: 1.5rem;
+  }
+
+  .call-details {
+    padding-left: 0;
+  }
+}
+
+/* A button that looks like a link, like "Forgot your password?" */
+.link-button {
+  background: none;
+  border: 0;
+  color: #C9A227;
+  cursor: pointer;
+  font: inherit;
+  margin-top: 8px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* The Call Log filters sit side by side, even on a phone */
+.call-filters button {
+  flex: 1 1 auto;
+  margin: 0;
+  width: auto;
+}

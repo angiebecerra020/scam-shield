@@ -106,6 +106,19 @@ def add_site_extras(app: FastAPI) -> None:
         return response
 
 
+@router.get("/calls")
+def show_call_log_page() -> FileResponse:
+    """
+    The Call Log: every call to everyone this family protects, with scams
+    caught and alerts sent. It's private, so it isn't in the sitemap, and
+    calls.js sends people who aren't logged in to /login.
+
+    Example:
+        Open http://localhost:8000/calls
+    """
+    return FileResponse(STATIC / "calls.html")
+
+
 @router.get("/how-to")
 def show_how_to_page() -> FileResponse:
     """

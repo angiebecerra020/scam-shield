@@ -37,13 +37,16 @@ def test_one_job_pages_skip_the_header(path):
 
 def test_nav_script_has_the_links():
     """nav.js has the tabs in order: Home, About us, Dashboard, Q&A, Test it,
-    Live demo. Profile and How to set up live in the dashboard instead."""
+    Live demo. Call Log and Account (the profile page) are added only once
+    someone is logged in, after the Log in check."""
     script = client.get("/static/nav.js").text
     tabs = ['"/"', '"/about"', '"/dashboard"', '"/qa"', '"/try"', '"/demo"']
 
     positions = [script.index(f"href: {tab}") for tab in tabs]
     assert positions == sorted(positions)
-    assert '"/profile"' not in script
+    # The logged in tabs come after the public ones, inside the login check.
+    assert script.index('href: "/calls"') > script.index("session === null")
+    assert script.index('href: "/profile"') > script.index("session === null")
     assert '"/how-to"' not in script
 
 
@@ -72,3 +75,18 @@ def test_pages_load_the_loading_and_error_helpers_first(path, page_script):
 
     assert "/static/busy.js" in page
     assert page.index("/static/busy.js") < page.index(page_script)
+
+
+def test_the_call_log_page_loads_its_script_and_stays_out_of_search():
+    """/calls is the logged in Call Log: private, so it's marked noindex."""
+    html = client.get("/calls").text
+
+    assert "/static/calls.js" in html
+    assert 'name="robots" content="noindex"' in html
+
+
+def test_the_account_page_can_change_the_password():
+    html = client.get("/profile").text
+
+    assert 'id="password-form"' in html
+    assert "/static/account.js" in html

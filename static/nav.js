@@ -63,7 +63,7 @@ function navLink(link) {
  * Output: nothing; it adds the link or button.
  * Example: Ana is logged in  gives you  a "Log out" button at the end of the header
  */
-async function addAccountLink(tools) {
+async function addAccountLink(tools, tabs) {
   // We're already on the login page, so a "Log in" link would go nowhere.
   if (window.location.pathname === "/login" || typeof getAuthClient !== "function") {
     return;
@@ -88,6 +88,12 @@ async function addAccountLink(tools) {
     logIn.textContent = t("nav.logIn");
     tools.appendChild(logIn);
     return;
+  }
+
+  // Logged in: their call log and their account (the profile page).
+  if (tabs) {
+    tabs.appendChild(navLink({ href: "/calls", text: "nav.callLog" }));
+    tabs.appendChild(navLink({ href: "/profile", text: "nav.account" }));
   }
 
   const logOutButton = document.createElement("button");
@@ -137,7 +143,7 @@ function buildHeader() {
   // bigger screens.
   header.replaceChildren(brand, tools, tabs);
   translatePage();
-  addAccountLink(tools);
+  addAccountLink(tools, tabs);
 }
 
 // Build the header again in the new language when they flip the switch.

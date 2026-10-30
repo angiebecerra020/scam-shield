@@ -1,0 +1,62 @@
+<!--
+  calls.html — The Call Log: every call to everyone this family protects.
+
+  How it fits in: app/site_pages.py sends this page at /calls, and nav.js
+  shows it as the "Call Log" tab once someone is logged in. calls.js fills it
+  in from GET /api/family (the same calls the dashboard shows) and, when a
+  call is tapped, GET /api/calls/{id} for the reasons and Tavily links.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <title data-text="calls.pageTitle">Call Log · Scam Shield</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/header.css">
+</head>
+<body class="with-header">
+  <!-- The header with the logo and tabs. nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
+  <!-- Hidden until calls.js checks the login -->
+  <main class="card" id="calls-page" hidden>
+    <h1 data-text="calls.title">Call Log</h1>
+    <p class="tagline" data-text="calls.tagline">Every call to the people you protect. Tap a call to see why.</p>
+
+    <!-- The three numbers at the top -->
+    <div class="call-stats">
+      <div class="call-stat"><p class="call-stat-number" id="stat-total">0</p><p data-text="calls.total">Calls checked</p></div>
+      <div class="call-stat call-stat-danger"><p class="call-stat-number" id="stat-scams">0</p><p data-text="calls.scams">Scams caught</p></div>
+      <div class="call-stat"><p class="call-stat-number" id="stat-alerts">0</p><p data-text="calls.alerts">Family alerts sent</p></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="call-filters" role="group">
+      <button type="button" class="button-small" data-filter="all" data-text="calls.all">All</button>
+      <button type="button" class="button-small button-outline" data-filter="scam" data-text="calls.scamFilter">Scams</button>
+      <button type="button" class="button-small button-outline" data-filter="safe" data-text="calls.safeFilter">Safe</button>
+      <button type="button" class="button-small button-outline" data-filter="unknown" data-text="calls.unchecked">Not checked</button>
+    </div>
+
+    <p id="calls-status" class="hint" aria-live="polite" data-text="calls.loading">Loading your calls…</p>
+    <ul id="call-list" class="call-log"></ul>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/busy.js"></script>
+  <script src="/static/nav.js"></script>
+  <script src="/static/calls.js"></script>
+</body>
+</html>

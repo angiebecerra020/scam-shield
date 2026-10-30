@@ -58,6 +58,8 @@
       <button type="submit" id="login-button" data-text="login.buttonLogIn">Log in</button>
       <p id="login-error" class="error" role="alert"></p>
       <p id="login-message" class="success" aria-live="polite"></p>
+      <!-- Sends a reset link that brings them to the Account page (forgot.js) -->
+      <button type="button" id="forgot-button" class="link-button" data-text="account.forgot">Forgot your password?</button>
     </form>
 
     <!-- Shown instead of the form when Supabase isn't set up in .env -->
@@ -76,5 +78,6 @@
   <script src="/static/busy.js"></script>
   <script src="/static/nav.js"></script>
   <script src="/static/login.js"></script>
+  <script src="/static/forgot.js"></script>
 </body>
 </html>

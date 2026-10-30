@@ -122,10 +122,8 @@ async function loadProfile() {
   // If we can't tell, keep the boxes: typing them again beats being stuck.
   myProfile = ok ? data.profile : null;
   drawFamilyFields();
-  // "Logged in as" shows their name once they have a profile, not their email.
-  if (myProfile !== null) {
-    document.getElementById("account-email").textContent = myProfile.name;
-  }
+  // "Logged in as" keeps showing their login email. The name is who gets the
+  // alerts, and showing it here mixed the two up.
 }
 
 /**
