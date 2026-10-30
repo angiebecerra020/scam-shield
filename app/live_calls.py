@@ -511,12 +511,28 @@ def senior_added_us(enrollment: dict, call_sid: str) -> str:
 
     response = VoiceResponse()
     start_transcription(response, call["id"])
+    # Our own menu, not Cass's: only 2 cancels. On a merged call the phone
+    # can send a tone by itself, and Cass's menu hangs up on any other key,
+    # which cut our first real test off after 14 seconds.
     gather = response.gather(
         num_digits=1,
         timeout=4,
-        action=f"{base}/twilio/senior-menu-answer?enrollment_id={enrollment['id']}",
+        action=f"{base}/twilio/protected/added-choice?call_id={call['id']}",
     )
     gather.say(words["joining"])
+    add_listening(response, call, words)
+    return str(response)
+
+
+def add_listening(response: VoiceResponse, call: dict, words: dict) -> None:
+    """
+    Says "Scam Shield is listening" and puts the senior's side in the call's
+    conference room, so the family's "Join call" link works.
+
+    Example:
+        add_listening(response, call, ADDED_WORDS["en"])
+    """
+    base = get_settings().public_base_url.rstrip("/")
     response.say(words["listening"])
     dial = response.dial()
     dial.conference(
@@ -528,4 +544,38 @@ def senior_added_us(enrollment: dict, call_sid: str) -> str:
         status_callback=f"{base}/twilio/conference-status",
         status_callback_event="end",
     )
-    return str(response)
+
+
+@router.post("/twilio/protected/added-choice")
+async def added_choice(request: Request, call_id: str = ""):
+    """
+    The senior added Scam Shield to a call and a key was pressed during
+    "press 2 to turn Scam Shield off". Only 2 cancels (Cass's cancel code in
+    consent.py). Any other key, like a stray tone from the merge, keeps us
+    listening.
+
+    Example:
+        Digits=2 gives you "Scam Shield is now canceled..."
+        Digits=1 gives you "Scam Shield is listening." and the call goes on
+    """
+    form = await read_twilio_form(request)
+    if form is None:
+        return Response(status_code=403)
+
+    call = storage.get_call(call_id)
+    response = VoiceResponse()
+    if call is None:
+        response.hangup()
+        return twiml_response(response)
+
+    if form.get("Digits", "") == "2":
+        # Imported here because consent.py is a big file we only need now.
+        from app import consent
+
+        xml = consent.handle_senior_menu_digits(call["enrollment_id"], form.get("From", ""), "2")
+        return Response(content=xml, media_type="application/xml")
+
+    enrollment = storage.get_enrollment(call["enrollment_id"]) or {}
+    words = ADDED_WORDS.get(enrollment.get("senior_language"), ADDED_WORDS["en"])
+    add_listening(response, call, words)
+    return twiml_response(response)

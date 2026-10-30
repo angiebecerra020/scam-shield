@@ -331,3 +331,27 @@ def test_with_real_calls_on_fake_twilio_requests_are_refused(monkeypatch):
 
     assert fake.status_code == 403
     assert real.status_code == 200
+
+
+def test_a_stray_key_on_an_added_call_keeps_scam_shield_listening():
+    """Our first real merge test got cut off: a tone counted as "not 2" and we
+    hung up. Now any key other than 2 keeps us in the call."""
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    response = twilio_post(f"/twilio/protected/added-choice?call_id={call['id']}", {"Digits": "1", "From": GRANDMA})
+
+    assert "<Hangup" not in response.text
+    assert call["conference_name"] in response.text
+    assert storage.get_enrollment("rosa")["status"] == "active"
+
+
+def test_pressing_2_on_an_added_call_still_cancels():
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
+
+    twilio_post(f"/twilio/protected/added-choice?call_id={call['id']}", {"Digits": "2", "From": GRANDMA})
+
+    assert storage.get_enrollment("rosa")["status"] == "revoked"
