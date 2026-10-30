@@ -260,6 +260,11 @@ input::placeholder {
   line-height: 1.1;
 }
 
+/* About us has no line under the headline, so give the video the same room */
+.watch-hero h1 + .video-frame {
+  margin-top: 32px;
+}
+
 .watch-hero .lead {
   max-width: 40ch;
   margin: 0 auto 32px;
