@@ -18,9 +18,9 @@ from app.main import app
 client = TestClient(app)
 
 
-@pytest.mark.parametrize("path", ["/", "/login", "/dashboard", "/setup/some-id", "/profile", "/demo", "/try", "/privacy", "/terms"])
+@pytest.mark.parametrize("path", ["/", "/login", "/dashboard", "/setup/some-id", "/profile", "/demo", "/try", "/qa", "/privacy", "/terms"])
 def test_main_pages_have_the_header(path):
-    """Home, login, the dashboard, the demos and the fine print all get the same tabs on top."""
+    """Home, login, the dashboard, the demos, the Q&A and the fine print all get the same tabs on top."""
     page = client.get(path).text
 
     assert 'id="site-header"' in page
@@ -36,12 +36,13 @@ def test_one_job_pages_skip_the_header(path):
 
 
 def test_nav_script_has_the_links():
-    """nav.js has the Home, Live demo, Test it and Dashboard tabs."""
+    """nav.js has the Home, Live demo, Test it, Q&A and Dashboard tabs."""
     script = client.get("/static/nav.js").text
 
     assert '{ href: "/", text: "nav.home" }' in script
     assert '"/demo"' in script
     assert '"/try"' in script
+    assert '"/qa"' in script
     assert '"/dashboard"' in script
 
 

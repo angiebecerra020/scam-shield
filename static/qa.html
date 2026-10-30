@@ -1,0 +1,91 @@
+<!--
+  qa.html
+
+  The Q&A page: the questions families ask us most, answered in plain words.
+
+  How it fits in: app/site_pages.py sends this page at /qa, and it's the "Q&A"
+  tab in the header. Same look as terms.html. The words live in strings.js
+  under "qa." so the English | Español switch works here too.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-text="qa.title">Questions & answers · Scam Shield</title>
+  <meta name="description" content="Answers to the questions families ask most about Scam Shield: consent, privacy, landlines, languages and how to try it.">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scam Shield">
+  <meta property="og:title" content="Questions & answers · Scam Shield">
+  <meta property="og:description" content="The questions families ask most about Scam Shield, answered in plain words.">
+  <meta property="og:url" content="https://scam-shield-ity3.onrender.com/qa">
+  <meta property="og:image" content="https://scam-shield-ity3.onrender.com/static/icons/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/header.css">
+</head>
+<body class="landing">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="page">
+    <p class="eyebrow" data-text="qa.eyebrow">Q&amp;A</p>
+    <h1 data-text="qa.heading">Your questions, answered.</h1>
+    <p class="lead" data-text="qa.lead">The things families ask us most, in plain words.</p>
+
+    <h2 data-text="qa.q1">What is Scam Shield?</h2>
+    <p data-text="qa.a1">Scam Shield listens for scam tricks on your loved one's phone calls, with their OK. If a call looks like a scam, it calls you right away so you can step in while there's still time.</p>
+
+    <h2 data-text="qa.q2">Does my loved one have to agree?</h2>
+    <p data-text="qa.a2">Yes. When you sign someone up, we call them on their own phone and they press 1 to allow it or 2 to say no. Nothing is listened to until they say YES.</p>
+
+    <h2 data-text="qa.q3">How do they turn it off?</h2>
+    <p data-text="qa.a3">They call the Scam Shield number from their own phone and press 2. You can also pause or remove them from your dashboard.</p>
+
+    <h2 data-text="qa.q4">Do you record the calls?</h2>
+    <p data-text="qa.a4">No. We never record or save the sound of a call. We read the words while the call is going to check for scams, and then let them go.</p>
+
+    <h2 data-text="qa.q5">What happens when a call looks like a scam?</h2>
+    <p data-text="qa.a5">NVIDIA Nemotron scores each call from 0 to 100. When it reaches 70, we call you in your language, tell you why we're worried, and you can press 1 to join the call yourself.</p>
+
+    <h2 data-text="qa.q6">Do they keep their phone number?</h2>
+    <p data-text="qa.a6">Yes. Their calls forward to Scam Shield, which rings an app on their cell phone or their own home phone through a small adapter.</p>
+
+    <h2 data-text="qa.q7">Does it work with a landline?</h2>
+    <p data-text="qa.a7">Yes. A landline needs a small phone adapter, about $40. A cell phone needs nothing extra.</p>
+
+    <h2 data-text="qa.q8">What languages does it speak?</h2>
+    <p data-text="qa.a8">English and Spanish. Use the switch at the top of any page.</p>
+
+    <h2 data-text="qa.q9">Can it be wrong?</h2>
+    <p data-text="qa.a9">Yes. AI can miss a scam or warn about a call that's fine. Always call your family member back on a number you already know. Scam Shield isn't for emergencies: if someone is in danger, call 911.</p>
+
+    <h2 data-text="qa.q10">How can I try it?</h2>
+    <p data-text="qa.a10">Watch the live demo, or use Test it to call our number and play the scammer yourself. No account needed.</p>
+
+    <h2 data-text="qa.moreTitle">Still have a question?</h2>
+    <p><span data-text="qa.more">Email us at</span> <a href="mailto:scam.shield.demo@gmail.com">scam.shield.demo@gmail.com</a></p>
+
+    <div class="actions">
+      <a class="button" href="/demo" data-text="landing.ctaDemo">Watch the live demo</a>
+      <a class="button button-outline" href="/try" data-text="nav.try">Test it</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p data-text="landing.footer1">Scam Shield · Nebius x NVIDIA Global AI Hackathon 2026</p>
+    <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>
+  </footer>
+
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/nav.js"></script>
+</body>
+</html>

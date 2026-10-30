@@ -23,9 +23,9 @@ STATIC = Path(__file__).resolve().parent.parent / "static"
 BROWSER = {"Accept": "text/html,application/xhtml+xml"}
 
 
-@pytest.mark.parametrize("path,words", [("/privacy", "No audio"), ("/terms", "Not for emergencies")])
+@pytest.mark.parametrize("path,words", [("/privacy", "No audio"), ("/terms", "Not for emergencies"), ("/qa", "Does my loved one have to agree?")])
 def test_privacy_and_terms_pages_load(path, words):
-    """The privacy and terms pages open and say the important part."""
+    """The privacy, terms and Q&A pages open and say the important part."""
     response = client.get(path)
 
     assert response.status_code == 200
@@ -92,7 +92,7 @@ def test_every_answer_has_the_safety_headers():
 @pytest.mark.parametrize(
     "page",
     ["landing.html", "login.html", "index.html", "join.html", "phone.html", "demo.html", "try.html",
-     "privacy.html", "terms.html", "404.html"],
+     "qa.html", "privacy.html", "terms.html", "404.html"],
 )
 def test_every_page_has_an_icon_and_a_description(page):
     """Every page has the tab icon and a description for search engines."""

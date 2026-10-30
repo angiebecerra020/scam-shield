@@ -1,7 +1,7 @@
 """
 site_pages.py
 
-The little things every real website needs: the privacy and terms pages, a
+The little things every real website needs: the Q&A, privacy and terms pages, a
 friendly "page not found", the icon in the browser tab, robots.txt and a
 sitemap for search engines, and a few safety headers on every answer.
 
@@ -21,7 +21,7 @@ STATIC = PROJECT_ROOT / "static"
 
 # The pages search engines can list. The dashboard, "Join call" links and the
 # senior's calling app stay out, since they're private to each family.
-PUBLIC_PAGES = ["/", "/demo", "/try", "/login", "/privacy", "/terms"]
+PUBLIC_PAGES = ["/", "/demo", "/try", "/qa", "/login", "/privacy", "/terms"]
 
 # Paths where the answer is data for our own pages or for Twilio, never a
 # web page. A wrong address there keeps getting the plain JSON error.
@@ -90,6 +90,17 @@ def add_site_extras(app: FastAPI) -> None:
         for name, value in SAFETY_HEADERS.items():
             response.headers.setdefault(name, value)
         return response
+
+
+@router.get("/qa")
+def show_qa_page() -> FileResponse:
+    """
+    Sends the Q&A page: the questions families ask us most.
+
+    Example:
+        Open http://localhost:8000/qa
+    """
+    return FileResponse(STATIC / "qa.html")
 
 
 @router.get("/privacy")
