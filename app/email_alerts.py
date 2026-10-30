@@ -196,3 +196,57 @@ def send_email(to: str, subject: str, body: str) -> str:
         print(f"Couldn't send the alert email: {problem}")
         return "failed"
     return "sent"
+
+
+# The welcome email, in the family's language. {name} is the family member,
+# {senior} the person they're protecting, {link} the how to set up page.
+WELCOME_WORDS = {
+    "en": {
+        "subject": "Welcome to Scam Shield",
+        "body": (
+            "Hi {name},\n\n"
+            "Welcome to Scam Shield! Thank you for looking out for {senior}.\n\n"
+            "Here's what happens next:\n"
+            "1. We call {senior} to ask for their OK. They press 1 to say yes.\n"
+            "2. Then you finish setting up their phone. It takes about 5 minutes.\n\n"
+            "Watch our step by step video, with every code to dial:\n{link}\n\n"
+            "We're here to help,\nAngie and Cass, Scam Shield"
+        ),
+    },
+    "es": {
+        "subject": "Bienvenido a Scam Shield",
+        "body": (
+            "Hola {name}:\n\n"
+            "¡Bienvenido a Scam Shield! Gracias por cuidar a {senior}.\n\n"
+            "Lo que sigue:\n"
+            "1. Llamamos a {senior} para pedirle su permiso. Marca 1 para decir que sí.\n"
+            "2. Después usted termina de configurar su teléfono. Toma unos 5 minutos.\n\n"
+            "Vea nuestro video paso a paso, con cada código para marcar:\n{link}\n\n"
+            "Estamos para ayudarle,\nAngie y Cass, Scam Shield"
+        ),
+    },
+}
+
+
+def send_welcome_email(enrollment: dict) -> str:
+    """
+    Sends the family a welcome email with the how to set up video, right
+    after they sign someone up. It never stops the sign up if it fails.
+
+    Input:  enrollment, the new sign up (needs family_email to send anything)
+    Output: what happened, like send_email(): "sent", "not_set_up",
+            "bad_address", "failed", or "no_email" if they didn't give one
+
+    Example:
+        send_welcome_email(rosa) gives you "sent", and Ana gets
+        "Welcome to Scam Shield" with the video link
+    """
+    address = enrollment.get("family_email")
+    if not address:
+        return "no_email"
+    words = WELCOME_WORDS.get(enrollment.get("family_language"), WELCOME_WORDS["en"])
+    link = get_settings().public_base_url.rstrip("/") + "/how-to"
+    body = words["body"].format(
+        name=enrollment.get("family_name", ""), senior=enrollment.get("senior_name", ""), link=link
+    )
+    return send_email(address, words["subject"], body)

@@ -26,6 +26,7 @@ PUBLIC_PAGES = [
     "/demo",
     "/try",
     "/about",
+    "/how-to",
     "/watch",
     "/qa",
     "/scam-call-protection-for-seniors",
@@ -103,6 +104,18 @@ def add_site_extras(app: FastAPI) -> None:
         for name, value in SAFETY_HEADERS.items():
             response.headers.setdefault(name, value)
         return response
+
+
+@router.get("/how-to")
+def show_how_to_page() -> FileResponse:
+    """
+    The "How to set up" page: our step by step video and the written steps.
+    The welcome email links here.
+
+    Example:
+        Open http://localhost:8000/how-to
+    """
+    return FileResponse(STATIC / "how-to.html")
 
 
 @router.get("/about")
