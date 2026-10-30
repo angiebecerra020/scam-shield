@@ -18,7 +18,7 @@ from app.main import app
 client = TestClient(app)
 
 
-@pytest.mark.parametrize("path", ["/", "/login", "/dashboard", "/setup/some-id", "/profile", "/demo", "/try", "/qa", "/privacy", "/terms"])
+@pytest.mark.parametrize("path", ["/", "/login", "/dashboard", "/setup/some-id", "/profile", "/demo", "/try", "/watch", "/qa", "/privacy", "/terms"])
 def test_main_pages_have_the_header(path):
     """Home, login, the dashboard, the demos, the Q&A and the fine print all get the same tabs on top."""
     page = client.get(path).text

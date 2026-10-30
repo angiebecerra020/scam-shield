@@ -96,7 +96,7 @@ def test_every_answer_has_the_safety_headers():
     "page",
     ["landing.html", "login.html", "index.html", "join.html", "phone.html", "demo.html", "try.html",
      "qa.html", "privacy.html", "terms.html", "404.html",
-     "seniors.html", "family-alerts.html", "phones.html"],
+     "seniors.html", "family-alerts.html", "phones.html", "watch.html"],
 )
 def test_every_page_has_an_icon_and_a_description(page):
     """Every page has the tab icon and a description for search engines."""
@@ -111,6 +111,7 @@ PUBLIC = [
     ("/", "landing.html"),
     ("/demo", "demo.html"),
     ("/try", "try.html"),
+    ("/watch", "watch.html"),
     ("/qa", "qa.html"),
     ("/scam-call-protection-for-seniors", "seniors.html"),
     ("/family-scam-alerts", "family-alerts.html"),
@@ -175,7 +176,30 @@ def test_faq_schema_matches_the_page(page):
         assert question["acceptedAnswer"]["text"] in shown
 
 
-@pytest.mark.parametrize("page", ["landing.html", "demo.html", "try.html", "login.html"])
+def test_video_page_waits_for_the_video():
+    """/watch opens and is in the sitemap. Until the YouTube ID is filled in,
+    it shows "coming soon" and a way to the live demo, and the home page links to it."""
+    response = client.get("/watch")
+
+    assert response.status_code == 200
+    assert 'data-video-id=""' in response.text
+    assert "Our video is coming soon" in response.text
+    assert 'href="/demo"' in response.text
+    assert 'href="/login?mode=signup"' in response.text
+    assert "<loc>http://testserver/watch</loc>" in client.get("/sitemap.xml").text
+    assert 'href="/watch"' in (STATIC / "landing.html").read_text()
+
+
+def test_video_uses_youtube_privacy_mode():
+    """The video comes from youtube-nocookie.com, so YouTube doesn't track
+    visitors before they press play (our privacy page promises no tracking)."""
+    script = (STATIC / "watch.js").read_text()
+
+    assert "https://www.youtube-nocookie.com/embed/" in script
+    assert "www.youtube.com/embed" not in script
+
+
+@pytest.mark.parametrize("page", ["landing.html", "demo.html", "try.html", "login.html", "watch.html"])
 def test_public_pages_have_link_previews(page):
     """Shared links show our preview image on Devpost and social media."""
     html = (STATIC / page).read_text()

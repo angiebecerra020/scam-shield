@@ -25,6 +25,7 @@ PUBLIC_PAGES = [
     "/",
     "/demo",
     "/try",
+    "/watch",
     "/qa",
     "/scam-call-protection-for-seniors",
     "/family-scam-alerts",
@@ -101,6 +102,18 @@ def add_site_extras(app: FastAPI) -> None:
         for name, value in SAFETY_HEADERS.items():
             response.headers.setdefault(name, value)
         return response
+
+
+@router.get("/watch")
+def show_watch_page() -> FileResponse:
+    """
+    Sends the video page: our YouTube video, the reasons families sign up,
+    and buttons to get started. A page to share on social media.
+
+    Example:
+        Open http://localhost:8000/watch
+    """
+    return FileResponse(STATIC / "watch.html")
 
 
 @router.get("/qa")
