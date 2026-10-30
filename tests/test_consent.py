@@ -13,9 +13,11 @@ on (see conftest.py), so no real texts are sent. Run with:  pytest
 
 from datetime import timedelta
 
+import pytest
+
 from fastapi.testclient import TestClient
 
-from app import storage
+from app import consent, storage
 from app.alerts import DEMO_OUTBOX
 from app.calls import DEMO_CALL_LOG
 from app.consent import read_answer
@@ -144,14 +146,26 @@ def test_cant_ask_again_while_waiting_for_an_answer():
     assert len(DEMO_CALL_LOG) == 1  # no second call to the senior
 
 
-def test_cant_ask_again_soon_after_a_no():
+def test_family_can_ask_again_after_one_no():
+    """A NO can be a mistake, so the family gets to ask again."""
     sign_up()
     senior_texts("NO")
 
     again = sign_up()
 
-    assert again.status_code == 409
-    assert "said no recently" in again.json()["error"]
+    assert again.status_code == 201
+
+
+def test_after_three_nos_we_wait_30_days_and_point_to_our_email():
+    for _ in range(3):
+        assert sign_up().status_code == 201
+        senior_texts("NO")
+
+    fourth = sign_up()
+
+    assert fourth.status_code == 409
+    assert "said no 3 times" in fourth.json()["error"]
+    assert "scam.shield.demo@gmail.com" in fourth.json()["error"]
 
 
 def test_request_expires_after_24_hours_and_yes_no_longer_counts():
@@ -295,3 +309,21 @@ def test_every_spanish_message_matches_english():
     assert set(MESSAGES) == {"en", "es"} == set(SPOKEN_LANGUAGE)
     for key, english in MESSAGES["en"].items():
         assert blanks(MESSAGES["es"][key]) == blanks(english), key
+
+
+def test_two_families_can_protect_the_same_senior():
+    """Ana protects Rosa. Her brother Luis can too (Rosa gets asked again)."""
+    ana = consent.start_enrollment("Rosa", "305-555-0100", "Ana", "305-555-0101", owner_id="ana")
+    storage.set_enrollment_status(ana["id"], "active", answered=True)
+
+    luis = consent.start_enrollment("Rosa", "305-555-0100", "Luis", "305-555-0102", owner_id="luis")
+
+    assert luis["status"] == "pending"
+
+
+def test_the_same_family_cant_sign_up_the_same_senior_twice():
+    ana = consent.start_enrollment("Rosa", "305-555-0100", "Ana", "305-555-0101", owner_id="ana")
+    storage.set_enrollment_status(ana["id"], "active", answered=True)
+
+    with pytest.raises(consent.EnrollmentError, match="already protect"):
+        consent.start_enrollment("Rosa", "305-555-0100", "Ana", "305-555-0101", owner_id="ana")

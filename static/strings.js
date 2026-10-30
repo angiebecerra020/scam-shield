@@ -1170,7 +1170,8 @@ const SERVER_MESSAGES_ES = {
   "Please choose cell phone or landline.": "Por favor elija celular o teléfono de casa.",
   "The senior's phone and your phone must be different.":
     "El teléfono de la persona protegida y el suyo deben ser diferentes.",
-  "This person is already protected by Scam Shield.": "Esta persona ya está protegida por Scam Shield.",
+  "You already protect this person with Scam Shield.": "Usted ya protege a esta persona con Scam Shield.",
+  "This person said no 3 times, so we won't ask them again for 30 days. Think it was a mistake? Email us at scam.shield.demo@gmail.com.": "Esta persona dijo que no 3 veces, así que no le preguntaremos de nuevo por 30 días. ¿Cree que fue un error? Escríbanos a scam.shield.demo@gmail.com.",
   "This person is already signed up, but protection is paused. You can turn it back on from the dashboard.":
     "Esta persona ya está registrada, pero la protección está en pausa. Puede volver a activarla desde el panel.",
   "We already asked this person. They have 24 hours to answer.":

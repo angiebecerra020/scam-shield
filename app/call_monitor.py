@@ -116,8 +116,36 @@ def send_alerts(call: dict, enrollment: dict, detector_result: dict) -> None:
             real_call=True,
         )
         email_alerts.send_email(enrollment["family_email"], subject, body)
+    alert_other_families(call, enrollment, detector_result)
     ALERTED_CALL_IDS.add(call["id"])
     storage.mark_call_alerted(call["id"])
+
+
+def alert_other_families(call: dict, enrollment: dict, detector_result: dict) -> None:
+    """
+    Emails every OTHER family that protects the same senior (each one got the
+    senior's own YES), with the same "Join call" link. The call itself shows
+    up on the dashboard of the family it belongs to.
+
+    Input:  call, the enrollment the call belongs to, detector_result
+    Output: nothing
+
+    Example:
+        Ana and her brother Luis both protect Rosa. A scam call comes in on
+        Ana's sign up: Ana gets the phone alert and email, and Luis gets the email.
+    """
+    for other in storage.find_enrollments_for_senior(enrollment["senior_phone"]):
+        if other["id"] == enrollment["id"] or other["status"] != "active" or not other.get("family_email"):
+            continue
+        subject, body = email_alerts.alert_email(
+            other["family_language"],
+            other["senior_name"],
+            other["family_name"],
+            detector_result,
+            calls.join_link(call),
+            real_call=True,
+        )
+        email_alerts.send_email(other["family_email"], subject, body)
 
 
 def all_sources(found: dict | None) -> list[dict]:

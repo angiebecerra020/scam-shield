@@ -81,6 +81,12 @@ ASK_WAYS = ("call",)
 ANSWER_WINDOW = timedelta(hours=24)
 # How long we wait before asking someone who said NO (or STOP) again.
 ASK_AGAIN_AFTER_NO = timedelta(days=30)
+# A NO can be a mistake (a wrong key, or they didn't understand), so families
+# can ask again. After this many NOs in 30 days we stop asking for 30 days,
+# and the family can email us to look at it case by case.
+NO_LIMIT = 3
+# Where families write to us about the 30 day wait.
+CONTACT_EMAIL = "scam.shield.demo@gmail.com"
 
 # Words we accept as an answer. Replies are cleaned up first (see clean_reply),
 # so "Yes!", "  yes " and "Sí" all match.
@@ -194,24 +200,51 @@ def expire_old_requests(enrollments: list[dict]) -> list[dict]:
     return enrollments
 
 
-def check_allowed_to_ask(senior_phone: str) -> None:
+def same_family(enrollment: dict, owner_id: str | None) -> bool:
+    """
+    Did this family (this login) make that sign up?
+
+    With login turned off there's no way to tell families apart, so every
+    sign up counts as the same family, like before.
+
+    Example:
+        same_family({"owner_id": "ana"}, "ana") gives you True
+        same_family({"owner_id": "ana"}, "luis") gives you False
+    """
+    if owner_id is None:
+        return True
+    return enrollment.get("owner_id") == owner_id
+
+
+def check_allowed_to_ask(senior_phone: str, owner_id: str | None = None) -> None:
     """
     Make sure we're allowed to ask this senior for their YES right now.
 
+    More than one family can protect the same senior (Ana and her brother Luis
+    can both protect Grandma). Each family still needs the senior's own YES,
+    so a new family means a new consent call. What we block:
+      - the SAME family signing the same senior up twice
+      - anyone asking again within 30 days after the senior said NO
+
     Input:  senior_phone — E.164 number
+            owner_id     — who's signing them up (their login), or None
     Output: nothing if it's fine
-    Raises: EnrollmentError when the senior is already protected, is already
-            waiting to answer, or said NO in the last 30 days
+    Raises: EnrollmentError when this family already protects them, is
+            already waiting for their answer, or the senior said NO recently
 
     Example:
-        check_allowed_to_ask("+13055550100")  ->  (nothing: OK to ask)
+        check_allowed_to_ask("+13055550100", "luis")  ->  (nothing: OK to ask,
+        even if Ana already protects her)
     """
     now = datetime.now(timezone.utc)
     enrollments = expire_old_requests(storage.find_enrollments_for_senior(senior_phone))
 
     for enrollment in enrollments:
+        # A NO from the senior counts no matter which family asked.
+        if enrollment["status"] in ("active", "paused", "pending") and not same_family(enrollment, owner_id):
+            continue
         if enrollment["status"] == "active":
-            raise EnrollmentError("This person is already protected by Scam Shield.", 409)
+            raise EnrollmentError("You already protect this person with Scam Shield.", 409)
         if enrollment["status"] == "paused":
             raise EnrollmentError(
                 "This person is already signed up, but protection is paused. "
@@ -222,12 +255,19 @@ def check_allowed_to_ask(senior_phone: str) -> None:
             raise EnrollmentError(
                 "We already asked this person. They have 24 hours to answer.", 409
             )
-        if enrollment["status"] in ("declined", "revoked"):
-            answered = storage.parse_time(enrollment["answered_at"])
-            if now - answered < ASK_AGAIN_AFTER_NO:
-                raise EnrollmentError(
-                    "This person said no recently, so we won't ask them again yet.", 409
-                )
+
+    # Count the senior's NOs in the last 30 days, from any family.
+    recent_nos = 0
+    for enrollment in enrollments:
+        if enrollment["status"] in ("declined", "revoked") and enrollment.get("answered_at"):
+            if now - storage.parse_time(enrollment["answered_at"]) < ASK_AGAIN_AFTER_NO:
+                recent_nos += 1
+    if recent_nos >= NO_LIMIT:
+        raise EnrollmentError(
+            "This person said no 3 times, so we won't ask them again for 30 days. "
+            f"Think it was a mistake? Email us at {CONTACT_EMAIL}.",
+            409,
+        )
 
 
 def start_enrollment(
@@ -294,7 +334,7 @@ def start_enrollment(
     if enrollment["senior_phone"] == enrollment["family_phone"]:
         raise EnrollmentError("The senior's phone and your phone must be different.", 400)
 
-    check_allowed_to_ask(enrollment["senior_phone"])
+    check_allowed_to_ask(enrollment["senior_phone"], owner_id)
     storage.save_enrollment(enrollment)
     call_senior_for_consent(enrollment)
     return public_view(enrollment)
