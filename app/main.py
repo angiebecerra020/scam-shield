@@ -40,7 +40,9 @@ Routes:
     POST /api/enrollments/{id}/resume -> [login] turn protection back on
     POST /api/enrollments/{id}/relationship -> [login] who they are to you: mom, grandma... other
 
-  The landline adapter (devices.py): how we ring them without a loop
+  The senior's device (devices.py): how we ring them without a loop
+    GET  /phone/{key}             -> the calling app for a cell phone
+    GET  /api/phone/{key}         -> the calling app's login
     POST /twilio/adapter-call     -> Twilio: a landline senior dialed a number
 
   3-way calls (calls.py): the family can join a risky call
@@ -506,7 +508,7 @@ async def receive_consent_key(request: Request, enrollment_id: str):
 
 
 # ---------------------------------------------------------------------------
-# The senior's menu, and the landline adapter
+# The senior's device: calling app (cell) and adapter (landline)
 # ---------------------------------------------------------------------------
 
 
@@ -539,6 +541,32 @@ async def receive_senior_menu_key(request: Request, enrollment_id: str):
     return twiml(
         consent.handle_senior_menu_digits(enrollment_id, form.get("From", ""), form.get("Digits", ""))
     )
+
+
+@app.get("/phone/{device_key}")
+def show_calling_app(device_key: str) -> FileResponse:
+    """
+    The calling app a cell-phone senior keeps open. Its JavaScript (phone.js)
+    reads the key from the address and logs in to Twilio.
+
+    Example:
+        Open http://localhost:8000/phone/Xy7...  ->  "Scam Shield is ready for calls"
+    """
+    return FileResponse(STATIC_DIR / "phone.html")
+
+
+@app.get("/api/phone/{device_key}")
+def get_calling_app_login(device_key: str):
+    """
+    Give the calling app its Twilio login, so incoming calls can ring it.
+
+    Example:
+        GET /api/phone/Xy7...  ->  {"senior_name": "Rosa", "demo_mode": false, "token": "eyJ..."}
+    """
+    try:
+        return devices.app_details(device_key)
+    except devices.DeviceError as problem:
+        return error(problem.text, problem.status_code)
 
 
 @app.post("/twilio/adapter-call")

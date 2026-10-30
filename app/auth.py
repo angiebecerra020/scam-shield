@@ -16,9 +16,9 @@ require_login() below. That asks Supabase "whose token is this?" If Supabase
 doesn't know the token, we answer 401 and the dashboard sends the person back
 to the login page.
 
-Twilio routes and the "Join call" page don't use this. Twilio proves itself
-with a signature (twilio_security.py), and the "Join call" link has its own
-secret part in the URL.
+Twilio routes and the senior's calling app don't use this. Twilio proves
+itself with a signature (twilio_security.py), and the "Join call" and calling
+app links have their own secret part in the URL.
 
 If SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY is blank, login is turned off and
 every route stays open. That keeps local testing simple.

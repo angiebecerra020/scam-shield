@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS enrollments (
     phone_type    TEXT NOT NULL,     -- "cell" or "landline"
     ask_by        TEXT,              -- "text" or "call": how we asked for their YES
     family_email  TEXT,              -- where the family gets alerts by email (optional)
-    device_id     TEXT NOT NULL,     -- name of a landline senior's adapter at Twilio
-    device_key    TEXT NOT NULL,     -- unused now (was the old calling-app link), kept for old databases
+    device_id     TEXT NOT NULL,     -- name of the senior's app or adapter at Twilio
+    device_key    TEXT NOT NULL,     -- secret part of the calling-app link
     senior_language TEXT NOT NULL,   -- "en" or "es"
     family_language TEXT NOT NULL,
     status        TEXT NOT NULL,     -- pending / active / paused / declined / expired / revoked / removed
@@ -244,9 +244,10 @@ def get_enrollment(enrollment_id: str) -> dict | None:
 
 def find_enrollment_by_device(column: str, value: str) -> dict | None:
     """
-    Find the enrollment that owns a phone adapter.
+    Find the enrollment that owns a calling app or phone adapter.
 
-    Input:  column — "device_id" (the name Twilio knows the adapter by)
+    Input:  column — "device_id" (the name Twilio knows the device by) or
+                     "device_key" (the secret in the calling-app link)
             value  — what to look for
     Output: the enrollment as a dict, or None
 

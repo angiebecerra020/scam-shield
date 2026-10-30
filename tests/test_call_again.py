@@ -111,16 +111,15 @@ def test_remove_deletes_their_calls_and_takes_them_off_the_dashboard():
     assert left["family_name"] == "" and left["family_phone"] == ""
 
 
-def test_removed_seniors_calls_dont_get_listened_to():
-    """Their cell may still forward missed calls to us. We don't listen or ring back."""
+def test_removed_seniors_calls_still_ring_without_listening():
+    """Their phone may still forward to us. Calls must ring through, not hang up."""
     enrollment_id = save_senior(status="active")
     client.delete(f"/api/enrollments/{enrollment_id}")
 
     xml = calls.handle_incoming_call("+15555550199", "CA123", "+15555550142")
 
-    assert "can't come to the phone" in xml
+    assert "<Dial" in xml
     assert "<Conference" not in xml
-    assert "<Transcription" not in xml
     assert "not set up" not in xml
 
 

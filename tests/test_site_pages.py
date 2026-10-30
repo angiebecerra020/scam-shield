@@ -94,7 +94,7 @@ def test_every_answer_has_the_safety_headers():
 
 @pytest.mark.parametrize(
     "page",
-    ["landing.html", "login.html", "index.html", "join.html", "demo.html", "try.html",
+    ["landing.html", "login.html", "index.html", "join.html", "phone.html", "demo.html", "try.html",
      "qa.html", "privacy.html", "terms.html", "404.html",
      "seniors.html", "family-alerts.html", "phones.html", "watch.html"],
 )
@@ -208,7 +208,7 @@ def test_public_pages_have_link_previews(page):
     assert 'name="twitter:card"' in html
 
 
-@pytest.mark.parametrize("page", ["index.html", "join.html"])
+@pytest.mark.parametrize("page", ["index.html", "join.html", "phone.html"])
 def test_private_pages_stay_out_of_search(page):
     """The dashboard, "Join call" and the calling app tell search engines to skip them."""
     html = (STATIC / page).read_text()

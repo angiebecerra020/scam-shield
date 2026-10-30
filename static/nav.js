@@ -19,9 +19,9 @@
   away. The words come from strings.js (via t() in i18n.js), and the header
   builds itself again when the language changes.
 
-  The "Join call" page doesn't get this header on purpose. It does one job in
-  a hurry, and its link holds a secret we don't want people wandering away
-  from and losing.
+  The "Join call" page and the senior's calling app don't get this header on
+  purpose. Each does one job in a hurry, and their links hold secrets we don't
+  want people wandering away from and losing.
 */
 
 // The tabs in the header, in order. "text" is the key for its words in strings.js.

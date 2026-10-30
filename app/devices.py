@@ -1,36 +1,43 @@
 """
-devices.py — How Scam Shield reaches a landline senior's phone.
+devices.py — How Scam Shield reaches the senior's phone, for cell phones and
+landlines alike.
 
-How it fits in: a landline senior's number forwards to our Scam Shield
-number. So we can NOT ring the senior back on that number: the call would
-just forward to us again, in a loop. Instead, we ring a small adapter
-between their home phone and the internet, which Twilio rings as
-"sip:<device_id>@<our SIP domain>".
+How it fits in: every senior's number forwards to our Scam Shield number. So
+we can NOT ring the senior back on that number: the call would just forward
+to us again, in a loop. Instead, we ring a private "device" that only Scam
+Shield can reach:
 
-Cell phones are never rung back: the senior adds Scam Shield to a call
-themselves (Add call, then Merge; see live_calls.py).
+  - cell phone -> our calling app on their phone (static/phone.html), which
+                  Twilio rings over the internet as "client:<device_id>"
+  - landline   -> a small adapter between their home phone and the internet,
+                  which Twilio rings as "sip:<device_id>@<our SIP domain>"
 
 calls.py uses device_address() whenever it rings the senior. This file also
-connects the landline adapter's OUTGOING calls (handle_adapter_call), since
-a landline whose phone is plugged into the adapter makes every call through us.
+gives the calling app its login (app_details) and connects the landline
+adapter's OUTGOING calls (handle_adapter_call), since a landline whose phone
+is plugged into the adapter makes every call through us.
 """
 
+from twilio.jwt.access_token import AccessToken
+from twilio.jwt.access_token.grants import VoiceGrant
 from twilio.twiml.voice_response import VoiceResponse
 
 from app import storage
 from app.config import get_settings
 from app.phone_numbers import normalize_phone
 
+# How long a calling-app login lasts before the app asks for a new one (seconds).
+APP_TOKEN_SECONDS = 3600
 # Numbers that must always go through, even if nothing else is set up.
 EMERGENCY_NUMBERS = ("911", "933")  # 933 is the US emergency-calling test line
 
 
 class DeviceError(Exception):
     """
-    An adapter request we can't do, with a message we can show.
+    A calling-app request we can't do, with a message the page can show.
 
     Example:
-        raise DeviceError("This adapter doesn't match any phone.", 404)
+        raise DeviceError("This link doesn't match any phone.", 404)
     """
 
     def __init__(self, text: str, status_code: int):
@@ -41,20 +48,24 @@ class DeviceError(Exception):
 
 def device_address(enrollment: dict) -> str:
     """
-    The private address Twilio rings to reach a landline senior's phone.
+    The private address Twilio rings to reach the senior's phone.
 
-    Input:  enrollment — the senior's (landline) enrollment
-    Output: "sip:<id>@<domain>", their adapter
+    Input:  enrollment — the senior's enrollment
+    Output: "client:<id>" for a cell phone's calling app, or
+            "sip:<id>@<domain>" for a landline's adapter
 
-    Example:
+    Examples:
+        device_address(rosa_cell)      ->  "client:senior-1a2b3c4d"
         device_address(rosa_landline)  ->  "sip:senior-1a2b3c4d@scamshield.sip.twilio.com"
     """
-    return f"sip:{enrollment['device_id']}@{get_settings().twilio_sip_domain}"
+    if enrollment["phone_type"] == "landline":
+        return f"sip:{enrollment['device_id']}@{get_settings().twilio_sip_domain}"
+    return f"client:{enrollment['device_id']}"
 
 
 def dial_device(response: VoiceResponse, enrollment: dict, caller: str) -> None:
     """
-    Add "connect this call to the senior's adapter" to a TwiML response.
+    Add "connect this call to the senior's device" to a TwiML response.
 
     Used for seniors who haven't said YES: a plain call, no listening.
 
@@ -64,11 +75,76 @@ def dial_device(response: VoiceResponse, enrollment: dict, caller: str) -> None:
     Output: nothing (it adds to response)
 
     Example:
-        dial_device(response, rosa_landline, "+15555550199")
-        ->  <Dial callerId="+15555550199"><Sip>sip:senior-1a2b3c4d@...</Sip></Dial>
+        dial_device(response, rosa_cell, "+15555550199")
+        ->  <Dial callerId="+15555550199"><Client>senior-1a2b3c4d</Client></Dial>
     """
     dial = response.dial(caller_id=caller)
-    dial.sip(device_address(enrollment))
+    address = device_address(enrollment)
+    if address.startswith("sip:"):
+        dial.sip(address)
+    else:
+        dial.client(enrollment["device_id"])
+
+
+# ---------------------------------------------------------------------------
+# Cell phones: the calling app
+# ---------------------------------------------------------------------------
+
+
+def find_cell_enrollment(device_key: str) -> dict:
+    """
+    Find the cell-phone senior a calling-app link belongs to.
+
+    Raises: DeviceError if the link is wrong or belongs to a landline
+
+    Example:
+        find_cell_enrollment("Xy7...")  ->  {"senior_name": "Rosa", ...}
+    """
+    enrollment = storage.find_enrollment_by_device("device_key", device_key)
+    if enrollment is None or enrollment["phone_type"] != "cell":
+        raise DeviceError("This link doesn't match any phone.", 404)
+    return enrollment
+
+
+def app_details(device_key: str) -> dict:
+    """
+    What the calling app needs to start: whose phone it is, and a login
+    (access token) that lets Twilio ring it.
+
+    The app only RECEIVES calls, so the login can't be used to call anyone.
+    Demo mode skips the login: no real calls ring in demo mode.
+
+    Input:  device_key — the secret part of the calling-app link
+    Output: {"senior_name": ..., "demo_mode": ..., "token": ... or None}
+    Raises: DeviceError if the link is wrong or Twilio isn't set up
+
+    Example:
+        app_details("Xy7...")  ->  {"senior_name": "Rosa", "demo_mode": False, "token": "eyJ..."}
+    """
+    enrollment = find_cell_enrollment(device_key)
+    settings = get_settings()
+    details = {
+        "senior_name": enrollment["senior_name"],
+        # With REAL_CALLS on, the calling app works for real even on the demo site.
+        "demo_mode": settings.demo_mode and not settings.real_calls,
+        "token": None,
+    }
+    if details["demo_mode"]:
+        return details
+
+    if not (settings.twilio_api_key_sid and settings.twilio_api_key_secret):
+        raise DeviceError("Scam Shield isn't fully set up yet (missing Twilio API key).", 503)
+
+    token = AccessToken(
+        settings.twilio_account_sid,
+        settings.twilio_api_key_sid,
+        settings.twilio_api_key_secret,
+        identity=enrollment["device_id"],
+        ttl=APP_TOKEN_SECONDS,
+    )
+    token.add_grant(VoiceGrant(incoming_allow=True))
+    details["token"] = token.to_jwt()
+    return details
 
 
 # ---------------------------------------------------------------------------

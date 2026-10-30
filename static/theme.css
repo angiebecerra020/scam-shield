@@ -39,8 +39,8 @@ h3 {
   font-weight: 600;
 }
 
-/* The English | Español switch on Join call (the header's own switch is
-   styled in header.css) */
+/* The English | Español switch on Join call and the calling app (the
+   header's own switch is styled in header.css) */
 .language-switch {
   color: var(--color-muted);
   font-weight: 400;
@@ -384,6 +384,19 @@ input::placeholder {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 28px;
+}
+
+/* "Keep Scam Shield open" banner: gold, easy to spot, big enough for seniors */
+.keep-open-banner {
+  background: rgba(201, 162, 39, 0.15);
+  border: 2px solid #C9A227;
+  border-radius: 12px;
+  color: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 12px 0;
+  padding: 12px 16px;
 }
 
 /* Spots for our videos on the home page. Each one becomes a YouTube embed later. */
