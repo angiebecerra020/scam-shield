@@ -478,3 +478,14 @@ input::placeholder {
   height: 100%;
   width: 100%;
 }
+
+/* The fold out setup video on the dashboard */
+.setup-video summary {
+  color: #C9A227;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.setup-video .video-spot {
+  margin-top: 12px;
+}
