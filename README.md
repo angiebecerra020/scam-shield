@@ -259,7 +259,7 @@ Seniors keep the phone number they already have, whether it's a cell phone or a 
 | **What rings** | The Scam Shield page (`/phone/<link>`) in their phone's browser, with a call to their real phone as a backup | Their own home phone, plugged into a small adapter |
 | **Extra hardware** | None | A phone adapter (ATA), about $40. Homes without internet need one that uses cell data, about $100 |
 | **Their outgoing calls** | Unchanged | Go through Scam Shield and still show their own number |
-| **Turning it off** | Dial `##004#` (Verizon: `*73`) | Plug the phone back into the wall jack and dial `*73` |
+| **Turning it off** | Dial `##002#` (Verizon: `*73`) | Plug the phone back into the wall jack and dial `*73` |
 
 **Order matters for both:** ask for their consent *before* turning on forwarding. Once forwarding is on, our consent call would forward back to us instead of ringing them.
 

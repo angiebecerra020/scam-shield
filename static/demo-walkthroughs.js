@@ -199,10 +199,10 @@ const WALKTHROUGHS_EN = {
         rosa: [{ kind: "info", body: "Scam Shield isn't listening. Calls still ring like normal." }],
       },
       {
-        note: "On Rosa's phone, Ana dials ##21# to turn off call forwarding. Now calls go straight to Rosa.",
+        note: "On Rosa's phone, Ana dials ##002# to turn off all call forwarding. Now calls go straight to Rosa.",
         status: "Calls ring like normal",
         rosa: [
-          { kind: "dials", body: "##21#" },
+          { kind: "dials", body: "##002#" },
           { kind: "info", body: "Call forwarding is off." },
         ],
       },
@@ -418,10 +418,10 @@ const WALKTHROUGHS_ES = {
         rosa: [{ kind: "info", body: "Scam Shield no está escuchando. Las llamadas siguen sonando como siempre." }],
       },
       {
-        note: "En el teléfono de Rosa, Ana marca ##21# para desactivar el desvío de llamadas. Ahora las llamadas van directo a Rosa.",
+        note: "En el teléfono de Rosa, Ana marca ##002# para desactivar todo el desvío de llamadas. Ahora las llamadas van directo a Rosa.",
         status: "Las llamadas suenan como siempre",
         rosa: [
-          { kind: "dials", body: "##21#" },
+          { kind: "dials", body: "##002#" },
           { kind: "info", body: "El desvío de llamadas está desactivado." },
         ],
       },

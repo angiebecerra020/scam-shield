@@ -372,7 +372,7 @@ function seniorActions(senior) {
  *                   e.g. {removed: "Rosa", phone_type: "cell"}
  * Output: nothing; it shows the note above "Your family".
  * Example: showRemovedNotice({removed: "Rosa", phone_type: "cell"})
- *          gives you  "Rosa was removed... dial ##004# (Verizon: *73)."
+ *          gives you  "Rosa was removed... dial ##002# (Verizon: *73)."
  */
 function showRemovedNotice(removed) {
   const key = removed.phone_type === "landline" ? "family.removedLandline" : "family.removedCell";

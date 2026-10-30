@@ -93,10 +93,16 @@ function cellSteps(name, setup, number) {
 
   return [
     step(t("setup.cellStep2Title"), [
+      // Phones keep old forwarding (and voicemail grabs declined calls), so we
+      // wipe every forwarding setting first. ##002# works on every GSM carrier.
+      makeTag("p", "", t("setup.cellReset")),
+      dialCode("##002#"),
       makeTag("p", "", t("setup.cellStep2a")),
       dialCode(`**004*${number}#`),
       makeTag("p", "hint", t("setup.verizon")),
       dialCode(`*71${number}`),
+      makeTag("p", "", t("setup.cellCheck")),
+      dialCode("*#67#"),
     ]),
     step(t("setup.cellPageTitle"), [
       makeTag("p", "", t("setup.cellPageA", { name })),
