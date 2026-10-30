@@ -494,7 +494,7 @@ def share_warning(ticket: dict, warning: dict) -> None:
     Shows Grandma's warning on the page and queues it up to say on the call.
 
     Example:
-        share_warning(ticket, {"text": "This call looks like a scam...", "speech_language": "en-US", ...})
+        share_warning(ticket, {"text": "This is a potential scam...", "speech_language": "en-US", ...})
     """
     ticket["senior_warning"] = warning
     ticket["warning_count"] += 1
@@ -793,7 +793,7 @@ async def keep_listening(request: Request, ticket: str = ""):
     just keep listening.
 
     Example:
-        Right after the score hits 70, the caller hears "This call looks like a scam..."
+        Right after the score hits 70, the caller hears "This is a potential scam..."
     """
     form = await read_twilio_form(request)
     if form is None:

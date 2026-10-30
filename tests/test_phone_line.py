@@ -288,8 +288,8 @@ def test_scam_words_alert_email_and_warn_on_the_call(pretend_ai, inbox):
     assert "gift cards" in inbox[0].get_content()
 
     # The next check in says the warning out loud, and only once.
-    assert "This call looks like a scam" in loop(ticket)
-    assert "This call looks like a scam" not in loop(ticket)
+    assert "This is a potential scam" in loop(ticket)
+    assert "This is a potential scam" not in loop(ticket)
 
 
 def test_unfinished_sentences_are_skipped(pretend_ai):

@@ -483,6 +483,18 @@ def get_call_by_conference_name(conference_name: str) -> dict | None:
     return dict(row) if row else None
 
 
+def delete_call(call_id: str) -> None:
+    """
+    Delete one call, like it never happened. Used when the senior takes
+    Scam Shield off a call they added us to (live_calls.added_choice).
+
+    Example:
+        delete_call("c1")
+    """
+    with connect() as db:
+        db.execute("DELETE FROM calls WHERE id = ?", (call_id,))
+
+
 def mark_call_ended(call_id: str) -> None:
     """
     Mark a call as over. Its "Join call" link stops working after this.

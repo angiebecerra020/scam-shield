@@ -347,14 +347,46 @@ def test_a_stray_key_on_an_added_call_keeps_scam_shield_listening():
     assert storage.get_enrollment("rosa")["status"] == "active"
 
 
-def test_pressing_2_on_an_added_call_still_cancels():
+def test_pressing_2_on_an_added_call_removes_us_from_that_call():
+    """Grandma hears we left, we hang up our side, and the call isn't kept."""
     save_grandma()
     twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
     call = storage.find_calls_for_enrollment("rosa")[0]
 
+    response = twilio_post(f"/twilio/protected/added-choice?call_id={call['id']}", {"Digits": "2", "From": GRANDMA})
+
+    assert "Scam Shield was removed from this call. We are not listening." in response.text
+    assert "<Hangup" in response.text
+    assert "<Conference" not in response.text
+    assert storage.find_calls_for_enrollment("rosa") == []
+    # Only this call: she stays protected for the next one
+    assert storage.get_enrollment("rosa")["status"] == "active"
+
+
+def test_words_after_pressing_2_on_an_added_call_are_ignored():
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+    call = storage.find_calls_for_enrollment("rosa")[0]
     twilio_post(f"/twilio/protected/added-choice?call_id={call['id']}", {"Digits": "2", "From": GRANDMA})
 
-    assert storage.get_enrollment("rosa")["status"] == "revoked"
+    twilio_post(
+        f"/twilio/protected/transcript?call_id={call['id']}",
+        {
+            "TranscriptionEvent": "transcription-content",
+            "Final": "true",
+            "TranscriptionData": json.dumps({"transcript": "Grandma, buy gift cards and don't tell Mom."}),
+        },
+    )
+
+    assert live_calls.LINES.get(call["id"]) is None
+
+
+def test_adding_us_to_a_call_says_how_to_remove_us():
+    save_grandma()
+
+    response = twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+
+    assert "To remove Scam Shield from this call, press 2." in response.text
 
 
 def test_an_added_call_has_no_hold_music():
@@ -394,4 +426,4 @@ def test_the_scam_warning_words():
 
     response = twilio_post(f"/twilio/protected/silence?call_id={call['id']}&kind=scam", {})
 
-    assert "This call looks like a scam" in response.text
+    assert "This is a potential scam. Disconnect from the call and contact a loved one." in response.text

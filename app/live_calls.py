@@ -80,8 +80,7 @@ SCREEN_WORDS = {
         "unprotected": "Connecting you now.",
         "silence": "Careful. This caller hasn't said anything. Silent calls are often scams. "
         "Please don't talk to them. We'll end this call soon.",
-        "scam": "Scam Shield warning. This call looks like a scam. Don't send money or gift cards, "
-        "and don't share any numbers or passwords. It's OK to hang up. Your family has been told.",
+        "scam": "This is a potential scam. Disconnect from the call and contact a loved one.",
     },
     "es": {
         "question": "Hola, habla Scam Shield. Tiene una llamada del {caller}. "
@@ -90,8 +89,7 @@ SCREEN_WORDS = {
         "unprotected": "Le conectamos ahora.",
         "silence": "Cuidado. Esta persona no ha dicho nada. Las llamadas en silencio suelen ser estafas. "
         "Por favor no hable con ella. Vamos a terminar esta llamada pronto.",
-        "scam": "Aviso de Scam Shield. Esta llamada parece una estafa. No envíe dinero ni tarjetas de regalo, "
-        "y no comparta números ni contraseñas. Puede colgar. Ya le avisamos a su familia.",
+        "scam": "Esta es una posible estafa. Cuelgue la llamada y comuníquese con un ser querido.",
     },
 }
 
@@ -415,7 +413,7 @@ def warn_about_silence(call_id: str) -> None:
 def warn_senior(call_id: str) -> None:
     """
     Says the scam warning out loud to everyone on the call, the moment the
-    family gets the alert: "Scam Shield warning. This call looks like a scam..."
+    family gets the alert: "This is a potential scam. Disconnect from the call..."
 
     Example:
         warn_senior("c1") right after Nemotron scores the call 92
@@ -470,7 +468,7 @@ async def silence_message(request: Request, call_id: str = "", kind: str = "sile
 
     Example:
         Rosa hears "Careful. This caller hasn't said anything..."
-        with kind=scam, Rosa hears "Scam Shield warning. This call looks like a scam..."
+        with kind=scam, Rosa hears "This is a potential scam. Disconnect from the call..."
     """
     form = await read_twilio_form(request)
     if form is None:
@@ -519,12 +517,14 @@ def end_silent_call(call_id: str) -> None:
 # What the senior hears when they add Scam Shield to a call, by language.
 ADDED_WORDS = {
     "en": {
-        "joining": "Scam Shield is joining your call. To turn Scam Shield off instead, press 2.",
+        "joining": "Scam Shield is joining your call. To remove Scam Shield from this call, press 2.",
         "listening": "Scam Shield is listening.",
+        "removed": "Scam Shield was removed from this call. We are not listening. Goodbye.",
     },
     "es": {
-        "joining": "Scam Shield se está uniendo a su llamada. Para apagar Scam Shield, marque 2.",
+        "joining": "Scam Shield se está uniendo a su llamada. Para quitar Scam Shield de esta llamada, marque 2.",
         "listening": "Scam Shield está escuchando.",
+        "removed": "Se quitó Scam Shield de esta llamada. No estamos escuchando. Adiós.",
     },
 }
 
@@ -542,9 +542,9 @@ def senior_added_us(enrollment: dict, call_sid: str) -> str:
     gets transcribed too. The senior's side goes in a conference room, so the
     family's "Join call" link works just like on a forwarded call.
 
-    For the first few seconds they can still press 2 to turn Scam Shield off
-    (Cass's cancel menu in consent.py). After that, keys do nothing, so the
-    other person on the call can't turn us off.
+    For the first few seconds they can still press 2 to take Scam Shield off
+    this call (added_choice). After that, keys do nothing, so the other
+    person on the call can't turn us off.
 
     Input:  enrollment, the senior's active sign up
             call_sid, Twilio's ID for the senior's call to us
@@ -568,7 +568,7 @@ def senior_added_us(enrollment: dict, call_sid: str) -> str:
     # which cut our first real test off after 14 seconds.
     gather = response.gather(
         num_digits=1,
-        timeout=4,
+        timeout=6,
         action=f"{base}/twilio/protected/added-choice?call_id={call['id']}",
     )
     gather.say(words["joining"])
@@ -606,12 +606,20 @@ def add_listening(response: VoiceResponse, call: dict, words: dict) -> None:
 async def added_choice(request: Request, call_id: str = ""):
     """
     The senior added Scam Shield to a call and a key was pressed during
-    "press 2 to turn Scam Shield off". Only 2 cancels (Cass's cancel code in
-    consent.py). Any other key, like a stray tone from the merge, keeps us
-    listening.
+    "press 2 to remove Scam Shield from this call". Only 2 removes us. Any
+    other key, like a stray tone from the merge, keeps us listening.
+
+    Pressing 2 only takes us off THIS call: we stop reading the words, delete
+    the call, and hang up our side, so the senior and the other person keep
+    talking without us. Their protection stays on for later calls. To cancel
+    Scam Shield for good, they call our number by itself (consent.py).
+
+    It used to run the full cancel, which texts and emails the family before
+    answering. That could take longer than the 15 seconds Twilio waits, so
+    the senior never heard back.
 
     Example:
-        Digits=2 gives you "Scam Shield is now canceled..."
+        Digits=2 gives you "Scam Shield was removed from this call..."
         Digits=1 gives you "Scam Shield is listening." and the call goes on
     """
     form = await read_twilio_form(request)
@@ -624,14 +632,18 @@ async def added_choice(request: Request, call_id: str = ""):
         response.hangup()
         return twiml_response(response)
 
-    if form.get("Digits", "") == "2":
-        # Imported here because consent.py is a big file we only need now.
-        from app import consent
-
-        xml = consent.handle_senior_menu_digits(call["enrollment_id"], form.get("From", ""), "2")
-        return Response(content=xml, media_type="application/xml")
-
     enrollment = storage.get_enrollment(call["enrollment_id"]) or {}
     words = ADDED_WORDS.get(enrollment.get("senior_language"), ADDED_WORDS["en"])
+
+    if form.get("Digits", "") == "2":
+        # Any words still on their way from Twilio get thrown away.
+        UNPROTECTED.add(call_id)
+        LINES.pop(call_id, None)
+        storage.delete_call(call_id)
+        response.say(words["removed"])
+        # Hanging up our side drops Scam Shield out of the merged call.
+        response.hangup()
+        return twiml_response(response)
+
     add_listening(response, call, words)
     return twiml_response(response)
