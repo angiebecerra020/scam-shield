@@ -324,8 +324,10 @@ function showSetupSteps(enrollment) {
     addStep("setup.landline3", { name });
     document.getElementById("setup-note").textContent = t("setup.landlineOff");
   } else {
-    addStep("setup.cell1", { name, appLink: { link: setup.app_link, label: t("setup.cellAppLink") } });
+    // Forwarding first, then how declining a call works. No app to open anymore:
+    // Scam Shield rings their real phone (see calls.ring_senior_phone).
     addStep("setup.cell2", { name, number });
+    addStep("setup.cell1", { name });
     addStep("setup.cell3", {});
     document.getElementById("setup-note").textContent = t("setup.cellOff");
   }

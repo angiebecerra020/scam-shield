@@ -377,7 +377,7 @@ async function cancelProtection(senior, button) {
  *
  * Input:  senior — one entry from GET /api/family, with status "canceled"
  * Output: the line of text
- * Example: a cell phone  gives you  "Scam Shield is off for Rosa. ... dial ##21# ..."
+ * Example: a cell phone  gives you  "Scam Shield is off for Rosa. ... dial ##004# ..."
  */
 function canceledNote(senior) {
   const key = senior.phone_type === "landline" ? "family.canceledLandline" : "family.canceledCell";

@@ -57,6 +57,12 @@ DEMO_CALL_LOG: list[dict] = []
 
 # How long to ring the senior's phone before giving up (seconds).
 SENIOR_RING_SECONDS = 25
+
+# Cell phone seniors we're ringing right now: enrollment ID gives you call ID.
+# Their phone forwards calls they don't answer back to us, so if they miss
+# OUR call too, it bounces right back here. This is how we spot that and
+# stop it, instead of ringing them in a loop forever.
+RINGING_SENIORS: dict[str, str] = {}
 # Wait this long before ringing the family again if they tap the link twice.
 FAMILY_RING_COOLDOWN = timedelta(seconds=60)
 
@@ -178,6 +184,13 @@ def handle_incoming_call(
         response.reject()
         return str(response)
 
+    if enrollment["id"] in RINGING_SENIORS:
+        # This is our own call to the senior bouncing back because they
+        # didn't pick up. Reject it, so our call ends as "busy" and the
+        # caller hears that the senior can't come to the phone.
+        response.reject()
+        return str(response)
+
     call = start_protected_call(enrollment, caller, call_sid, call_token)
     if reported == "warn":
         warn_about_reported_number(call, enrollment)
@@ -188,6 +201,8 @@ def handle_incoming_call(
     from app import live_calls
     live_calls.start_transcription(response, call["id"])
 
+    # Without this the caller hears silence while we ring the senior.
+    response.say("Please hold while we connect your call.")
     dial = response.dial()
     dial.conference(
         call["conference_name"],
@@ -234,6 +249,10 @@ def start_protected_call(
     }
     storage.save_call(call)
 
+    if enrollment["phone_type"] == "cell":
+        ring_senior_phone(call, enrollment, caller_id_for(caller, call_token))
+        return call
+
     ring_into_conference(
         to=device_address(enrollment),
         conference_name=call["conference_name"],
@@ -247,6 +266,46 @@ def start_protected_call(
         status_callback=public_url(f"/twilio/senior-status?call_id={call_id}"),
     )
     return call
+
+
+def ring_senior_phone(call: dict, enrollment: dict, caller_id: dict) -> None:
+    """
+    Calls a cell phone senior's REAL phone and asks if they want Scam Shield.
+
+    Their phone only forwards calls they decline or miss (see the setup
+    steps), so ringing their real number doesn't loop back here, and they
+    don't need any app or web page open. When they pick up, Twilio asks
+    live_calls.py what to say: "Press 1 to answer with Scam Shield listening,
+    press 2 to answer without it." Either way, the call goes through.
+
+    Input:  call, the call we just saved
+            enrollment, the senior's sign up
+            caller_id, from caller_id_for(), so they see who's really calling
+    Output: nothing. In demo mode, the call goes in DEMO_CALL_LOG instead.
+
+    Example:
+        ring_senior_phone(call, rosa, {"from_": "+15555550199"})
+        rings Rosa's cell, and she hears the press 1 or press 2 question
+    """
+    settings = get_settings()
+    to = enrollment["senior_phone"]
+
+    if settings.demo_mode and not settings.real_calls:
+        DEMO_CALL_LOG.append(
+            {"to": to, "conference": call["conference_name"], "who": "senior", "shows": caller_id["from_"]}
+        )
+        print(f"[demo mode] would ring the senior at {to} for {call['conference_name']}")
+        return
+
+    RINGING_SENIORS[enrollment["id"]] = call["id"]
+    twilio_client().calls.create(
+        **caller_id,
+        to=to,
+        url=public_url(f"/twilio/protected/screen?call_id={call['id']}"),
+        timeout=SENIOR_RING_SECONDS,
+        status_callback=public_url(f"/twilio/senior-status?call_id={call['id']}"),
+        status_callback_event=["answered", "completed"],
+    )
 
 
 def caller_id_for(caller: str, call_token: str | None) -> dict:
@@ -355,10 +414,16 @@ def handle_senior_status(call_id: str, call_status: str) -> None:
         handle_senior_status("abc", "no-answer")
         ->  the caller hears "The person you are calling is not available."
     """
+    call = storage.get_call(call_id)
+    if call is not None:
+        # Ringing is over (they picked up, or never will), so a new call
+        # for this senior is a real new call again, not a bounce.
+        if RINGING_SENIORS.get(call["enrollment_id"]) == call_id:
+            RINGING_SENIORS.pop(call["enrollment_id"])
+
     if call_status not in ("busy", "no-answer", "failed", "canceled"):
         return
 
-    call = storage.get_call(call_id)
     if call is None or call["status"] != "live":
         return
 
@@ -368,7 +433,7 @@ def handle_senior_status(call_id: str, call_status: str) -> None:
         return
 
     goodbye = VoiceResponse()
-    goodbye.say("The person you are calling is not available. Goodbye.")
+    goodbye.say("Sorry, they can't come to the phone right now. Please try again later. Goodbye.")
     goodbye.hangup()
     twilio_client().calls(call["call_sid"]).update(twiml=str(goodbye))
 

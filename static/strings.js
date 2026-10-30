@@ -168,13 +168,13 @@ const STRINGS = {
     "setup.landline3": "Unplug {name}'s phone from the wall and plug it into the adapter.",
     "setup.landlineOff": "To turn Scam Shield off later: plug the phone back into the wall and dial *73.",
     "setup.cell1":
-      "On {name}'s phone, open {appLink} in the web browser, tap “Turn on calls” and allow the microphone. Keep that page open: protected calls ring there, not in the normal phone app.",
+      "That's it, no app needed. Calls ring {name}'s phone like normal. If a number looks strange, they tap Decline. Scam Shield calls them right back and asks: press 1 to answer with Scam Shield listening, or press 2 to answer without it.",
     "setup.cellAppLink": "this calling app link",
-    "setup.cell3": "To turn it off later, dial ##21# and press call (Verizon: *73).",
+    "setup.cell3": "To turn it off later, dial ##004# and press call (Verizon: *73).",
     "setup.cell2":
-      "On {name}'s phone, open the Phone app, dial **21*{number}# and press call. That sends their calls through Scam Shield. (Verizon: dial *72{number} instead.)",
+      "On {name}'s phone, open the Phone app, dial **004*{number}# and press call. Now calls they decline or miss go through Scam Shield. (Verizon: dial *71{number} instead.)",
     "setup.cellOff":
-      "To turn Scam Shield off later: dial ##21# (Verizon: *73), or text STOP to the Scam Shield number.",
+      "To turn Scam Shield off later: dial ##004# (Verizon: *73), or text STOP to the Scam Shield number.",
 
     // Your family (family.js)
     "family.title": "Your family",
@@ -199,7 +199,7 @@ const STRINGS = {
     "family.cancelKeep": "Keep it",
     "family.busyCancel": "Canceling…",
     "family.canceledCell":
-      "Scam Shield is off for {name}, and we aren't listening. Their calls still ring like normal. To stop calls going through Scam Shield at all, turn off call forwarding on their phone: dial ##21# (Verizon: *73).",
+      "Scam Shield is off for {name}, and we aren't listening. Their calls still ring like normal. To stop calls going through Scam Shield at all, turn off call forwarding on their phone: dial ##004# (Verizon: *73).",
     "family.canceledLandline":
       "Scam Shield is off for {name}, and we aren't listening. Please tell them. To finish, plug their phone back into the wall and dial *73 to turn off call forwarding.",
     "family.statusPending": "Waiting for their YES",
@@ -454,13 +454,13 @@ const STRINGS = {
     "setup.landlineOff":
       "Para apagar Scam Shield más adelante: vuelva a conectar el teléfono a la pared y marque *73.",
     "setup.cell1":
-      "En el teléfono de {name}, abra {appLink} en el navegador, toque “Activar llamadas” y permita el micrófono. Deje esa página abierta: las llamadas protegidas suenan ahí, no en la aplicación de teléfono normal.",
+      "Listo, no hace falta ninguna aplicación. Las llamadas suenan en el teléfono de {name} como siempre. Si un número parece extraño, toque Rechazar. Scam Shield le devuelve la llamada enseguida y pregunta: marque 1 para contestar con Scam Shield escuchando, o 2 para contestar sin Scam Shield.",
     "setup.cellAppLink": "este enlace de la aplicación de llamadas",
-    "setup.cell3": "Para apagarlo después, marque ##21# y presione llamar (Verizon: *73).",
+    "setup.cell3": "Para apagarlo después, marque ##004# y presione llamar (Verizon: *73).",
     "setup.cell2":
-      "En el teléfono de {name}, abra la aplicación Teléfono, marque **21*{number}# y presione llamar. Así sus llamadas pasan por Scam Shield. (Verizon: marque *72{number}.)",
+      "En el teléfono de {name}, abra la aplicación Teléfono, marque **004*{number}# y presione llamar. Así las llamadas que rechace o no conteste pasan por Scam Shield. (Verizon: marque *71{number}.)",
     "setup.cellOff":
-      "Para apagar Scam Shield más adelante: marque ##21# (Verizon: *73), o envíe STOP al número de Scam Shield.",
+      "Para apagar Scam Shield más adelante: marque ##004# (Verizon: *73), o envíe STOP al número de Scam Shield.",
 
     "family.title": "Su familia",
     "family.protectSomeoneElse": "Proteger a otra persona",
@@ -485,7 +485,7 @@ const STRINGS = {
     "family.cancelKeep": "Mantenerlo",
     "family.busyCancel": "Cancelando…",
     "family.canceledCell":
-      "Scam Shield está apagado para {name} y no estamos escuchando. Sus llamadas siguen sonando como siempre. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##21# (Verizon: *73).",
+      "Scam Shield está apagado para {name} y no estamos escuchando. Sus llamadas siguen sonando como siempre. Para que sus llamadas ya no pasen por Scam Shield, desactive el desvío de llamadas en su teléfono: marque ##004# (Verizon: *73).",
     "family.canceledLandline":
       "Scam Shield está apagado para {name} y no estamos escuchando. Por favor avísele. Para terminar, vuelva a conectar su teléfono a la pared y marque *73 para desactivar el desvío de llamadas.",
     "family.statusPending": "Esperando su SÍ",
