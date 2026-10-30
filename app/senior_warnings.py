@@ -19,11 +19,11 @@ from app.languages import pick_language
 # so they're easy to read and easy to understand when they're read out loud.
 WARNINGS = {
     "en": {
-        "scam_likely": "This is a potential scam. We are notifying a family member.",
+        "scam_likely": "This is a potential spam call. We are notifying your loved ones now.",
         "not_them": "{contact_name} says they are NOT calling you. Hang up now.",
     },
     "es": {
-        "scam_likely": "Esta es una posible estafa. Estamos avisando a un familiar.",
+        "scam_likely": "Esta es una posible llamada fraudulenta. Estamos avisando a sus seres queridos ahora.",
         "not_them": "{contact_name} dice que NO le está llamando. Cuelgue ahora.",
     },
 }

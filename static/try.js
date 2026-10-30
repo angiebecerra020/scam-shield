@@ -466,7 +466,7 @@ function showVerify(check) {
  * Shows Grandma's warning on her phone. Scam Shield says it out loud on the
  * call, so the page stays quiet (otherwise your phone would hear it twice).
  *
- * Example: showWarning({text: "This is a potential scam..."})
+ * Example: showWarning({text: "This is a potential spam call..."})
  */
 function showWarning(view) {
   if (!view.senior_warning || view.warning_count <= state.warningsShown) {

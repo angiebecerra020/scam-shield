@@ -244,7 +244,7 @@ def test_spanish_call_warns_rosa_in_spanish(pretend_ai):
 
     result = check(call["call_id"], 3)
 
-    assert result["senior_warning"]["text"].startswith("Esta es una posible estafa")
+    assert result["senior_warning"]["text"].startswith("Esta es una posible llamada fraudulenta")
     assert result["senior_warning"]["speech_language"] == "es-US"
     assert result["texts"]["family"][0].startswith("📞 Llamada de ALERTA")
     # The fake officer isn't using a family member's name, so Danny isn't asked.
@@ -311,5 +311,5 @@ def test_warnings_fall_back_to_english():
     """A language we don't support yet gets the English warning."""
     warning = senior_warnings.senior_warning("scam_likely", "fr")
 
-    assert warning["text"].startswith("This is a potential scam")
+    assert warning["text"].startswith("This is a potential spam call")
     assert warning["speech_language"] == "en-US"

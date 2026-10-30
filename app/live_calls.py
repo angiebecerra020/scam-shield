@@ -26,6 +26,7 @@ keep the words in memory while the call is going. They never go in the database.
 
 import json
 import threading
+import time
 
 from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import Response
@@ -58,9 +59,15 @@ UNPROTECTED: set[str] = set()
 
 # The scam warning everyone on the call hears, in the senior's language.
 SCAM_WARNING = {
-    "en": "This is a potential scam. We are notifying a family member.",
-    "es": "Esta es una posible estafa. Estamos avisando a un familiar.",
+    "en": "This is a potential spam call. We are notifying your loved ones now.",
+    "es": "Esta es una posible llamada fraudulenta. Estamos avisando a sus seres queridos ahora.",
 }
+
+# Added calls whose line we just took out of the room to say the warning,
+# by call ID, with when. Leaving can close the room for a moment, and that
+# shouldn't count as the call ending (calls.handle_conference_status).
+REJOINING: dict[str, float] = {}
+REJOIN_SECONDS = 30
 
 # Sign-ups whose calls really get forwarded to us. Demo sign-ups never do.
 REAL_STATUSES = ("active", "paused", "pending")
@@ -167,6 +174,7 @@ def forget_call(call_id: str) -> None:
     CHECKED.pop(call_id, None)
     LOCKS.pop(call_id, None)
     UNPROTECTED.discard(call_id)
+    REJOINING.pop(call_id, None)
 
 
 @router.post("/twilio/protected/transcript")
@@ -240,7 +248,13 @@ def find_conference(call: dict):
 def warn_senior(call_id: str) -> None:
     """
     Says the scam warning out loud to everyone on the call, the moment the
-    family's alert call goes out: "This is a potential scam. We are notifying a family member."
+    family's alert call goes out: "This is a potential spam call. We are notifying your loved ones now."
+
+    On an added call (Add call + Merge) the senior's line is alone in our
+    room, and Twilio doesn't start a room until a second person joins. A room
+    that hasn't started can't play anything, so the warning was never heard.
+    So unless the room is really going, we say it right on the senior's line
+    instead (say_on_senior_line). The merged call hears it too.
 
     Example:
         warn_senior("c1") right after Nemotron scores the call 92
@@ -253,15 +267,21 @@ def warn_senior(call_id: str) -> None:
         room = find_conference(call)
     except Exception as problem:
         print(f"[live call {call_id}] Couldn't find the room for the scam warning: {problem}")
+        room = None
+    if room is not None and room.status == "in-progress":
+        try:
+            # Everyone in the room hears it.
+            room.update(announce_url=link)
+            print(f"[live call {call_id}] Scam warning played in the room")
+            return
+        except Exception as problem:
+            print(f"[live call {call_id}] Room announcement didn't work: {problem}")
+    if call["caller_number"] == ADDED_CALLER:
+        say_on_senior_line(call)
         return
     if room is None:
+        print(f"[live call {call_id}] No room to play the scam warning in")
         return
-    try:
-        # Everyone in the room hears it.
-        room.update(announce_url=link)
-        return
-    except Exception as problem:
-        print(f"[live call {call_id}] Room announcement didn't work, trying the senior's line: {problem}")
     try:
         # A room that hasn't started can't take an announcement, so we play it
         # straight to the line that called us. On an added call that's the
@@ -289,7 +309,7 @@ async def warning_message(request: Request, call_id: str = ""):
     The words Twilio plays into a call: the scam warning.
 
     Example:
-        Rosa hears "This is a potential scam. We are notifying a family member."
+        Rosa hears "This is a potential spam call. We are notifying your loved ones now."
     """
     form = await read_twilio_form(request)
     if form is None:
@@ -363,6 +383,48 @@ def senior_added_us(enrollment: dict, call_sid: str) -> str:
     return str(response)
 
 
+def say_on_senior_line(call: dict) -> None:
+    """
+    Says the scam warning straight on the senior's line of an added call,
+    then puts them right back in the room, so the family can still join.
+
+    Twilio swaps in our new instructions for the line: the warning, then the
+    same room. Live transcription keeps going, since it belongs to the line.
+
+    Example:
+        say_on_senior_line(call) and Rosa (and the caller on her merged call)
+        hears "This is a potential spam call. We are notifying your loved ones now."
+    """
+    response = VoiceResponse()
+    response.say(scam_warning(call))
+    put_in_room(response, call)
+    REJOINING[call["id"]] = time.time()
+    try:
+        twilio_client().calls(call["call_sid"]).update(twiml=str(response))
+        print(f"[live call {call['id']}] Scam warning played on the senior's line")
+    except Exception as problem:
+        REJOINING.pop(call["id"], None)
+        # A failed warning should never crash the server mid call.
+        print(f"[live call {call['id']}] Couldn't play the scam warning on the senior's line: {problem}")
+
+
+def is_rejoining(call_id: str) -> bool:
+    """
+    True if we just took this call's line out of the room to say the warning,
+    so a room closing now isn't the call ending.
+
+    Example:
+        is_rejoining("c1") right after say_on_senior_line gives you True
+    """
+    started = REJOINING.get(call_id)
+    if started is None:
+        return False
+    if time.time() - started > REJOIN_SECONDS:
+        REJOINING.pop(call_id, None)
+        return False
+    return True
+
+
 def add_listening(response: VoiceResponse, call: dict, words: dict) -> None:
     """
     Says "Scam Shield is listening" and puts the senior's side in the call's
@@ -371,8 +433,18 @@ def add_listening(response: VoiceResponse, call: dict, words: dict) -> None:
     Example:
         add_listening(response, call, ADDED_WORDS["en"])
     """
-    base = get_settings().public_base_url.rstrip("/")
     response.say(words["listening"])
+    put_in_room(response, call)
+
+
+def put_in_room(response: VoiceResponse, call: dict) -> None:
+    """
+    Puts the senior's side of an added call in the call's conference room.
+
+    Example:
+        put_in_room(response, call)
+    """
+    base = get_settings().public_base_url.rstrip("/")
     dial = response.dial()
     dial.conference(
         call["conference_name"],

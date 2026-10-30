@@ -581,7 +581,7 @@ async function answerAsDanny(answer) {
 /**
  * Shows Rosa's warning on her phone, and reads it out loud in her language.
  *
- * Example: showWarning({text: "This is a potential scam...", speech_language: "en-US"})
+ * Example: showWarning({text: "This is a potential spam call...", speech_language: "en-US"})
  */
 function showWarning(warning) {
   if (!warning) {

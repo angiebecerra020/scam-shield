@@ -363,6 +363,101 @@ def test_the_warning_plays_as_the_family_call_goes_out(inbox, monkeypatch):
     assert happened[:2] == ["family call", "warning"]
 
 
+class FakeRoom:
+    """A pretend Twilio conference room that remembers what we asked it to do."""
+
+    def __init__(self, status):
+        self.status = status
+        self.announced = []
+
+    def update(self, announce_url):
+        if self.status != "in-progress":
+            raise RuntimeError("Conference is not in progress")
+        self.announced.append(announce_url)
+
+    def participants(self, call_sid):
+        raise RuntimeError("Conference is not in progress")
+
+
+class FakeTwilio:
+    """A pretend Twilio client: one room, and it remembers lines we updated."""
+
+    def __init__(self, room):
+        self.room = room
+        self.updated = []
+        self.conferences = self
+
+    def list(self, friendly_name, limit):
+        return [self.room]
+
+    def calls(self, call_sid):
+        twilio = self
+
+        class Line:
+            def update(self, twiml):
+                twilio.updated.append((call_sid, twiml))
+
+        return Line()
+
+
+def added_call():
+    """Grandma adds Scam Shield to a call (Add call + Merge)."""
+    save_grandma()
+    twilio_post("/twilio/line/incoming", {"CallSid": "CA5", "From": GRANDMA})
+    return storage.find_calls_for_enrollment("rosa")[0]
+
+
+def test_on_an_added_call_the_warning_is_said_on_grandmas_line(monkeypatch):
+    """Alone in the room, it hasn't started, so Twilio can't announce in it.
+    We say the warning on her line instead, then put her back in the room."""
+    twilio = FakeTwilio(FakeRoom("init"))
+    monkeypatch.setattr(live_calls, "twilio_client", lambda: twilio)
+    call = added_call()
+
+    live_calls.warn_senior(call["id"])
+
+    assert len(twilio.updated) == 1
+    line, twiml = twilio.updated[0]
+    assert line == "CA5"
+    assert "This is a potential spam call. We are notifying your loved ones now." in twiml
+    assert call["conference_name"] in twiml
+    assert twiml.index("potential spam call") < twiml.index("<Conference")
+
+
+def test_a_room_that_is_going_gets_the_announcement(monkeypatch):
+    room = FakeRoom("in-progress")
+    twilio = FakeTwilio(room)
+    monkeypatch.setattr(live_calls, "twilio_client", lambda: twilio)
+    call = added_call()
+
+    live_calls.warn_senior(call["id"])
+
+    assert room.announced == [live_calls.announce_link(call["id"])]
+    assert twilio.updated == []
+
+
+def test_the_room_closing_while_grandma_hears_the_warning_isnt_the_end(monkeypatch):
+    """Her line leaves the room for a moment, so the room may close. The call goes on."""
+    monkeypatch.setattr(live_calls, "twilio_client", lambda: FakeTwilio(FakeRoom("init")))
+    call = added_call()
+    live_calls.warn_senior(call["id"])
+
+    calls.handle_conference_status(call["conference_name"], "conference-end")
+
+    assert storage.get_call(call["id"])["status"] == "live"
+
+
+def test_the_room_closing_later_still_ends_the_call(monkeypatch):
+    monkeypatch.setattr(live_calls, "twilio_client", lambda: FakeTwilio(FakeRoom("init")))
+    call = added_call()
+    live_calls.warn_senior(call["id"])
+    live_calls.REJOINING[call["id"]] -= live_calls.REJOIN_SECONDS + 1
+
+    calls.handle_conference_status(call["conference_name"], "conference-end")
+
+    assert storage.get_call(call["id"])["status"] == "ended"
+
+
 def test_the_scam_warning_words():
     save_grandma()
     twilio_post("/twilio/line/incoming", {"CallSid": "CA1", "From": SCAMMER, "ForwardedFrom": GRANDMA})
@@ -370,7 +465,7 @@ def test_the_scam_warning_words():
 
     response = twilio_post(f"/twilio/protected/warning?call_id={call['id']}", {})
 
-    assert "This is a potential scam. We are notifying a family member." in response.text
+    assert "This is a potential spam call. We are notifying your loved ones now." in response.text
 
 
 # ----- Cell phones: missed calls are left alone -----

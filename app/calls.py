@@ -433,6 +433,13 @@ def handle_conference_status(conference_name: str, event: str) -> None:
         return
     call = storage.get_call_by_conference_name(conference_name)
     if call and call["status"] == "live":
+        # Imported here because live_calls.py uses this file too.
+        from app import live_calls
+
+        if live_calls.is_rejoining(call["id"]):
+            # The senior's line left the room for a moment to hear the scam
+            # warning, and is on its way back. The call isn't over.
+            return
         storage.mark_call_ended(call["id"])
 
 
