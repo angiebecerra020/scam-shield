@@ -58,13 +58,13 @@ Routes:
 
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from twilio.twiml.messaging_response import MessagingResponse
 
-from app import calls, consent, devices, family
+from app import calls, consent, devices, email_alerts, family
 from app.auth import login_is_on, require_login
 from app.config import get_settings
 from app.twilio_security import is_from_twilio
@@ -270,7 +270,9 @@ class EnrollmentForm(BaseModel):
 
 
 @app.post("/api/enrollments", status_code=201)
-def create_enrollment(form: EnrollmentForm, user: dict | None = Depends(require_login)):
+def create_enrollment(
+    form: EnrollmentForm, background: BackgroundTasks, user: dict | None = Depends(require_login)
+):
     """
     Sign a senior up and text them to ask for their YES.
 
@@ -290,6 +292,9 @@ def create_enrollment(form: EnrollmentForm, user: dict | None = Depends(require_
         fields = profile.fill_in_family(form.model_dump(), user)
         enrollment = consent.start_enrollment(**fields, owner_id=owner_id)
         profile.remember_from_signup(fields, user)
+        # The welcome email with the how to set up video. In the background,
+        # so the page doesn't wait on Gmail.
+        background.add_task(email_alerts.send_welcome_email, enrollment)
         return enrollment
     except consent.EnrollmentError as problem:
         return error(problem.text, problem.status_code)

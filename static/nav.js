@@ -92,6 +92,7 @@ async function addAccountLink(tools, tabs) {
   }
 
   // Only once they're logged in, since there's no profile to see before that.
+  tabs.appendChild(navLink({ href: "/how-to", text: "nav.howTo" }));
   tabs.appendChild(navLink({ href: "/profile", text: "nav.profile" }));
 
   const logOutButton = document.createElement("button");

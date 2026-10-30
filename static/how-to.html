@@ -1,0 +1,80 @@
+<!--
+  how-to.html — The "How to set up" page: our step by step video, plus the
+  same 6 steps in writing, with every code to dial.
+
+  How it fits in: app/site_pages.py sends this page at /how-to. Logged in
+  families see it as a tab (nav.js), and the welcome email links here
+  (email_alerts.send_welcome_email). The words live in strings.js under
+  "howto." so English | Español works. watch.js puts the YouTube video in.
+
+  TO ADD THE VIDEO: put the YouTube video's ID in data-video-id below.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-text="howto.pageTitle">How to set up Scam Shield</title>
+  <meta name="description" content="Set up Scam Shield in about 5 minutes: a step by step video with every code to dial.">
+  <link rel="canonical" href="https://scam-shield-86hy.onrender.com/how-to">
+  <meta name="theme-color" content="#1C1C1C">
+  <link rel="icon" href="/static/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scam Shield">
+  <meta property="og:title" content="How to set up Scam Shield">
+  <meta property="og:description" content="Scam Shield stops scam calls to seniors while they happen. Built with NVIDIA Nemotron on Nebius Token Factory, Tavily and Twilio.">
+  <meta property="og:url" content="https://scam-shield-86hy.onrender.com/how-to">
+  <meta property="og:image" content="https://scam-shield-86hy.onrender.com/static/icons/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/header.css">
+</head>
+<body class="landing">
+  <!-- The header with the logo and tabs. nav.js fills it in. -->
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <section class="watch-hero">
+      <h1 data-text="howto.title">Set up Scam Shield in about 5 minutes</h1>
+      <p class="lead" data-text="howto.lead">Watch the video, then follow the steps below. Every code is right here, ready to copy.</p>
+      <div id="video-frame" class="video-frame" data-video-id="">
+        <div class="video-soon">
+          <img src="/static/icons/favicon.svg" alt="" width="72" height="72">
+          <p class="video-soon-title" data-text="howto.soonTitle">Our step by step video is on its way</p>
+          <p data-text="howto.soonText">Until then, the written steps below have everything you need.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="steps-title">
+      <h2 id="steps-title" data-text="howto.stepsTitle">The 6 steps</h2>
+      <ol class="step-cards">
+        <li><h3 data-text="howto.s1Title">Make your account</h3><p data-text="howto.s1">Tap Protect a loved one and sign up with your email.</p></li>
+        <li><h3 data-text="howto.s2Title">Tell us who you're protecting</h3><p data-text="howto.s2">Their name, their phone with the area code, and cell or home phone. Then your phone and email for the alerts.</p></li>
+        <li><h3 data-text="howto.s3Title">They say yes</h3><p data-text="howto.s3">We call them. They press 1 to say yes. Nothing is heard without their permission.</p></li>
+        <li><h3 data-text="howto.s4Title">On their phone, dial this</h3><p class="dial-code">**004*5705325081#</p><p data-text="howto.s4">Then press call. On Verizon, dial *715705325081 instead.</p></li>
+        <li><h3 data-text="howto.s5Title">Open the Scam Shield page</h3><p data-text="howto.s5">Open the link from your dashboard on their phone, tap Turn on calls and allow the microphone. Keep it open. If it's closed, we call their phone instead.</p></li>
+        <li><h3 data-text="howto.s6Title">Save Scam Shield as a contact</h3><p class="dial-code">(570) 532-5081</p><p data-text="howto.s6">On a call that feels wrong? Tap Add call, pick Scam Shield, then tap Merge.</p></li>
+      </ol>
+      <p class="hint" data-text="howto.off">To turn it off later, dial ##004# on their phone.</p>
+      <p><a class="button" href="/dashboard" data-text="howto.toDashboard">Go to my dashboard</a></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p><a href="/privacy" data-text="landing.privacy">Privacy</a> · <a href="/terms" data-text="landing.terms">Terms</a></p>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+  <script src="/static/strings.js"></script>
+  <script src="/static/i18n.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/nav.js"></script>
+  <script src="/static/watch.js"></script>
+</body>
+</html>

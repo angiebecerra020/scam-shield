@@ -301,3 +301,19 @@ def test_a_paused_grandma_calling_in_still_gets_the_menu():
 
     assert "<Transcription" not in response.text
     assert "<Gather" in response.text
+
+
+def test_signing_someone_up_sends_a_welcome_email_with_the_setup_video(inbox):
+    """The family gets "Welcome to Scam Shield" with the how to set up link."""
+    rosa = {"family_email": "ana@example.com", "family_name": "Ana", "senior_name": "Rosa", "family_language": "en"}
+
+    result = email_alerts.send_welcome_email(rosa)
+
+    assert result == "sent"
+    assert inbox[0]["Subject"] == "Welcome to Scam Shield"
+    assert "/how-to" in inbox[0].get_content()
+
+
+def test_no_email_means_no_welcome_email(inbox):
+    assert email_alerts.send_welcome_email({"family_email": None}) == "no_email"
+    assert inbox == []
