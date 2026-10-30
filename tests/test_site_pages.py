@@ -227,10 +227,10 @@ def test_home_page_leads_with_the_demo():
 
 
 @pytest.mark.parametrize("photo", ["/static/team/angie.jpg", "/static/team/cassandra.jpg"])
-def test_team_photos_are_on_the_judges_page(photo):
-    """"Who we are" on the judges page shows Angie's and Cassandra's photos,
+def test_team_photos_are_on_the_about_page(photo):
+    """"Who we are" on the About us page shows Angie's and Cassandra's photos,
     and each one describes the photo for screen readers."""
-    html = (STATIC / "judges.html").read_text()
+    html = (STATIC / "about.html").read_text()
     image = client.get(photo)
 
     assert f'src="{photo}" alt="' in html

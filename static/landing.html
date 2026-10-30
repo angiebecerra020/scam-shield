@@ -2,7 +2,7 @@
   landing.html — The home page: what Scam Shield does and how it works.
 
   How it fits in: the web server (app/main.py) sends this page at /. It's the
-  first thing judges and families see. The buttons go to /login, where people
+  first thing families see. The buttons go to /login, where people
   make an account or log in, and then on to the dashboard (/dashboard).
   No JavaScript needed here, it's all plain HTML and styles.css.
 -->
@@ -43,8 +43,6 @@
     <!-- The big first impression: what it is, and one clear next step -->
     <section class="hero">
       <div class="hero-text">
-        <!-- Judges: the first thing to click -->
-        <p><a class="button button-small" href="/judges">⭐ Judges, start here</a></p>
         <p class="badge badge-alert" data-text="landing.badge">Live scam call protection</p>
         <h1><span data-text="landing.title1">Stop scam calls to seniors</span> <span class="text-red" data-text="landing.title2">while they happen.</span></h1>
         <p class="lead" data-text="landing.lead">Scam Shield listens for scam tricks on your loved one's calls, with their OK, and tells you right away, in your language.</p>

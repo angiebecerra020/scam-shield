@@ -25,7 +25,7 @@ PUBLIC_PAGES = [
     "/",
     "/demo",
     "/try",
-    "/judges",
+    "/about",
     "/watch",
     "/qa",
     "/scam-call-protection-for-seniors",
@@ -105,16 +105,16 @@ def add_site_extras(app: FastAPI) -> None:
         return response
 
 
-@router.get("/judges")
-def show_judges_page() -> FileResponse:
+@router.get("/about")
+def show_about_page() -> FileResponse:
     """
-    The "For the judges" page: our video, how to try it, who we are, and
-    how we use Nemotron, Tavily and Twilio.
+    The "About us" page: our mission, why we built it, how to try it, how we
+    use Nemotron, Tavily and Twilio, and who we are.
 
     Example:
-        Open http://localhost:8000/judges
+        Open http://localhost:8000/about
     """
-    return FileResponse(STATIC / "judges.html")
+    return FileResponse(STATIC / "about.html")
 
 
 @router.get("/watch")

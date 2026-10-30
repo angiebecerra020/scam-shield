@@ -428,8 +428,8 @@ input::placeholder {
   padding: 24px;
 }
 
-/* The "Why we built it" story on the judges page: big, calm, easy to read */
-.judges-story {
+/* The "Why we built it" story on the About us page: big, calm, easy to read */
+.about-story {
   border-left: 4px solid #C9A227;
   font-size: 1.15rem;
   line-height: 1.6;
@@ -437,17 +437,17 @@ input::placeholder {
   padding-left: 20px;
 }
 
-.judges-signature {
+.about-signature {
   color: #C9A227;
   font-family: "Fraunces", Georgia, serif;
   font-size: 1.3rem;
 }
 
-.judges-bullets {
+.about-bullets {
   margin-top: 20px;
 }
 
-/* "Who we are" on the judges page: a round photo with a gold ring on each
+/* "Who we are" on the About us page: a round photo with a gold ring on each
    card, instead of the small gold icon the other cards get */
 .team-card h3::before {
   content: none;
