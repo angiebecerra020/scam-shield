@@ -446,3 +446,19 @@ input::placeholder {
 .judges-bullets {
   margin-top: 20px;
 }
+
+/* "Who we are" on the judges page: a round photo with a gold ring on each
+   card, instead of the small gold icon the other cards get */
+.team-card h3::before {
+  content: none;
+}
+
+.team-photo {
+  display: block;
+  width: 160px;
+  height: 160px;
+  margin-bottom: 16px;
+  border: 3px solid var(--color-gold);
+  border-radius: 50%;
+  object-fit: cover;
+}
