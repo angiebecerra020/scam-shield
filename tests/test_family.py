@@ -15,7 +15,7 @@ import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
-from app import alerts, auth, call_monitor, calls, detector, research, storage
+from app import alerts, auth, call_monitor, calls, detector, email_alerts, research, storage
 from app.main import app
 
 client = TestClient(app)
@@ -317,6 +317,32 @@ def test_senior_calling_us_hears_press_2_to_cancel():
     assert "<Conference" not in response.text
 
 
+@pytest.fixture
+def inbox(monkeypatch):
+    """Catches emails instead of sending them, with our Gmail set up."""
+    monkeypatch.setenv("GMAIL_ADDRESS", "scamshield.test@example.com")
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "abcd")
+    sent = []
+    monkeypatch.setattr(email_alerts, "deliver", sent.append)
+    return sent
+
+
+def sign_up_rosa_with_email() -> str:
+    """Like sign_up_rosa(), but Ana gives her email too."""
+    response = client.post(
+        "/api/enrollments",
+        json={
+            "senior_name": "Rosa",
+            "senior_phone": SENIOR_PHONE,
+            "family_name": "Ana",
+            "family_phone": FAMILY_PHONE,
+            "family_email": "ana@example.com",
+        },
+    )
+    client.post("/twilio/sms", data={"From": SENIOR_PHONE, "Body": "YES"})
+    return response.json()["id"]
+
+
 def test_pressing_2_cancels_and_tells_the_family():
     rosa = sign_up_rosa()
 
@@ -325,8 +351,62 @@ def test_pressing_2_cancels_and_tells_the_family():
     assert storage.get_enrollment(rosa)["status"] == "revoked"
     assert "Scam Shield is now canceled" in response.text
     assert "turned Scam Shield off" in texts_to_family()[-1]
-    # Rosa said no herself, so the family can't turn it back on
-    assert client.post(f"/api/enrollments/{rosa}/resume").status_code == 409
+    # Rosa said no herself, so the family can't turn it back on (she's gone)
+    assert client.post(f"/api/enrollments/{rosa}/resume").status_code == 404
+
+
+def test_pressing_2_emails_the_family_that_they_were_removed(inbox):
+    rosa = sign_up_rosa_with_email()
+    inbox.clear()  # the welcome email
+
+    senior_presses(rosa, "2")
+
+    assert len(inbox) == 1
+    assert inbox[0]["To"] == "ana@example.com"
+    assert inbox[0]["Subject"] == "Rosa removed you from Scam Shield"
+    body = inbox[0].get_content()
+    assert "removed you as their contact" in body
+    assert "##002#" in body
+
+
+def test_pressing_2_wipes_the_senior_from_everything(inbox):
+    """After Rosa cancels, nothing about her or Ana is left, and she's off the dashboard."""
+    rosa = sign_up_rosa_with_email()
+    scam_call_for(rosa)
+
+    senior_presses(rosa, "2")
+
+    saved = storage.get_enrollment(rosa)
+    assert saved["senior_name"] == ""
+    assert saved["family_name"] == ""
+    assert saved["family_phone"] == ""
+    assert saved["family_email"] is None
+    assert storage.find_calls_for_enrollment(rosa) == []
+    assert client.get("/api/family").json() == {"seniors": []}
+    assert client.get(f"/api/enrollments/{rosa}").status_code == 404
+
+
+def test_saving_the_profile_doesnt_bring_back_a_canceled_senior():
+    rosa = sign_up_rosa()
+    senior_presses(rosa, "2")
+
+    storage.update_family_details(None, {"name": "Ana", "phone": FAMILY_PHONE, "email": None, "language": "en"})
+
+    assert storage.get_enrollment(rosa)["family_name"] == ""
+
+
+def test_a_canceled_seniors_calls_still_ring_through():
+    """Her phone may still forward to us, so calls ring her like normal, without listening."""
+    rosa = sign_up_rosa()
+    senior_presses(rosa, "2")
+
+    xml = client.post(
+        "/twilio/voice",
+        data={"From": SCAMMER_PHONE, "CallSid": "CA123", "ForwardedFrom": SENIOR_PHONE},
+    ).text
+
+    assert "<Conference" not in xml
+    assert "<Dial" in xml
 
 
 def test_pressing_1_keeps_it_on():
@@ -414,7 +494,7 @@ def test_stop_still_works_while_paused():
     client.post("/twilio/sms", data={"From": SENIOR_PHONE, "Body": "STOP"})
 
     assert storage.get_enrollment(rosa)["status"] == "revoked"
-    assert client.post(f"/api/enrollments/{rosa}/resume").status_code == 409
+    assert client.post(f"/api/enrollments/{rosa}/resume").status_code == 404
 
 
 def test_cant_sign_up_a_paused_senior_again():

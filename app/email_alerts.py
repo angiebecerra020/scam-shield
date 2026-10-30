@@ -250,3 +250,66 @@ def send_welcome_email(enrollment: dict) -> str:
         name=enrollment.get("family_name", ""), senior=enrollment.get("senior_name", ""), link=link
     )
     return send_email(address, words["subject"], body)
+
+
+# The email the family gets when the senior turns Scam Shield off themselves.
+# {name} is the family member, {senior} the person they were protecting,
+# {forwarding} how to turn off call forwarding on their kind of phone (the
+# same codes the dashboard shows after Remove).
+REMOVED_WORDS = {
+    "en": {
+        "subject": "{senior} removed you from Scam Shield",
+        "body": (
+            "Hi {name},\n\n"
+            "{senior} called Scam Shield and turned it off, which removed you "
+            "as their contact. We no longer monitor their calls, and we deleted "
+            "their details and call history.\n\n"
+            "Their calls keep ringing like normal. {forwarding}\n\n"
+            "Angie and Cass, Scam Shield"
+        ),
+        "cell": "To stop forwarding calls to Scam Shield, dial ##002# on their phone (Verizon: *73).",
+        "landline": (
+            "To finish, plug their phone back into the wall jack and dial *73 "
+            "to turn off call forwarding."
+        ),
+    },
+    "es": {
+        "subject": "{senior} lo quitó de Scam Shield",
+        "body": (
+            "Hola {name}:\n\n"
+            "{senior} llamó a Scam Shield y lo apagó, así que usted ya no es su "
+            "contacto. Ya no vigilamos sus llamadas, y borramos sus datos y su "
+            "historial de llamadas.\n\n"
+            "Sus llamadas siguen sonando como siempre. {forwarding}\n\n"
+            "Angie y Cass, Scam Shield"
+        ),
+        "cell": "Para dejar de desviar llamadas a Scam Shield, marque ##002# en su teléfono (Verizon: *73).",
+        "landline": (
+            "Para terminar, conecte su teléfono otra vez al enchufe de la pared "
+            "y marque *73 para apagar el desvío de llamadas."
+        ),
+    },
+}
+
+
+def send_removed_email(enrollment: dict) -> str:
+    """
+    Tells the family by email that the senior turned Scam Shield off and
+    removed them as their contact. Send it BEFORE we wipe the sign-up
+    (storage.forget_enrollment), since that deletes the family's email.
+
+    Input:  enrollment, the senior's sign-up (needs family_email to send anything)
+    Output: what happened, like send_welcome_email()
+
+    Example:
+        send_removed_email(rosa) gives you "sent", and Ana gets
+        "Rosa removed you from Scam Shield"
+    """
+    address = enrollment.get("family_email")
+    if not address:
+        return "no_email"
+    words = REMOVED_WORDS.get(enrollment.get("family_language"), REMOVED_WORDS["en"])
+    forwarding = words["landline" if enrollment.get("phone_type") == "landline" else "cell"]
+    senior = enrollment.get("senior_name", "")
+    body = words["body"].format(name=enrollment.get("family_name", ""), senior=senior, forwarding=forwarding)
+    return send_email(address, words["subject"].format(senior=senior), body)

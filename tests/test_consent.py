@@ -122,7 +122,8 @@ def test_stop_turns_protection_off_later():
 
     senior_texts("STOP")
 
-    assert status_of(enrollment_id) == "revoked"
+    # She's gone from the dashboard now, so we check storage directly
+    assert storage.get_enrollment(enrollment_id)["status"] == "revoked"
     assert "turned Scam Shield off" in DEMO_OUTBOX[-1]["body"]
 
 

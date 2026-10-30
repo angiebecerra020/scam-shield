@@ -32,6 +32,10 @@ from app import consent, storage
 # How many past calls we show for each senior.
 CALLS_TO_SHOW = 50
 
+# Seniors we never show the family: ones the family removed, and ones who
+# turned Scam Shield off themselves (we wiped their details).
+GONE = ("removed", "revoked")
+
 # The answers the family can give to "Was this a scam?"
 FAMILY_ANSWERS = ("scam", "not_scam")
 
@@ -79,7 +83,8 @@ def owns(enrollment: dict, user: dict | None) -> bool:
 def my_enrollments(user: dict | None) -> list[dict]:
     """
     Gets every senior the logged in family member signed up, newest first.
-    Seniors they removed (call_again.py) aren't included.
+    Seniors they removed (call_again.py), and seniors who turned Scam Shield
+    off themselves (consent.forget_senior), aren't included.
 
     Input:  user, the same as owns()
     Output: a list of enrollments from storage
@@ -91,7 +96,7 @@ def my_enrollments(user: dict | None) -> list[dict]:
         enrollments = storage.find_all_enrollments()
     else:
         enrollments = storage.find_enrollments_for_owner(user["id"])
-    return [enrollment for enrollment in enrollments if enrollment["status"] != "removed"]
+    return [enrollment for enrollment in enrollments if enrollment["status"] not in GONE]
 
 
 def find_my_enrollment(enrollment_id: str, user: dict | None) -> dict:
@@ -111,7 +116,7 @@ def find_my_enrollment(enrollment_id: str, user: dict | None) -> dict:
     """
     enrollment = storage.get_enrollment(enrollment_id)
     # A removed senior is gone as far as the family is concerned.
-    if enrollment is None or enrollment["status"] == "removed" or not owns(enrollment, user):
+    if enrollment is None or enrollment["status"] in GONE or not owns(enrollment, user):
         raise FamilyError("We couldn't find that sign-up.", 404)
     return enrollment
 

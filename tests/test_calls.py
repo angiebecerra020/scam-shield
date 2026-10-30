@@ -296,7 +296,8 @@ def test_link_stops_working_if_senior_turns_scam_shield_off():
 
     client.post("/twilio/sms", data={"From": SENIOR_PHONE, "Body": "STOP"})
 
-    assert client.post(f"/api/join/{token}").status_code == 403
+    # Turning it off deletes her calls, so the link finds nothing
+    assert client.post(f"/api/join/{token}").status_code == 404
 
 
 def test_page_not_answering_calls_her_real_phone_then_ends_the_call():

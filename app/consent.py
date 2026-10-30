@@ -29,7 +29,10 @@ Turning it back on only works if they already said YES.
 
 The senior can turn it off themselves too, without a text: they call our
 Scam Shield number from their own phone, and we say "To cancel Scam Shield,
-press 2." Pressing 2 works like texting STOP ("revoked").
+press 2." Pressing 2 works like texting STOP ("revoked"). Either way the
+family gets a text and an email saying they were removed, and we wipe the
+senior's details and calls, so they're gone from the dashboard
+(forget_senior).
 
 Ask BEFORE turning on call forwarding: once the senior's number forwards to
 us, our consent call would come straight back to us instead of ringing them.
@@ -48,7 +51,7 @@ from twilio.twiml.voice_response import VoiceResponse
 
 from app import storage
 from app.alerts import send_sms, twilio_client
-from app.email_alerts import is_email
+from app.email_alerts import is_email, send_removed_email
 from app.calls import DEMO_CALL_LOG, public_url
 from app.config import get_settings
 from app.languages import message, pick_language, spoken_language
@@ -707,7 +710,7 @@ def handle_senior_menu_digits(enrollment_id: str, from_phone: str, digits: str) 
         # The same as texting STOP: the senior said no, so the family can't
         # turn it back on, and can't ask again for 30 days.
         storage.set_enrollment_status(enrollment_id, "revoked", answered=True)
-        tell_family(enrollment, "family_told_off")
+        forget_senior(enrollment, tell=True)
         response.say(
             message("consent_call_canceled", language, family_name=enrollment["family_name"]),
             language=voice,
@@ -797,8 +800,7 @@ def handle_senior_reply(from_phone: str, body: str) -> str | None:
             return None
         for enrollment in turned_off:
             storage.set_enrollment_status(enrollment["id"], "revoked", answered=True)
-            if enrollment["status"] in ("active", "paused"):
-                tell_family(enrollment, "family_told_off")
+            forget_senior(enrollment, tell=enrollment["status"] in ("active", "paused"))
         return message("consent_revoked", turned_off[0]["senior_language"])
 
     pending = [e for e in enrollments if e["status"] == "pending"]
@@ -818,6 +820,29 @@ def handle_senior_reply(from_phone: str, body: str) -> str | None:
         return message("consent_no", language)
 
     return message("consent_unclear", language)
+
+
+def forget_senior(enrollment: dict, tell: bool) -> None:
+    """
+    The senior turned Scam Shield off themselves, so we tell the family they
+    were removed, then wipe the senior's details and calls (storage.forget_enrollment).
+    The family gets a text and an email, since texts from our number often
+    don't arrive.
+
+    Input:  enrollment, the senior's sign-up, read BEFORE the wipe
+            tell, False to skip telling the family (they never said YES, so
+            the family was never their contact)
+    Output: nothing
+
+    Example:
+        forget_senior(rosa, tell=True)
+        ->  Ana gets "Rosa removed you from Scam Shield", and Rosa is gone
+            from her dashboard
+    """
+    if tell:
+        tell_family(enrollment, "family_told_off")
+        send_removed_email(enrollment)
+    storage.forget_enrollment(enrollment["id"])
 
 
 def tell_family(enrollment: dict, message_key: str) -> None:

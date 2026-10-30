@@ -370,6 +370,34 @@ def set_enrollment_status(enrollment_id: str, status: str, answered: bool) -> No
             )
 
 
+def forget_enrollment(enrollment_id: str) -> None:
+    """
+    Wipe what we know about a senior who turned Scam Shield off themselves:
+    every call we saved, their name, and the family's name, phone and email.
+
+    We keep only their number, status and phone's device name. The number and
+    device let calls.py keep ringing their phone like normal if it still
+    forwards to us, and the "revoked" status keeps the 30-day wait before
+    anyone can ask them again (consent.py).
+
+    Input:  enrollment_id, which senior
+    Output: nothing
+
+    Example:
+        forget_enrollment("abc") and Rosa is gone from Ana's dashboard
+    """
+    with connect() as db:
+        db.execute("DELETE FROM calls WHERE enrollment_id = ?", (enrollment_id,))
+        db.execute(
+            """
+            UPDATE enrollments
+            SET senior_name = '', family_name = '', family_phone = '', family_email = NULL
+            WHERE id = ?
+            """,
+            (enrollment_id,),
+        )
+
+
 def set_enrollment_relationship(enrollment_id: str, relationship: str) -> None:
     """
     Change who the senior is to the family, like from "other" to "grandma".
@@ -720,8 +748,9 @@ def save_profile(owner_id: str | None, profile: dict) -> None:
 def update_family_details(owner_id: str, profile: dict) -> None:
     """
     Copy a family member's new details onto every senior they protect, so
-    alerts go to their new phone and email right away. Removed seniors keep
-    their blanked-out details (call_again.py).
+    alerts go to their new phone and email right away. Removed seniors
+    (call_again.py) and seniors who turned it off (forget_enrollment) keep
+    their blanked-out details.
 
     Input:  owner_id, the family's login
             profile, the same as save_profile()
@@ -736,7 +765,7 @@ def update_family_details(owner_id: str, profile: dict) -> None:
             """
             UPDATE enrollments
             SET family_name = ?, family_phone = ?, family_email = ?, family_language = ?
-            WHERE owner_id = ? AND status != 'removed'
+            WHERE owner_id = ? AND status NOT IN ('removed', 'revoked')
             """,
             (profile["name"], profile["phone"], profile["email"], profile["language"], owner_id),
         )
